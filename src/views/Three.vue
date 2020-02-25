@@ -8,48 +8,15 @@ import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 
 const MAX_PARTICLES = 10000
-const START_PARTICLES = 119
-const CAMERA_FRUSTUM = 1
+const START_PARTICLES = 1000
 const MOVE_DURATION = 300
-const TILE_PADDING = 0.04
+const TILE_PADDING = 0.05
+const CAMERA_NEAR = 100
+const CAMERA_FAR = 100000
 const SCENE_PADDING = 1.15
 const PARTICLE_SIZE = 1
 const SELECTED_SCALE = 1.5
 const SELECTED_COLOR = new THREE.Color(0, 130, 41)
-
-const vshader = `
-			attribute float size;
-			attribute vec3 customColor;
-
-			varying vec3 vColor;
-
-			void main() {
-
-				vColor = customColor;
-
-				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-
-				gl_PointSize = size * ( 300.0 / -mvPosition.z );
-
-				gl_Position = projectionMatrix * mvPosition;
-
-      }`
-
-const fshader = `
-			uniform vec3 color;
-			uniform sampler2D pointTexture;
-
-			varying vec3 vColor;
-
-			void main() {
-
-				gl_FragColor = vec4( color * vColor, 1.0 );
-
-				gl_FragColor = gl_FragColor * texture2D( pointTexture, gl_PointCoord );
-
-				if ( gl_FragColor.a < ALPHATEST ) discard;
-
-      }`
 
 export default {
   components: {},
@@ -73,9 +40,22 @@ export default {
   computed: {},
   mounted() {
     this.init()
+    this.createControls()
     this.refreshParticles()
     this.initMoveCamera()
     this.animate()
+    // console.log(
+    //   this.camera.position.x,
+    //   this.camera.position.y,
+    //   this.camera.position.z
+    // )
+    this.controls.addEventListener('end', (e) => {
+      console.log(
+        this.camera.position.x,
+        this.camera.position.y,
+        this.camera.position.z
+      )
+    })
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mousemove', this.onDocumentMouseMove)
   },
@@ -99,10 +79,10 @@ export default {
       this.scene = new THREE.Scene()
 
       this.raycaster = new THREE.Raycaster()
+      this.raycaster.params.Points.threshold = PARTICLE_SIZE * 0.5
       this.mouse = new THREE.Vector2()
 
       this.camera = this.createBaseCamera()
-      this.createControls()
     },
     createControls() {
       this.controls = new TrackballControls(this.camera, this.$refs.three)
@@ -122,68 +102,64 @@ export default {
         .step(0.001)
         .listen()
       gui
-        .add(this.camera, 'zoom', 0, 10)
+        .add(this.camera, 'fov', 0, 180)
         .step(0.001)
         .listen()
     },
     resetControls() {
       this.controls.rotateSpeed = 1.0
       this.controls.zoomSpeed = 10
-      this.controls.panSpeed = 10
+      this.controls.panSpeed = 0.5
+      this.controls.maxDistance = CAMERA_FAR
+      this.controls.minDistance = CAMERA_NEAR
       this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
       this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
-      this.controls.maxDistance = 1
-      this.controls.minDistance = 0.009
       this.controls.noRotate = true
     },
     refreshParticles() {
       this.cleanParticles()
 
-      const texture = new THREE.TextureLoader().load('/square.png')
-
       const particleCount = this.particleCount
 
       const side = Math.floor(Math.sqrt(particleCount))
 
-      const positions = new Float32Array(particleCount * 3)
-      const colors = new Float32Array(particleCount * 3)
-      const sizes = new Float32Array(particleCount)
+      const geometry = new THREE.PlaneBufferGeometry(
+        PARTICLE_SIZE,
+        PARTICLE_SIZE
+      )
 
-      let vertex
+      const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
+
+      this.particles = new THREE.InstancedMesh(
+        geometry,
+        material,
+        particleCount
+      )
+
+      const colors = new Float32Array(particleCount * 3)
+
       const color = new THREE.Color()
+      const transform = new THREE.Object3D()
 
       for (let i = 0, i3 = 0, l = particleCount; i < l; i++, i3 += 3) {
-        const x = (i % side) * (1 + TILE_PADDING) - side * 0.5
-        const y = Math.floor(i / side) * -(1 + TILE_PADDING) + side * 0.5
+        const x = (i % side) * (PARTICLE_SIZE + TILE_PADDING) - side * 0.5
+        const y =
+          Math.floor(i / side) * -(PARTICLE_SIZE + TILE_PADDING) + side * 0.5
         const z = 0
-        vertex = new THREE.Vector3(x, y, z)
-        vertex.toArray(positions, i * 3)
+        transform.position.set(x, y, z)
+        transform.updateMatrix()
+
+        this.particles.setMatrixAt(i, transform.matrix)
 
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
         color.toArray(colors, i * 3)
-
-        sizes[i] = PARTICLE_SIZE
       }
 
-      const geometry = new THREE.BufferGeometry()
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-      geometry.setAttribute('customColor', new THREE.BufferAttribute(colors, 3))
-      geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
-
-      const material = new THREE.ShaderMaterial({
-        uniforms: {
-          color: { value: new THREE.Color(0xffffff) },
-          pointTexture: {
-            value: texture
-          }
-        },
-        vertexShader: vshader,
-        fragmentShader: fshader,
-
-        alphaTest: 0.9
-      })
-
-      this.particles = new THREE.Points(geometry, material)
+      geometry.setAttribute(
+        'color',
+        new THREE.InstancedBufferAttribute(colors, 3)
+      )
+      material.vertexColors = THREE.VertexColors
 
       this.scene.add(this.particles)
     },
@@ -196,12 +172,14 @@ export default {
     },
     createBaseCamera() {
       const aspect = window.innerWidth / window.innerHeight
-      const camera = new THREE.OrthographicCamera(
-        (CAMERA_FRUSTUM * aspect) / -2,
-        (CAMERA_FRUSTUM * aspect) / 2,
-        CAMERA_FRUSTUM / 2,
-        CAMERA_FRUSTUM / -2
+      const camera = new THREE.PerspectiveCamera(
+        1,
+        aspect,
+        0.1,
+        CAMERA_FAR * 10
       )
+      camera.position.x = 0
+      camera.position.y = 0
       camera.position.z = 10
       return camera
     },
@@ -210,7 +188,14 @@ export default {
 
       let side = Math.ceil(Math.sqrt(this.particleCount))
       side = side * SCENE_PADDING
+
       this.zoom = 1 / side
+
+      const dist = 10
+
+      const fov = 2 * Math.atan(side / (2 * dist)) * (180 / Math.PI) // in degrees
+
+      this.zoom = fov
 
       this.cameraMoveStart = Date.now()
     },
@@ -218,14 +203,14 @@ export default {
       if (!this.lastCamera) return
       const t = Date.now() - this.cameraMoveStart
 
-      const fromZoom = this.lastCamera.zoom
+      const fromZoom = this.lastCamera.fov
       const toZoom = this.zoom - fromZoom
 
       const toCamera = this.createBaseCamera()
 
       const zoom = this.easeInOutQuad(t, fromZoom, toZoom, MOVE_DURATION)
 
-      toCamera.zoom = zoom
+      // toCamera.fov = zoom
 
       this.resetControls()
 
@@ -253,11 +238,7 @@ export default {
       return -c * (t /= d) * (t - 2) + b
     },
     onResize() {
-      const aspect = window.innerWidth / window.innerHeight
-      this.camera.left = (CAMERA_FRUSTUM * aspect) / -2
-      this.camera.right = (CAMERA_FRUSTUM * aspect) / 2
-      this.camera.top = CAMERA_FRUSTUM / 2
-      this.camera.bottom = CAMERA_FRUSTUM / -2
+      this.camera.aspect = window.innerWidth / window.innerHeight
       this.camera.updateProjectionMatrix()
       this.renderer.setSize(window.innerWidth, window.innerHeight)
       this.controls.handleResize()
@@ -282,53 +263,43 @@ export default {
       const selectedSize = PARTICLE_SIZE * SELECTED_SCALE
 
       if (intersects.length > 0) {
-        const index = intersects[0].index
-        if (this.INTERSECTED.index != index) {
-          attributes.size.array[this.INTERSECTED.index] = normalSize
-          attributes.position.array[3 * this.INTERSECTED.index + 2] = 0
+        const instanceId = intersects[0].instanceId
+        if (this.INTERSECTED.instanceId != instanceId) {
           if (this.INTERSECTED.color) {
-            attributes.customColor.array[
-              3 * this.INTERSECTED.index
+            attributes.color.array[
+              3 * this.INTERSECTED.instanceId
             ] = this.INTERSECTED.color.r
-            attributes.customColor.array[
-              3 * this.INTERSECTED.index + 1
+            attributes.color.array[
+              3 * this.INTERSECTED.instanceId + 1
             ] = this.INTERSECTED.color.g
-            attributes.customColor.array[
-              3 * this.INTERSECTED.index + 2
+            attributes.color.array[
+              3 * this.INTERSECTED.instanceId + 2
             ] = this.INTERSECTED.color.b
           }
-          const r = attributes.customColor.array[3 * index]
-          const g = attributes.customColor.array[3 * index + 1]
-          const b = attributes.customColor.array[3 * index + 2]
+          const r = attributes.color.array[3 * instanceId]
+          const g = attributes.color.array[3 * instanceId + 1]
+          const b = attributes.color.array[3 * instanceId + 2]
 
-          this.INTERSECTED.index = index
+          this.INTERSECTED.instanceId = instanceId
           this.INTERSECTED.color = { r, g, b }
 
-          attributes.size.array[index] = selectedSize
-          attributes.customColor.array[3 * index] = SELECTED_COLOR.r
-          attributes.customColor.array[3 * index + 1] = SELECTED_COLOR.g
-          attributes.customColor.array[3 * index + 2] = SELECTED_COLOR.b
-          attributes.position.array[3 * index + 2] = 1
+          attributes.color.array[3 * instanceId] = SELECTED_COLOR.r
+          attributes.color.array[3 * instanceId + 1] = SELECTED_COLOR.g
+          attributes.color.array[3 * instanceId + 2] = SELECTED_COLOR.b
 
-          attributes.size.needsUpdate = true
-          attributes.customColor.needsUpdate = true
-          attributes.position.needsUpdate = true
+          attributes.color.needsUpdate = true
         }
-      } else if (this.INTERSECTED.index) {
-        attributes.size.array[this.INTERSECTED.index] = normalSize
-        attributes.customColor.array[
-          3 * this.INTERSECTED.index
+      } else if (this.INTERSECTED.instanceId) {
+        attributes.color.array[
+          3 * this.INTERSECTED.instanceId
         ] = this.INTERSECTED.color.r
-        attributes.customColor.array[
-          3 * this.INTERSECTED.index + 1
+        attributes.color.array[
+          3 * this.INTERSECTED.instanceId + 1
         ] = this.INTERSECTED.color.g
-        attributes.customColor.array[
-          3 * this.INTERSECTED.index + 2
+        attributes.color.array[
+          3 * this.INTERSECTED.instanceId + 2
         ] = this.INTERSECTED.color.b
-        attributes.position.array[3 * this.INTERSECTED.index + 2] = 0
-        attributes.size.needsUpdate = true
-        attributes.customColor.needsUpdate = true
-        attributes.position.needsUpdate = true
+        attributes.color.needsUpdate = true
         this.INTERSECTED = {}
       }
 
