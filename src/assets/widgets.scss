@@ -1,0 +1,8 @@
+@import 'variables';
+
+@for $i from 0 through 100 {
+  .facet-bar-value-#{$i} {
+    background: linear-gradient(to right,
+    $facet-bar-color unquote($i + '%'), white unquote($i + '%'));
+  }
+}

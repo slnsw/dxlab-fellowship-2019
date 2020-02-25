@@ -1,18 +1,32 @@
 <template>
-  <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png" />
-    <HelloWorld msg="Welcome to Your Vue.js App" />
+  <div class="viewer">
+    <filters v-if="loaded" />
+    <things />
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
-import HelloWorld from "@/components/HelloWorld.vue";
+import { mapState } from 'vuex'
+
+import Things from '@/components/Things.vue'
+import Filters from '@/components/Filters.vue'
 
 export default {
-  name: "Home",
-  components: {
-    HelloWorld
+  components: { Things, Filters },
+  created() {
+    this.$store.commit('getItems')
+  },
+  computed: {
+    ...mapState(['loaded'])
   }
-};
+}
 </script>
+
+<style lang="scss" scoped>
+.viewer {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  width: 100vw;
+}
+</style>
