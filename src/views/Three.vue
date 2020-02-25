@@ -13,6 +13,43 @@ const CAMERA_FRUSTUM = 1
 const MOVE_DURATION = 300
 const TILE_PADDING = 0.04
 const SCENE_PADDING = 1.15
+const PARTICLE_SIZE = 1
+const SELECTED_SCALE = 1.5
+const SELECTED_COLOR = new THREE.Color(0, 130, 41)
+
+const vshader = `
+			attribute float size;
+			attribute vec3 customColor;
+
+			varying vec3 vColor;
+
+			void main() {
+
+				vColor = customColor;
+
+				vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+
+				gl_PointSize = size * ( 300.0 / -mvPosition.z );
+
+				gl_Position = projectionMatrix * mvPosition;
+
+      }`
+
+const fshader = `
+			uniform vec3 color;
+			uniform sampler2D pointTexture;
+
+			varying vec3 vColor;
+
+			void main() {
+
+				gl_FragColor = vec4( color * vColor, 1.0 );
+
+				gl_FragColor = gl_FragColor * texture2D( pointTexture, gl_PointCoord );
+
+				if ( gl_FragColor.a < ALPHATEST ) discard;
+
+      }`
 
 export default {
   components: {},
@@ -21,7 +58,7 @@ export default {
       renderer: null,
       camera: null,
       scene: null,
-      mesh: null,
+      particles: null,
       controls: null,
       particleCount: START_PARTICLES,
       lastCamera: null,
@@ -30,13 +67,13 @@ export default {
       zoom: 1,
       mouse: {},
       raycaster: null,
-      hlMesh: null
+      INTERSECTED: {}
     }
   },
   computed: {},
   mounted() {
     this.init()
-    this.refreshMesh()
+    this.refreshParticles()
     this.initMoveCamera()
     this.animate()
     window.addEventListener('resize', this.onResize)
@@ -62,27 +99,21 @@ export default {
       this.scene = new THREE.Scene()
 
       this.raycaster = new THREE.Raycaster()
+      this.mouse = new THREE.Vector2()
 
       this.camera = this.createBaseCamera()
       this.createControls()
     },
     createControls() {
       this.controls = new TrackballControls(this.camera, this.$refs.three)
-      this.controls.rotateSpeed = 1.0
-      this.controls.zoomSpeed = 10
-      this.controls.panSpeed = 200
-      this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
-      this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
-      this.controls.maxDistance = 0.9
-      this.controls.minDistance = 0.0009
-      this.controls.noRotate = true
+      this.resetControls()
 
       const gui = new GUI()
       gui
         .add(this, 'particleCount', 1, MAX_PARTICLES)
         .step(1)
         .onFinishChange(() => {
-          this.refreshMesh()
+          this.refreshParticles()
           this.initMoveCamera()
         })
         .listen()
@@ -90,67 +121,78 @@ export default {
         .add(this, 'zoom', 0, 1)
         .step(0.001)
         .listen()
+      gui
+        .add(this.camera, 'zoom', 0, 10)
+        .step(0.001)
+        .listen()
     },
-    refreshMesh() {
-      this.cleanMesh()
+    resetControls() {
+      this.controls.rotateSpeed = 1.0
+      this.controls.zoomSpeed = 10
+      this.controls.panSpeed = 10
+      this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
+      this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
+      this.controls.maxDistance = 1
+      this.controls.minDistance = 0.009
+      this.controls.noRotate = true
+    },
+    refreshParticles() {
+      this.cleanParticles()
 
-      const texture = new THREE.TextureLoader().load(
-        'https://raw.githubusercontent.com/mgiraldo/vue-threejs-hello-world/master/public/textures/cobblestone.png'
-      )
+      const texture = new THREE.TextureLoader().load('/square.png')
 
       const particleCount = this.particleCount
 
       const side = Math.floor(Math.sqrt(particleCount))
 
-      const hlGeometry = new THREE.PlaneBufferGeometry(
-        1 + TILE_PADDING,
-        1 + TILE_PADDING
-      )
-      const hlMaterial = new THREE.MeshBasicMaterial({
-        color: 0x880000,
-        side: THREE.DoubleSide
-      })
-      this.hlMesh = new THREE.Mesh(hlGeometry, hlMaterial)
-      const x = -side * 0.5
-      const y = side * 0.5
-      this.hlMesh.position.set(x, y, -0.1)
-      this.scene.add(this.hlMesh)
+      const positions = new Float32Array(particleCount * 3)
+      const colors = new Float32Array(particleCount * 3)
+      const sizes = new Float32Array(particleCount)
 
-      const geometry = new THREE.PlaneBufferGeometry(1, 1)
-      const material = new THREE.MeshBasicMaterial({
-        color: 0x888888,
-        map: texture,
-        side: THREE.DoubleSide
-      })
-      this.mesh = new THREE.InstancedMesh(geometry, material, particleCount)
-
-      const transform = new THREE.Object3D()
+      let vertex
+      const color = new THREE.Color()
 
       for (let i = 0, i3 = 0, l = particleCount; i < l; i++, i3 += 3) {
         const x = (i % side) * (1 + TILE_PADDING) - side * 0.5
-        const y = Math.floor(i / side) * -1.02 + side * 0.5
+        const y = Math.floor(i / side) * -(1 + TILE_PADDING) + side * 0.5
         const z = 0
-        transform.position.set(x, y, z)
-        transform.updateMatrix()
-        this.mesh.setMatrixAt(i, transform.matrix)
+        vertex = new THREE.Vector3(x, y, z)
+        vertex.toArray(positions, i * 3)
+
+        color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
+        color.toArray(colors, i * 3)
+
+        sizes[i] = PARTICLE_SIZE
       }
 
-      this.scene.add(this.mesh)
-    },
-    cleanMesh() {
-      const meshes = []
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+      geometry.setAttribute('customColor', new THREE.BufferAttribute(colors, 3))
+      geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
 
-      this.scene.traverse(function(object) {
-        if (object.isMesh) meshes.push(object)
+      const material = new THREE.ShaderMaterial({
+        uniforms: {
+          color: { value: new THREE.Color(0xffffff) },
+          pointTexture: {
+            value: texture
+          }
+        },
+        vertexShader: vshader,
+        fragmentShader: fshader,
+
+        alphaTest: 0.9
       })
 
-      for (let i = 0; i < meshes.length; i++) {
-        const mesh = meshes[i]
-        mesh.material.dispose()
-        mesh.geometry.dispose()
+      this.particles = new THREE.Points(geometry, material)
 
-        this.scene.remove(mesh)
-      }
+      this.scene.add(this.particles)
+    },
+    cleanParticles() {
+      if (!this.particles) return
+      this.particles.material.dispose()
+      this.particles.geometry.dispose()
+
+      this.scene.remove(this.particles)
     },
     createBaseCamera() {
       const aspect = window.innerWidth / window.innerHeight
@@ -160,7 +202,7 @@ export default {
         CAMERA_FRUSTUM / 2,
         CAMERA_FRUSTUM / -2
       )
-      camera.position.z = 1
+      camera.position.z = 10
       return camera
     },
     initMoveCamera() {
@@ -174,14 +216,23 @@ export default {
     },
     interpolateCamera() {
       if (!this.lastCamera) return
-      const from = this.lastCamera.zoom
-      const to = this.zoom - from
       const t = Date.now() - this.cameraMoveStart
-      const zoom = this.easeInOutQuad(t, from, to, MOVE_DURATION)
+
+      const fromZoom = this.lastCamera.zoom
+      const toZoom = this.zoom - fromZoom
+
       const toCamera = this.createBaseCamera()
+
+      const zoom = this.easeInOutQuad(t, fromZoom, toZoom, MOVE_DURATION)
+
       toCamera.zoom = zoom
+
+      this.resetControls()
+
       toCamera.updateProjectionMatrix()
+
       this.camera.copy(toCamera)
+
       if (t > MOVE_DURATION) {
         this.lastCamera = null
       }
@@ -220,21 +271,65 @@ export default {
     render() {
       this.raycaster.setFromCamera(this.mouse, this.camera)
 
-      const intersects = this.raycaster.intersectObject(this.mesh)
-      const side = Math.floor(Math.sqrt(this.particleCount))
-      const maxX = Math.floor(side * 0.5) - 1
-      const minY = -Math.ceil(side * 0.5) - 1
+      const geometry = this.particles.geometry
+      const attributes = geometry.attributes
+
+      this.raycaster.setFromCamera(this.mouse, this.camera)
+
+      const intersects = this.raycaster.intersectObject(this.particles)
+
+      const normalSize = PARTICLE_SIZE
+      const selectedSize = PARTICLE_SIZE * SELECTED_SCALE
 
       if (intersects.length > 0) {
-        const intersected = intersects[0]
-        const point = intersected.point
-        let x = Math.round(point.x)
-        let y = Math.round(point.y)
-        if (x > maxX) x = maxX
-        if (y < minY) y = minY
-        this.hlMesh.position.set(x, y, -0.1)
-      } else {
-        //
+        const index = intersects[0].index
+        if (this.INTERSECTED.index != index) {
+          attributes.size.array[this.INTERSECTED.index] = normalSize
+          attributes.position.array[3 * this.INTERSECTED.index + 2] = 0
+          if (this.INTERSECTED.color) {
+            attributes.customColor.array[
+              3 * this.INTERSECTED.index
+            ] = this.INTERSECTED.color.r
+            attributes.customColor.array[
+              3 * this.INTERSECTED.index + 1
+            ] = this.INTERSECTED.color.g
+            attributes.customColor.array[
+              3 * this.INTERSECTED.index + 2
+            ] = this.INTERSECTED.color.b
+          }
+          const r = attributes.customColor.array[3 * index]
+          const g = attributes.customColor.array[3 * index + 1]
+          const b = attributes.customColor.array[3 * index + 2]
+
+          this.INTERSECTED.index = index
+          this.INTERSECTED.color = { r, g, b }
+
+          attributes.size.array[index] = selectedSize
+          attributes.customColor.array[3 * index] = SELECTED_COLOR.r
+          attributes.customColor.array[3 * index + 1] = SELECTED_COLOR.g
+          attributes.customColor.array[3 * index + 2] = SELECTED_COLOR.b
+          attributes.position.array[3 * index + 2] = 1
+
+          attributes.size.needsUpdate = true
+          attributes.customColor.needsUpdate = true
+          attributes.position.needsUpdate = true
+        }
+      } else if (this.INTERSECTED.index) {
+        attributes.size.array[this.INTERSECTED.index] = normalSize
+        attributes.customColor.array[
+          3 * this.INTERSECTED.index
+        ] = this.INTERSECTED.color.r
+        attributes.customColor.array[
+          3 * this.INTERSECTED.index + 1
+        ] = this.INTERSECTED.color.g
+        attributes.customColor.array[
+          3 * this.INTERSECTED.index + 2
+        ] = this.INTERSECTED.color.b
+        attributes.position.array[3 * this.INTERSECTED.index + 2] = 0
+        attributes.size.needsUpdate = true
+        attributes.customColor.needsUpdate = true
+        attributes.position.needsUpdate = true
+        this.INTERSECTED = {}
       }
 
       this.renderer.render(this.scene, this.camera)
