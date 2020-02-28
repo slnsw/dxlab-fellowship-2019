@@ -5,20 +5,56 @@ import Vuex from 'vuex'
 
 Vue.use(Vuex)
 
+// const instance = axios.create({
+//   baseURL: process.env.VUE_APP_API_BASE_URL,
+//   timeout: 5000,
+//   headers: { 'x-api-key': process.env.VUE_APP_API_KEY }
+// })
+
 const instance = axios.create({
-  baseURL: process.env.VUE_APP_API_BASE_URL,
-  timeout: 5000,
-  headers: { 'x-api-key': process.env.VUE_APP_API_KEY }
+  baseURL: process.env.VUE_APP_ELASTIC_BASE_URL,
+  timeout: 5000
 })
 
-const REQUEST_SIZE = 10 // actually 1000 but leaving small for speed
-const REQUEST_MAX_OFFSET = 9000
-const REQUEST_FORMATS =
-  'archTechDrawings,clippingArchival,coins,designDrawings,drawings,ephemera,films,manuscriptMaps,manuscriptMusicScores,manuscripts,maps,medals,musicalRecordings,newspapers,nonMusicalRecordings,objects,oralHistory,paintings,photographs,pictures,posters,printedMusicScores,prints,stamps,video,websites'
+// const REQUEST_SIZE = 10 // actually 1000 but leaving small for speed
+// const REQUEST_MAX_OFFSET = 9000
+// const REQUEST_FORMATS =
+//   'archTechDrawings,clippingArchival,coins,designDrawings,drawings,ephemera,films,manuscriptMaps,manuscriptMusicScores,manuscripts,maps,medals,musicalRecordings,newspapers,nonMusicalRecordings,objects,oralHistory,paintings,photographs,pictures,posters,printedMusicScores,prints,stamps,video,websites'
+
+const AGGS = {
+  places: {
+    name: 'places',
+    field: 'place_title',
+    type: 'keyword'
+  },
+  formats: {
+    name: 'formats',
+    field: 'format_id',
+    type: 'keyword'
+  },
+  authors: {
+    name: 'authors',
+    field: 'author_agg',
+    type: 'keyword'
+  },
+  subjects: {
+    name: 'subjects',
+    field: 'subject_agg',
+    type: 'keyword'
+  },
+  date: {
+    name: 'date',
+    field: 'item_date_creation_agg',
+    type: 'date'
+  }
+}
 
 export default new Vuex.Store({
   state: {
     loaded: false,
+    buckets: {},
+    aggs: AGGS,
+    currentBucket: null,
     itemsClosest: [],
     itemsMidway: [],
     itemsFarthest: [],
@@ -40,45 +76,39 @@ export default new Vuex.Store({
     locations: []
   },
   mutations: {
-    async getItems(state) {
-      const url = '/items'
-      const params = { limit: REQUEST_SIZE, formats: REQUEST_FORMATS }
-
-      const baseResponse = await instance.get(url, { params })
-      state.itemsClosest = baseResponse.data.items
-
-      state.formatGroups = baseResponse.data.facets.formatGroups
-      state.authors = baseResponse.data.facets.authors
-      state.languages = baseResponse.data.facets.languages
-      state.subjects = baseResponse.data.facets.subjects
-      state.locations = baseResponse.data.facets.locations
-      state.itemsTotal = baseResponse.data.itemsTotal
-      state.loaded = true
-
-      const total = baseResponse.data.itemsTotal
-      let midOffset = REQUEST_SIZE
-      let farOffset = REQUEST_SIZE
-
-      if (total > REQUEST_SIZE * 3) {
-        // only do mid/far results if worthwhile
-        if (total > REQUEST_MAX_OFFSET) {
-          midOffset = (REQUEST_MAX_OFFSET - REQUEST_SIZE) / 2
-          farOffset = REQUEST_MAX_OFFSET - REQUEST_SIZE
-        } else {
-          midOffset = (total - REQUEST_SIZE) / 2
-          farOffset = total - REQUEST_SIZE
+    setBucket(state, bucketId) {
+      state.currentBucket = bucketId
+    },
+    async getBuckets(state) {
+      const url = '/_search?size=0&track_total_hits=true'
+      const aggregations = {}
+      Object.values(AGGS).forEach((agg, index) => {
+        const id = Object.keys(AGGS)[index]
+        const field = agg.field
+        const type = agg.type
+        if (type === 'keyword') {
+          aggregations[id + '_stats'] = {
+            terms: {
+              field: field + '.keyword',
+              size: 1000
+            }
+          }
+        } else if (type === 'date') {
+          aggregations[id + '_stats'] = {
+            date_histogram: {
+              field: field,
+              calendar_interval: 'year'
+            }
+          }
         }
-        // midway stuff
-        const midResponse = await instance.get(url, {
-          params: { ...params, ...{ offset: midOffset } }
-        })
-        state.itemsMidway = midResponse.data.items
-        // far stuff
-        const farResponse = await instance.get(url, {
-          params: { ...params, ...{ offset: farOffset } }
-        })
-        state.itemsFarthest = farResponse.data.items
-      }
+      })
+      const params = { aggregations }
+      const baseResponse = await instance.post(url, { ...params })
+      const hits = baseResponse.data.hits
+      const agg = baseResponse.data.aggregations
+      state.itemsTotal = hits.total.value
+      state.buckets = agg
+      state.loaded = true
     }
   },
   actions: {},

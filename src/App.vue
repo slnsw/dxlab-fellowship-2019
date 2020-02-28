@@ -9,6 +9,10 @@
 
 @import '@/assets/widgets';
 
+body {
+  overflow: hidden;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
