@@ -21,6 +21,8 @@ const instance = axios.create({
 // const REQUEST_FORMATS =
 //   'archTechDrawings,clippingArchival,coins,designDrawings,drawings,ephemera,films,manuscriptMaps,manuscriptMusicScores,manuscripts,maps,medals,musicalRecordings,newspapers,nonMusicalRecordings,objects,oralHistory,paintings,photographs,pictures,posters,printedMusicScores,prints,stamps,video,websites'
 
+const BUCKET_SIZE = 100
+
 const AGGS = {
   places: {
     name: 'places',
@@ -32,11 +34,11 @@ const AGGS = {
     field: 'format_id',
     type: 'keyword'
   },
-  authors: {
-    name: 'authors',
-    field: 'author_agg',
-    type: 'keyword'
-  },
+  // authors: {
+  //   name: 'authors',
+  //   field: 'author_agg',
+  //   type: 'keyword'
+  // },
   subjects: {
     name: 'subjects',
     field: 'subject_agg',
@@ -54,6 +56,7 @@ export default new Vuex.Store({
     loaded: false,
     buckets: {},
     aggs: AGGS,
+    currentBucketId: null,
     currentBucket: null,
     itemsClosest: [],
     itemsMidway: [],
@@ -77,7 +80,8 @@ export default new Vuex.Store({
   },
   mutations: {
     setBucket(state, bucketId) {
-      state.currentBucket = bucketId
+      state.currentBucketId = bucketId
+      state.currentBucket = state.buckets[bucketId]
     },
     async getBuckets(state) {
       const url = '/_search?size=0&track_total_hits=true'
@@ -90,7 +94,7 @@ export default new Vuex.Store({
           aggregations[id + '_stats'] = {
             terms: {
               field: field + '.keyword',
-              size: 1000
+              size: BUCKET_SIZE
             }
           }
         } else if (type === 'date') {
@@ -107,7 +111,11 @@ export default new Vuex.Store({
       const hits = baseResponse.data.hits
       const agg = baseResponse.data.aggregations
       state.itemsTotal = hits.total.value
-      state.buckets = agg
+      const buckets = {}
+      Object.keys(state.aggs).forEach((id, index) => {
+        buckets[id] = agg[id + '_stats']
+      })
+      state.buckets = buckets
       state.loaded = true
     }
   },

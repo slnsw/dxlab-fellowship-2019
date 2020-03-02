@@ -4,7 +4,12 @@
       <h1 class="total">{{ itemsTotal }}</h1>
       <ul class="controls">
         <li v-for="(value, id) in aggs" :key="id">
-          <button type="button" class="bucket_button" @click="setBucket(id)">
+          <button
+            type="button"
+            class="bucket_button"
+            @click="setBucket(id)"
+            :disabled="currentBucketId === id"
+          >
             {{ value.name }}
           </button>
         </li>
@@ -25,7 +30,7 @@ export default {
     return {}
   },
   computed: {
-    ...mapState(['loaded', 'buckets', 'itemsTotal', 'aggs'])
+    ...mapState(['loaded', 'itemsTotal', 'aggs', 'currentBucketId'])
   },
   created() {
     this.$store.commit('getBuckets')

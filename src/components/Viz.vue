@@ -1,35 +1,45 @@
 <template>
-  <canvas ref="three" class="three" @click="onClick"></canvas>
+  <canvas
+    ref="three"
+    class="three"
+    @dblclick.prevent="onDoubleClick"
+    @click.prevent="onClick"
+  ></canvas>
 </template>
 
 <script>
 import { mapState } from 'vuex'
-
 import * as THREE from 'three'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
+import SpriteText from 'three-spritetext'
 
-const MAX_PARTICLES = 10000
-const START_PARTICLES = 100
+import { FormatType } from '@/utils/types'
+
+const FILE_Z = 10
+const BUCKET_Z = 200
+const TEXT_Z = 0.1 // relative
 const MOVE_DURATION = 300
-const TILE_PADDING = 0.05
-const CAMERA_NEAR = 0.1
-const CAMERA_FAR = 100000
+const TILE_PADDING = 1
+const CAMERA_NEAR = 0.01
+const CAMERA_FAR = 1000
 const CAMERA_FOV = 60
-const SCENE_PADDING = 0.7
-const PARTICLE_SIZE = 1
-const SELECTED_COLOR = new THREE.Color(255, 0, 0)
-const HOVERED_COLOR = new THREE.Color(0, 130, 41)
+const SCENE_PADDING = 1.5
+const PARTICLE_SIZE = 100
+const TEXT_SIZE = 10
+const CAMERA_DIST = 10
+const SELECTED_COLOR = new THREE.Color('rgb(255, 0, 0)')
+const HOVERED_COLOR = new THREE.Color('rgb(0, 130, 41)')
+const OTHER_COLOR = new THREE.Color('hsl(0, 100%, 30)')
 
 export default {
   components: {},
   data() {
     return {
-      categories: ['format', 'author', 'subject'],
       renderer: null,
       camera: null,
       scene: null,
-      particles: null,
-      particleCount: START_PARTICLES,
+      bucketsMesh: null,
+      textGroup: null,
       controls: null,
       lastCamera: null,
       toCamera: null,
@@ -43,21 +53,31 @@ export default {
     }
   },
   computed: {
-    ...mapState(['currentBucket'])
+    formats() {
+      return FormatType
+    },
+    formatsById() {
+      const formats = this.formats
+      const values = Object.values(formats)
+      const result = {}
+      values.forEach((val) => {
+        result[val.id] = val.title
+      })
+      return result
+    },
+    ...mapState(['currentBucket', 'currentBucketId', 'itemsTotal'])
   },
   watch: {
-    currentBucket(newBucket, oldBucket) {
-      console.log('hi')
-      this.particleCount = this.currentBucket ? 10 : START_PARTICLES
-      this.refreshParticles()
+    currentBucketId() {
+      this.paintBuckets()
       this.moveCameraTo()
     }
   },
   mounted() {
     this.init()
     this.createControls()
-    this.refreshParticles()
-    this.moveCameraTo()
+    // this.paintBuckets()
+    // this.moveCameraTo()
     this.animate()
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mousemove', this.onDocumentMouseMove)
@@ -87,39 +107,67 @@ export default {
 
       this.camera = this.createBaseCamera()
     },
+    createText(text, x, y, z, scale) {
+      text = text ? text : '[undefined]'
+      if (isNaN(text) && text.indexOf('|||') !== -1) text = text.split('|||')[1]
+      const myText = new SpriteText(text)
+      myText.fontFace = 'Aaux ProLight OSF'
+      myText.textHeight = TEXT_SIZE * scale
+      myText.position.set(x, y, z)
+      myText.material.rotation = Math.PI / 8
+      myText.center = new THREE.Vector2(0, 0)
+      return myText
+    },
+    onDoubleClick() {
+      if (this.PAST_INTERSECTED.instanceId !== undefined) {
+        this.resetIntersectedColor(this.selectedInstance)
+        const attributes = this.bucketsMesh.geometry.attributes
+        const id = this.PAST_INTERSECTED.instanceId
+        const x = attributes.customPosition.array[id * 3]
+        const y = attributes.customPosition.array[id * 3 + 1]
+        const z = attributes.customPosition.array[id * 3 + 2]
+        attributes.color.array[id * 3] = SELECTED_COLOR.r
+        attributes.color.array[id * 3 + 1] = SELECTED_COLOR.g
+        attributes.color.array[id * 3 + 2] = SELECTED_COLOR.b
+        attributes.color.needsUpdate = true
+        const matrix = new THREE.Matrix4()
+        this.bucketsMesh.getMatrixAt(id, matrix)
+        const s = new THREE.Vector3()
+        matrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), s)
+        const obj = new THREE.Mesh(
+          new THREE.PlaneGeometry(PARTICLE_SIZE * s.x, PARTICLE_SIZE * s.x)
+        )
+        obj.position.set(x, y, FILE_Z + CAMERA_DIST * s.x)
+        this.selectedInstance = { ...this.PAST_INTERSECTED }
+        this.moveCameraTo(obj)
+      }
+    },
     onClick() {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.resetIntersectedColor(this.selectedInstance)
-        const x = this.particles.geometry.attributes.customPosition.array[
-          this.PAST_INTERSECTED.instanceId * 3
-        ]
-        const y = this.particles.geometry.attributes.customPosition.array[
-          this.PAST_INTERSECTED.instanceId * 3 + 1
-        ]
-        const z = this.particles.geometry.attributes.customPosition.array[
-          this.PAST_INTERSECTED.instanceId * 3 + 2
-        ]
-        this.particles.geometry.attributes.color.array[
-          this.PAST_INTERSECTED.instanceId * 3
-        ] = SELECTED_COLOR.r
-        this.particles.geometry.attributes.color.array[
-          this.PAST_INTERSECTED.instanceId * 3 + 1
-        ] = SELECTED_COLOR.g
-        this.particles.geometry.attributes.color.array[
-          this.PAST_INTERSECTED.instanceId * 3 + 2
-        ] = SELECTED_COLOR.b
-        this.particles.geometry.attributes.color.needsUpdate = true
-        const obj = new THREE.Mesh(new THREE.PlaneGeometry(1, 1))
-        obj.position.set(x, y, z)
+        const attributes = this.bucketsMesh.geometry.attributes
+        const id = this.PAST_INTERSECTED.instanceId
+        const x = attributes.customPosition.array[id * 3]
+        const y = attributes.customPosition.array[id * 3 + 1]
+        const z = attributes.customPosition.array[id * 3 + 2]
+        attributes.color.array[id * 3] = SELECTED_COLOR.r
+        attributes.color.array[id * 3 + 1] = SELECTED_COLOR.g
+        attributes.color.array[id * 3 + 2] = SELECTED_COLOR.b
+        attributes.color.needsUpdate = true
+        const matrix = new THREE.Matrix4()
+        this.bucketsMesh.getMatrixAt(id, matrix)
+        const s = new THREE.Vector3()
+        matrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), s)
+        const obj = new THREE.Mesh(
+          new THREE.PlaneGeometry(PARTICLE_SIZE * s.x, PARTICLE_SIZE * s.x)
+        )
+        obj.position.set(x, y, z + CAMERA_DIST * s.x)
         this.selectedInstance = { ...this.PAST_INTERSECTED }
         this.moveCameraTo(obj)
       }
     },
     createControls() {
       this.controls = new TrackballControls(this.camera, this.$refs.three)
-      this.resetControls()
-    },
-    resetControls() {
       this.controls.rotateSpeed = 1.0
       this.controls.zoomSpeed = 1
       this.controls.panSpeed = 1
@@ -132,47 +180,85 @@ export default {
       this.controls.enableDamping = true
       this.controls.dampingFactor = 0.1
     },
-    refreshParticles() {
-      this.cleanParticles()
+    paintBuckets() {
+      this.cleanBuckets()
 
-      const particleCount = this.particleCount
+      const buckets = [...this.currentBucket.buckets]
 
-      const side = Math.floor(Math.sqrt(particleCount))
+      if (this.currentBucket.sum_other_doc_count) {
+        buckets.push({
+          doc_count: this.currentBucket.sum_other_doc_count,
+          key: 'other'
+        })
+      }
+
+      const bucketCount = buckets.length
+
+      const colors = new Float32Array(bucketCount * 3)
+      const positions = new Float32Array(bucketCount * 3)
+
+      const color = new THREE.Color()
+      const position = new THREE.Vector3()
+      const transform = new THREE.Object3D()
+
+      let lastX = 0
+
+      const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
 
       const geometry = new THREE.PlaneBufferGeometry(
         PARTICLE_SIZE,
         PARTICLE_SIZE
       )
 
-      const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
-
-      this.particles = new THREE.InstancedMesh(
+      const bucketsMesh = new THREE.InstancedMesh(
         geometry,
         material,
-        particleCount
+        bucketCount
       )
 
-      const colors = new Float32Array(particleCount * 3)
-      const positions = new Float32Array(particleCount * 3)
+      const textGroup = new THREE.Group()
+      // const textVertices = []
+      // const textMaterials = []
 
-      const color = new THREE.Color()
-      const position = new THREE.Vector3()
-      const transform = new THREE.Object3D()
+      for (let i = 0, i3 = 0, l = bucketCount; i < l; i++, i3 += 3) {
+        const b = buckets[i]
+        const pct = b.doc_count / this.itemsTotal
+        const scale = Math.sqrt(pct)
+        const w = PARTICLE_SIZE * scale
+        const x = lastX + w / 2
+        lastX = x + w / 2 + TILE_PADDING * scale
+        const y = -w / 2
+        const z = BUCKET_Z
 
-      for (let i = 0, i3 = 0, l = particleCount; i < l; i++, i3 += 3) {
-        const x = (i % side) * (PARTICLE_SIZE + TILE_PADDING) - side * 0.5
-        const y =
-          Math.floor(i / side) * -(PARTICLE_SIZE + TILE_PADDING) + side * 0.5
-        const z = 0
         transform.position.set(x, y, z)
+        transform.scale.set(scale, scale, scale)
         transform.updateMatrix()
 
-        this.particles.setMatrixAt(i, transform.matrix)
+        bucketsMesh.setMatrixAt(i, transform.matrix)
 
         position.set(x, y, z)
         position.toArray(positions, i * 3)
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
         color.toArray(colors, i * 3)
+
+        // text particles
+        const textTop = y + w / 2 + TILE_PADDING * scale
+        const textZ = BUCKET_Z + TEXT_Z * scale
+        const labelStr =
+          this.currentBucketId !== 'formats' ? b.key : this.formatsById[b.key]
+        const numberStr = b.doc_count
+        textGroup.add(
+          this.createText(
+            labelStr,
+            x,
+            textTop + TEXT_SIZE * scale,
+            textZ,
+            scale
+          )
+        )
+        textGroup.add(
+          this.createText(numberStr, x, textTop, textZ, scale * 0.75)
+        )
       }
 
       geometry.setAttribute(
@@ -185,14 +271,22 @@ export default {
       )
       material.vertexColors = THREE.VertexColors
 
-      this.scene.add(this.particles)
-    },
-    cleanParticles() {
-      if (!this.particles) return
-      this.particles.material.dispose()
-      this.particles.geometry.dispose()
+      this.bucketsMesh = bucketsMesh
 
-      this.scene.remove(this.particles)
+      this.textGroup = textGroup
+
+      this.scene.add(this.bucketsMesh)
+      this.scene.add(this.textGroup)
+    },
+    cleanBuckets() {
+      if (!this.bucketsMesh) return
+      this.textGroup.children.forEach((t) => t.material.map.dispose())
+
+      this.scene.remove(this.bucketsMesh)
+      this.scene.remove(this.textGroup)
+
+      this.bucketsMesh.material.dispose()
+      this.bucketsMesh.geometry.dispose()
     },
     createBaseCamera() {
       const aspect = window.innerWidth / window.innerHeight
@@ -204,32 +298,31 @@ export default {
       )
       camera.position.x = 0
       camera.position.y = 0
-      camera.position.z = 10
+      camera.position.z = BUCKET_Z + 10
       camera.updateProjectionMatrix()
       return camera
     },
     moveCameraTo(obj) {
       let o = obj
 
-      if (!obj) o = this.particles
+      o = new THREE.Box3().setFromObject(!obj ? this.bucketsMesh : obj)
 
-      o.geometry.computeBoundingSphere()
+      const sphere = new THREE.Sphere()
+
+      o.getBoundingSphere(sphere)
 
       const fov = CAMERA_FOV * (Math.PI / 180)
 
-      let side = !obj
-        ? Math.ceil(Math.sqrt(this.particleCount))
-        : o.geometry.boundingSphere.radius
+      let side = sphere.radius
       side = side * SCENE_PADDING
+      // console.log(side)
 
-      const center = new THREE.Vector3(o.position.x, o.position.y, 0)
+      const center = new THREE.Vector3()
+      o.getCenter(center)
 
       const dist = Math.abs(side / Math.sin(fov / 2))
 
-      const dir = new THREE.Vector3().subVectors(
-        this.camera.position,
-        this.controls.target
-      )
+      const dir = new THREE.Vector3(0, 0, 1)
 
       const newPos = new THREE.Vector3().addVectors(center, dir.setLength(dist))
 
@@ -282,10 +375,6 @@ export default {
       if ((t /= d / 2) < 1) return (c / 2) * t * t + b
       return (-c / 2) * (--t * (t - 2) - 1) + b
     },
-    easeOutQuad(t, b, c, d) {
-      // t: current time, b: beginning value, c: change In value, d: duration
-      return -c * (t /= d) * (t - 2) + b
-    },
     onResize() {
       this.camera.aspect = window.innerWidth / window.innerHeight
       this.camera.updateProjectionMatrix()
@@ -298,7 +387,7 @@ export default {
     },
     resetIntersectedColor(instance) {
       if (!instance.color) return
-      const geometry = this.particles.geometry
+      const geometry = this.bucketsMesh.geometry
       const attributes = geometry.attributes
       attributes.color.array[3 * instance.instanceId] = instance.color.r
       attributes.color.array[3 * instance.instanceId + 1] = instance.color.g
@@ -306,45 +395,47 @@ export default {
       attributes.color.needsUpdate = true
     },
     render() {
-      const geometry = this.particles.geometry
-      const attributes = geometry.attributes
+      if (this.bucketsMesh) {
+        const geometry = this.bucketsMesh.geometry
+        const attributes = geometry.attributes
 
-      if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
+        if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
 
-      const intersects = this.raycaster.intersectObject(this.particles)
+        const intersects = this.raycaster.intersectObject(this.bucketsMesh)
 
-      if (intersects.length > 0) {
-        const instanceId = intersects[0].instanceId
-        if (this.PAST_INTERSECTED.instanceId !== instanceId) {
-          const r = attributes.color.array[3 * instanceId]
-          const g = attributes.color.array[3 * instanceId + 1]
-          const b = attributes.color.array[3 * instanceId + 2]
+        if (intersects.length > 0) {
+          const instanceId = intersects[0].instanceId
+          if (this.PAST_INTERSECTED.instanceId !== instanceId) {
+            const r = attributes.color.array[3 * instanceId]
+            const g = attributes.color.array[3 * instanceId + 1]
+            const b = attributes.color.array[3 * instanceId + 2]
 
-          if (this.selectedInstance.instanceId !== instanceId) {
-            attributes.color.array[3 * instanceId] = HOVERED_COLOR.r
-            attributes.color.array[3 * instanceId + 1] = HOVERED_COLOR.g
-            attributes.color.array[3 * instanceId + 2] = HOVERED_COLOR.b
+            if (this.selectedInstance.instanceId !== instanceId) {
+              attributes.color.array[3 * instanceId] = HOVERED_COLOR.r
+              attributes.color.array[3 * instanceId + 1] = HOVERED_COLOR.g
+              attributes.color.array[3 * instanceId + 2] = HOVERED_COLOR.b
+            }
+
+            if (
+              this.PAST_INTERSECTED.color &&
+              this.selectedInstance.instanceId !==
+                this.PAST_INTERSECTED.instanceId
+            ) {
+              this.resetIntersectedColor(this.PAST_INTERSECTED)
+            }
+
+            this.PAST_INTERSECTED.instanceId = instanceId
+            this.PAST_INTERSECTED.color = { r, g, b }
+
+            attributes.color.needsUpdate = true
           }
-
-          if (
-            this.PAST_INTERSECTED.color &&
-            this.selectedInstance.instanceId !==
-              this.PAST_INTERSECTED.instanceId
-          ) {
-            this.resetIntersectedColor(this.PAST_INTERSECTED)
-          }
-
-          this.PAST_INTERSECTED.instanceId = instanceId
-          this.PAST_INTERSECTED.color = { r, g, b }
-
-          attributes.color.needsUpdate = true
+        } else if (
+          this.PAST_INTERSECTED.instanceId &&
+          this.selectedInstance.instanceId !== this.PAST_INTERSECTED.instanceId
+        ) {
+          this.resetIntersectedColor(this.PAST_INTERSECTED)
+          this.PAST_INTERSECTED = {}
         }
-      } else if (
-        this.PAST_INTERSECTED.instanceId &&
-        this.selectedInstance.instanceId !== this.PAST_INTERSECTED.instanceId
-      ) {
-        this.resetIntersectedColor(this.PAST_INTERSECTED)
-        this.PAST_INTERSECTED = {}
       }
 
       this.renderer.render(this.scene, this.camera)
