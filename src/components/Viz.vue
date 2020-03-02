@@ -120,20 +120,7 @@ export default {
     },
     onDoubleClick() {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
-        this.resetIntersectedColor(this.selectedInstance)
-        const attributes = this.bucketsMesh.geometry.attributes
-        const id = this.PAST_INTERSECTED.instanceId
-        const x = attributes.customPosition.array[id * 3]
-        const y = attributes.customPosition.array[id * 3 + 1]
-        const z = attributes.customPosition.array[id * 3 + 2]
-        attributes.color.array[id * 3] = SELECTED_COLOR.r
-        attributes.color.array[id * 3 + 1] = SELECTED_COLOR.g
-        attributes.color.array[id * 3 + 2] = SELECTED_COLOR.b
-        attributes.color.needsUpdate = true
-        const matrix = new THREE.Matrix4()
-        this.bucketsMesh.getMatrixAt(id, matrix)
-        const s = new THREE.Vector3()
-        matrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), s)
+        const { x, y, z, s } = this.getClickedGeometry()
         const obj = new THREE.Mesh(
           new THREE.PlaneGeometry(PARTICLE_SIZE * s.x, PARTICLE_SIZE * s.x)
         )
@@ -145,26 +132,40 @@ export default {
     onClick() {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.resetIntersectedColor(this.selectedInstance)
-        const attributes = this.bucketsMesh.geometry.attributes
-        const id = this.PAST_INTERSECTED.instanceId
-        const x = attributes.customPosition.array[id * 3]
-        const y = attributes.customPosition.array[id * 3 + 1]
-        const z = attributes.customPosition.array[id * 3 + 2]
-        attributes.color.array[id * 3] = SELECTED_COLOR.r
-        attributes.color.array[id * 3 + 1] = SELECTED_COLOR.g
-        attributes.color.array[id * 3 + 2] = SELECTED_COLOR.b
-        attributes.color.needsUpdate = true
-        const matrix = new THREE.Matrix4()
-        this.bucketsMesh.getMatrixAt(id, matrix)
-        const s = new THREE.Vector3()
-        matrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), s)
+        this.setClickedColor()
+        const { x, y, z, s } = this.getClickedGeometry()
         const obj = new THREE.Mesh(
           new THREE.PlaneGeometry(PARTICLE_SIZE * s.x, PARTICLE_SIZE * s.x)
         )
         obj.position.set(x, y, z + CAMERA_DIST * s.x)
-        this.selectedInstance = { ...this.PAST_INTERSECTED }
         this.moveCameraTo(obj)
+        this.selectedInstance = { ...this.PAST_INTERSECTED }
+      } else {
+        if (this.selectedInstance) {
+          this.resetIntersectedColor(this.selectedInstance)
+          this.selectedInstance = {}
+        }
       }
+    },
+    getClickedGeometry() {
+      const attributes = this.bucketsMesh.geometry.attributes
+      const id = this.PAST_INTERSECTED.instanceId
+      const x = attributes.customPosition.array[id * 3]
+      const y = attributes.customPosition.array[id * 3 + 1]
+      const z = attributes.customPosition.array[id * 3 + 2]
+      const matrix = new THREE.Matrix4()
+      this.bucketsMesh.getMatrixAt(id, matrix)
+      const s = new THREE.Vector3()
+      matrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), s)
+      return { x, y, z, s }
+    },
+    setClickedColor() {
+      const attributes = this.bucketsMesh.geometry.attributes
+      const id = this.PAST_INTERSECTED.instanceId
+      attributes.color.array[id * 3] = SELECTED_COLOR.r
+      attributes.color.array[id * 3 + 1] = SELECTED_COLOR.g
+      attributes.color.array[id * 3 + 2] = SELECTED_COLOR.b
+      attributes.color.needsUpdate = true
     },
     createControls() {
       this.controls = new TrackballControls(this.camera, this.$refs.three)
@@ -186,10 +187,20 @@ export default {
       const buckets = [...this.currentBucket.buckets]
 
       if (this.currentBucket.sum_other_doc_count) {
-        buckets.push({
-          doc_count: this.currentBucket.sum_other_doc_count,
-          key: 'other'
-        })
+        const bucketTotal = this.currentBucket.buckets
+          .map((b) => b.doc_count)
+          .reduce((a, b) => a + b, 0) // cannot trust sum_other_doc_count
+        const otherTotal = this.itemsTotal - bucketTotal
+        if (bucketTotal < this.itemsTotal) {
+          console.log(bucketTotal, otherTotal)
+          buckets.push({
+            doc_count:
+              this.currentBucket.sum_other_doc_count < otherTotal
+                ? this.currentBucket.sum_other_doc_count
+                : otherTotal,
+            key: 'other'
+          })
+        }
       }
 
       const bucketCount = buckets.length

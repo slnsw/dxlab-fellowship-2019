@@ -16,11 +16,6 @@ const instance = axios.create({
   timeout: 5000
 })
 
-// const REQUEST_SIZE = 10 // actually 1000 but leaving small for speed
-// const REQUEST_MAX_OFFSET = 9000
-// const REQUEST_FORMATS =
-//   'archTechDrawings,clippingArchival,coins,designDrawings,drawings,ephemera,films,manuscriptMaps,manuscriptMusicScores,manuscripts,maps,medals,musicalRecordings,newspapers,nonMusicalRecordings,objects,oralHistory,paintings,photographs,pictures,posters,printedMusicScores,prints,stamps,video,websites'
-
 const BUCKET_SIZE = 100
 
 const AGGS = {
@@ -84,7 +79,7 @@ export default new Vuex.Store({
       state.currentBucket = state.buckets[bucketId]
     },
     async getBuckets(state) {
-      const url = '/_search?size=0&track_total_hits=true'
+      const url = '/_search'
       const aggregations = {}
       Object.values(AGGS).forEach((agg, index) => {
         const id = Object.keys(AGGS)[index]
@@ -101,12 +96,13 @@ export default new Vuex.Store({
           aggregations[id + '_stats'] = {
             date_histogram: {
               field: field,
-              calendar_interval: 'year'
+              calendar_interval: 'year',
+              format: 'yyyy'
             }
           }
         }
       })
-      const params = { aggregations }
+      const params = { size: 0, track_total_hits: true, aggregations }
       const baseResponse = await instance.post(url, { ...params })
       const hits = baseResponse.data.hits
       const agg = baseResponse.data.aggregations
