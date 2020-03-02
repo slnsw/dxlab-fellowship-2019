@@ -191,8 +191,8 @@ export default {
           .map((b) => b.doc_count)
           .reduce((a, b) => a + b, 0) // cannot trust sum_other_doc_count
         const otherTotal = this.itemsTotal - bucketTotal
+
         if (bucketTotal < this.itemsTotal) {
-          console.log(bucketTotal, otherTotal)
           buckets.push({
             doc_count:
               this.currentBucket.sum_other_doc_count < otherTotal
