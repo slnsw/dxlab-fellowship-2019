@@ -1,7 +1,7 @@
 <template>
   <div v-if="loaded">
     <div class="header">
-      <h1 class="total">{{ itemsTotal }}</h1>
+      <h1 class="total">{{ formattedItemsTotal }}</h1>
       <ul class="controls">
         <li v-for="(value, id) in aggs" :key="id">
           <button
@@ -30,6 +30,9 @@ export default {
     return {}
   },
   computed: {
+    formattedItemsTotal() {
+      return new Intl.NumberFormat().format(this.itemsTotal)
+    },
     ...mapState(['loaded', 'itemsTotal', 'aggs', 'currentBucketId'])
   },
   created() {

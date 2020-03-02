@@ -249,15 +249,12 @@ export default {
         const numberStr = b.doc_count
         textGroup.add(
           this.createText(
-            labelStr,
+            `${labelStr} (${new Intl.NumberFormat().format(numberStr)})`,
             x,
-            textTop + TEXT_SIZE * scale,
+            textTop,
             textZ,
             scale
           )
-        )
-        textGroup.add(
-          this.createText(numberStr, x, textTop, textZ, scale * 0.75)
         )
       }
 
@@ -303,27 +300,44 @@ export default {
       return camera
     },
     moveCameraTo(obj) {
-      let o = obj
+      let o
 
-      o = new THREE.Box3().setFromObject(!obj ? this.bucketsMesh : obj)
+      if (!obj) {
+        // centering on the current base bucket
+        o = new THREE.Box3()
+        const count = this.bucketsMesh.instanceMatrix.count
+        for (let i = 0, i3 = 0, l = count; i < l; i++, i3 += 3) {
+          const matrix = new THREE.Matrix4()
+          this.bucketsMesh.getMatrixAt(i, matrix)
+          const p = new THREE.Vector3()
+          const s = new THREE.Vector3()
+          matrix.decompose(p, new THREE.Quaternion(), s)
+          const x = p.x
+          const y = p.y
+          const z = p.z
+          const objBucket = new THREE.Mesh(
+            new THREE.PlaneGeometry(PARTICLE_SIZE * s.x, PARTICLE_SIZE * s.x)
+          )
+          objBucket.position.set(x, y, z * s.x)
+          o.expandByObject(objBucket)
+        }
+      } else {
+        o = new THREE.Box3().setFromObject(obj)
+      }
 
       const sphere = new THREE.Sphere()
-
       o.getBoundingSphere(sphere)
-
-      const fov = CAMERA_FOV * (Math.PI / 180)
-
-      let side = sphere.radius
-      side = side * SCENE_PADDING
-      // console.log(side)
+      const side = !obj
+        ? sphere.radius * 0.9 * SCENE_PADDING
+        : sphere.radius * SCENE_PADDING
 
       const center = new THREE.Vector3()
       o.getCenter(center)
 
+      const fov = CAMERA_FOV * (Math.PI / 180)
       const dist = Math.abs(side / Math.sin(fov / 2))
 
       const dir = new THREE.Vector3(0, 0, 1)
-
       const newPos = new THREE.Vector3().addVectors(center, dir.setLength(dist))
 
       this.lastCamera = this.camera.clone()
