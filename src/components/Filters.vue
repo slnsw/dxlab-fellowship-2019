@@ -2,42 +2,28 @@
   <div class="fields-wrapper">
     <form class="fields">
       <section class="field">
-        <h2>Keywords</h2>
+        <h2 class="field-title">Keywords</h2>
         <input type="text" v-model.lazy.trim="filters.search" />
       </section>
+      <ul class="controls">
+        <li v-for="(value, id) in aggs" :key="id">
+          <button
+            type="button"
+            class="bucket_button"
+            @click="setBucket(id)"
+            :disabled="currentBucketId === id"
+          >
+            {{ value.name }}
+          </button>
+        </li>
+      </ul>
       <filters-list
-        name="Subject"
-        v-model="filters.subjects"
-        :options="subjects"
+        v-if="currentBucketId"
+        :name="currentBucketId"
+        v-model="filters[currentBucketId]"
+        :options="mapBucket()"
         :total="total"
       />
-      <filters-list
-        name="Authors"
-        v-model="filters.authors"
-        :options="authors"
-        :total="total"
-      />
-      <filters-list
-        name="Languages"
-        v-model="filters.languages"
-        :options="languages"
-        :total="total"
-      />
-      <filters-list
-        name="Locations"
-        v-model="filters.locations"
-        :options="locations"
-        :total="total"
-      />
-
-      <section class="field">
-        <h2>From date</h2>
-        <input type="text" v-model.lazy.trim="filters.startDate" />
-      </section>
-      <section class="field">
-        <h2>To date</h2>
-        <input type="text" v-model.lazy.trim="filters.endDate" />
-      </section>
     </form>
   </div>
 </template>
@@ -50,6 +36,26 @@ import FiltersList from '@/components/FiltersList.vue'
 export default {
   components: { FiltersList },
   computed: {
+    subjects() {
+      return this.buckets.subjects.buckets.map((b, index) => {
+        return { id: b.key.split('|||')[1], value: b.doc_count }
+      })
+    },
+    authors() {
+      return this.buckets.authors.buckets.map((b, index) => {
+        return { id: b.key.split('|||')[1], value: b.doc_count }
+      })
+    },
+    places() {
+      return this.buckets.places.buckets.map((b, index) => {
+        return { id: b.key, value: b.doc_count }
+      })
+    },
+    formats() {
+      return this.buckets.formats.buckets.map((b, index) => {
+        return { id: b.key, value: b.doc_count }
+      })
+    },
     total() {
       return this.itemsTotal
     },
@@ -74,27 +80,45 @@ export default {
       }
     },
     ...mapState([
+      'buckets',
+      'currentBucket',
+      'currentBucketId',
       'filters',
-      'subjects',
+      'aggs',
       'formatGroups',
-      'languages',
-      'authors',
-      'locations',
       'itemsTotal'
     ])
+  },
+  methods: {
+    mapBucket() {
+      const bucket = this.buckets[this.currentBucketId]
+      return bucket.buckets.map((b) => {
+        return {
+          id: b.key.indexOf('|||') !== -1 ? b.key.split('|||')[1] : b.key,
+          value: b.doc_count
+        }
+      })
+    },
+    setBucket(bucket) {
+      this.$store.commit('setBucket', bucket)
+    }
   }
 }
 </script>
 
 <style lang="scss" scoped>
 .fields-wrapper {
-  height: 100vh;
-  min-width: 16rem;
+  max-height: 100vh;
+  overflow-x: hidden;
   overflow-y: scroll;
-  width: 16rem;
 }
-
-.fields {
-  padding: 0.5rem;
+.controls {
+  display: flex;
+}
+.category_button {
+  margin: 0.5rem;
+}
+.field-title {
+  font-size: 1.25rem;
 }
 </style>

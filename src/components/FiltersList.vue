@@ -1,6 +1,6 @@
 <template>
   <section class="field">
-    <h2>{{ name }}</h2>
+    <h2 class="field-title">{{ name }}</h2>
     <ul class="field-list">
       <li
         v-for="(option, index) in options"
@@ -18,11 +18,11 @@
             :value="option.id ? option.id : option.type"
           />
           <div
-            :class="['field-text', 'facet-bar-value-' + percent(option.total)]"
+            :class="['field-text', 'facet-bar-value-' + percent(option.value)]"
           >
-            {{ option.value }}
+            {{ option.id }}
             <span class="field-total">
-              {{ option.total.toLocaleString() }}
+              {{ option.value.toLocaleString() }}
             </span>
           </div>
         </label>
@@ -66,6 +66,9 @@ export default {
 <style lang="scss" scoped>
 .field-wrapper {
   display: flex;
+}
+.field-title {
+  font-size: 1.25rem;
 }
 .field-label {
   align-items: baseline;

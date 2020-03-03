@@ -17,7 +17,7 @@ const routes = [
     path: '/',
     name: 'Three',
     meta: {
-      title: 'THREE.js',
+      title: 'Bird’s Eye',
       metaTags: [
         {
           name: 'description',

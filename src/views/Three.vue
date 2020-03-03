@@ -1,26 +1,16 @@
 <template>
-  <div v-if="loaded">
+  <div v-if="loaded" class="grid">
     <div class="header">
-      <h1 class="total">{{ formattedItemsTotal }}</h1>
-      <ul class="controls">
-        <li v-for="(value, id) in aggs" :key="id">
-          <button
-            type="button"
-            class="bucket_button"
-            @click="setBucket(id)"
-            :disabled="currentBucketId === id"
-          >
-            {{ value.name }}
-          </button>
-        </li>
-      </ul>
+      <h1 class="total">
+        {{ formattedItemsTotal }} objects, pictures, and maps.
+      </h1>
     </div>
-    <viz />
+    <viz class="viz" />
   </div>
 </template>
 
 <script>
-import { mapState } from 'vuex'
+import { mapState, mapGetters } from 'vuex'
 
 import Viz from '@/components/Viz.vue'
 
@@ -30,37 +20,47 @@ export default {
     return {}
   },
   computed: {
-    formattedItemsTotal() {
-      return new Intl.NumberFormat().format(this.itemsTotal)
+    total() {
+      return this.itemsTotal
     },
-    ...mapState(['loaded', 'itemsTotal', 'aggs', 'currentBucketId'])
+    formattedItemsTotal() {
+      return new Intl.NumberFormat().format(this.totalFromBuckets)
+    },
+    ...mapGetters(['totalFromBuckets']),
+    ...mapState(['loaded', 'itemsTotal', 'aggs', 'buckets', 'currentBucketId'])
   },
   created() {
     this.$store.commit('getBuckets')
-  },
-  methods: {
-    setBucket(bucket) {
-      this.$store.commit('setBucket', bucket)
-    }
   }
 }
 </script>
 
 <style lang="scss" scoped>
+.grid {
+  background-color: black;
+  color: wheat;
+  display: grid;
+  grid-template-rows: 5rem 1fr;
+  grid-template-columns: 18rem 1fr;
+}
 .header {
-  position: absolute;
+  grid-column: 2/3;
+  grid-row: 1/2;
+  z-index: 2;
+  pointer-events: none;
 }
 .total {
-  color: white;
+  color: wheat;
+  font-size: 1.5rem;
+  font-weight: normal;
 }
-.controls {
-  display: flex;
+.filters {
+  grid-column: 1/2;
+  grid-row: 1/3;
+  z-index: 1;
 }
-.category_button {
-  margin: 0.5rem;
-}
-.three {
-  height: 100vh;
-  width: 100vw;
+.viz {
+  grid-column: 1/3;
+  grid-row: 1/3;
 }
 </style>

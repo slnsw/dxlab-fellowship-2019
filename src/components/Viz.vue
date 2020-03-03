@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
+import { mapState, mapGetters } from 'vuex'
 import * as THREE from 'three'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 import SpriteText from 'three-spritetext'
@@ -16,7 +16,7 @@ import SpriteText from 'three-spritetext'
 import { FormatType } from '@/utils/types'
 
 const FILE_Z = 10
-const BUCKET_Z = 200
+const BUCKET_Z = 300
 const TEXT_Z = 0.1 // relative
 const MOVE_DURATION = 300
 const TILE_PADDING = 1
@@ -65,7 +65,8 @@ export default {
       })
       return result
     },
-    ...mapState(['currentBucket', 'currentBucketId', 'itemsTotal'])
+    ...mapGetters(['totalFromBuckets', 'bucketInfo']),
+    ...mapState(['currentBucket', 'currentBucketId', 'itemsTotal', 'buckets'])
   },
   watch: {
     currentBucketId() {
@@ -76,8 +77,8 @@ export default {
   mounted() {
     this.init()
     this.createControls()
-    // this.paintBuckets()
-    // this.moveCameraTo()
+    this.paintBuckets()
+    this.moveCameraTo()
     this.animate()
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mousemove', this.onDocumentMouseMove)
@@ -184,24 +185,7 @@ export default {
     paintBuckets() {
       this.cleanBuckets()
 
-      const buckets = [...this.currentBucket.buckets]
-
-      if (this.currentBucket.sum_other_doc_count) {
-        const bucketTotal = this.currentBucket.buckets
-          .map((b) => b.doc_count)
-          .reduce((a, b) => a + b, 0) // cannot trust sum_other_doc_count
-        const otherTotal = this.itemsTotal - bucketTotal
-
-        if (bucketTotal < this.itemsTotal) {
-          buckets.push({
-            doc_count:
-              this.currentBucket.sum_other_doc_count < otherTotal
-                ? this.currentBucket.sum_other_doc_count
-                : otherTotal,
-            key: 'other'
-          })
-        }
-      }
+      const buckets = this.buckets
 
       const bucketCount = buckets.length
 
@@ -228,16 +212,16 @@ export default {
       )
 
       const textGroup = new THREE.Group()
-      // const textVertices = []
-      // const textMaterials = []
 
       for (let i = 0, i3 = 0, l = bucketCount; i < l; i++, i3 += 3) {
         const b = buckets[i]
-        const pct = b.doc_count / this.itemsTotal
+        const count = b.count
+        const text = this.bucketInfo(b.id).name
+        const pct = count / this.itemsTotal
         const scale = Math.sqrt(pct)
         const w = PARTICLE_SIZE * scale
         const x = lastX + w / 2
-        lastX = x + w / 2 + TILE_PADDING * scale
+        lastX = x + w / 2 + TILE_PADDING
         const y = -w / 2
         const z = BUCKET_Z
 
@@ -255,9 +239,8 @@ export default {
         // text particles
         const textTop = y + w / 2 + TILE_PADDING * scale
         const textZ = BUCKET_Z + TEXT_Z * scale
-        const labelStr =
-          this.currentBucketId !== 'formats' ? b.key : this.formatsById[b.key]
-        const numberStr = b.doc_count
+        const labelStr = text
+        const numberStr = count
         textGroup.add(
           this.createText(
             `${labelStr} (${new Intl.NumberFormat().format(numberStr)})`,
