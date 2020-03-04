@@ -9,32 +9,37 @@
 
 <script>
 import { mapState, mapGetters } from 'vuex'
+
 import * as THREE from 'three'
+import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 import SpriteText from 'three-spritetext'
 
 import { FormatType } from '@/utils/types'
 
-const FILE_Z = 10
-const BUCKET_Z = 1000
-const TEXT_Z = 0.1 // relative
-const MOVE_DURATION = 300
+const BUCKET_Z = 4000
 const CAMERA_NEAR = 0.01
-const CAMERA_FAR = 4000
+const CAMERA_FAR = BUCKET_Z * 2
 const CAMERA_FOV = 30
+const CAMERA_DIST = 5
+const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
+const COLOR_HOVERED = new THREE.Color('rgb(0, 130, 41)')
+const COLOR_OTHER = new THREE.Color('hsl(0, 100%, 30)')
+const FILE_Z = 10
+const MOVE_DURATION = 300
 const SCENE_PADDING = 0.95
+const TEXT_SIZE = 100
+const TEXT_Z = 0.1 // relative
+const TILE_COLOR_DIST = 100
+const TILE_FILE_DIST = 50
 const TILE_PADDING = 25
 const TILE_SIZE = 1000
-const TEXT_SIZE = 100
-const CAMERA_DIST = 5
-const SELECTED_COLOR = new THREE.Color('rgb(255, 0, 0)')
-const HOVERED_COLOR = new THREE.Color('rgb(0, 130, 41)')
-const OTHER_COLOR = new THREE.Color('hsl(0, 100%, 30)')
 
 export default {
   components: {},
   data() {
     return {
+      fileMode: false,
       renderer: null,
       camera: null,
       scene: null,
@@ -68,13 +73,7 @@ export default {
       return result
     },
     ...mapGetters(['totalFromBuckets', 'bucketInfo']),
-    ...mapState(['currentBucket', 'currentBucketId', 'itemsTotal', 'buckets'])
-  },
-  watch: {
-    currentBucketId() {
-      this.paintBuckets()
-      this.moveCameraTo(this.bucketsMesh)
-    }
+    ...mapState(['currentBucket', 'itemsTotal', 'buckets'])
   },
   mounted() {
     this.init()
@@ -109,6 +108,12 @@ export default {
       this.mouse = new THREE.Vector2(-1e10, -1e10)
 
       this.camera = this.createBaseCamera()
+
+      const gui = new GUI()
+
+      gui.add(this.camera.position, 'x').listen()
+      gui.add(this.camera.position, 'y').listen()
+      gui.add(this.camera.position, 'z').listen()
     },
     createText(text, x, y, z, scale) {
       text = text ? text : '[undefined]'
@@ -124,12 +129,14 @@ export default {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         const { x, y, s, id } = this.getClickedGeometry()
         this.selectedBucket = this.buckets[id]
+        this.$store.commit('setBucket', this.selectedBucket)
         const obj = new THREE.Mesh(
           new THREE.PlaneGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
         )
         obj.position.set(x, y, FILE_Z + CAMERA_DIST * s.x)
         this.moveCameraTo(obj)
         this.paintFiles(obj)
+        this.fileMode = true
       }
     },
     onClick() {
@@ -148,8 +155,10 @@ export default {
         if (this.selectedInstance) {
           this.resetIntersectedColor(this.selectedInstance)
           this.selectedInstance = {}
+          this.fileMode = false
         }
       }
+      this.$store.commit('setBucket', null)
     },
     getClickedGeometry() {
       const attributes = this.bucketsMesh.geometry.attributes
@@ -166,9 +175,9 @@ export default {
     setClickedColor() {
       const attributes = this.bucketsMesh.geometry.attributes
       const id = this.PAST_INTERSECTED.instanceId
-      attributes.color.array[id * 3] = SELECTED_COLOR.r
-      attributes.color.array[id * 3 + 1] = SELECTED_COLOR.g
-      attributes.color.array[id * 3 + 2] = SELECTED_COLOR.b
+      attributes.color.array[id * 3] = COLOR_SELECTED.r
+      attributes.color.array[id * 3 + 1] = COLOR_SELECTED.g
+      attributes.color.array[id * 3 + 2] = COLOR_SELECTED.b
       attributes.color.needsUpdate = true
     },
     createControls() {
@@ -178,8 +187,8 @@ export default {
       this.controls.panSpeed = 1
       this.controls.maxDistance = CAMERA_FAR
       this.controls.minDistance = CAMERA_NEAR
-      this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
-      this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
+      // this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
+      // this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
       this.controls.noRotate = true
       this.controls.screenSpacePanning = true
       this.controls.enableDamping = true
@@ -193,19 +202,17 @@ export default {
       this.cleanFiles()
 
       const tileCount = this.selectedBucket.count
-      const side = Math.floor(Math.sqrt(tileCount))
+      const side = Math.ceil(Math.sqrt(tileCount))
       const w = obj.geometry.parameters.width
       const s = w / TILE_SIZE
       const tileSize = w / side
       const padding = tileSize * (TILE_PADDING / TILE_SIZE)
       const realW = side * tileSize + (side - 1) * padding
 
-      const x = obj.position.x - realW / 2
-      const y = obj.position.y + realW / 2
+      const x = obj.position.x - realW / 2 + tileSize / 2
+      const y = obj.position.y + realW / 2 - tileSize / 2
       const z = obj.position.z
       const id = this.selectedBucket.id
-
-      console.log('p', padding, 's', s, 'w', w, 'ts', tileSize)
 
       const geometry = new THREE.PlaneBufferGeometry(tileSize, tileSize)
 
@@ -283,7 +290,7 @@ export default {
         const scale = Math.sqrt(pct)
         const w = TILE_SIZE * scale
         const x = lastX + w / 2
-        lastX = x + w / 2 + TILE_PADDING
+        lastX = x + w / 2 + TILE_PADDING * scale
         const y = -w / 2
         const z = BUCKET_Z
 
@@ -482,9 +489,9 @@ export default {
             const b = attributes.color.array[3 * instanceId + 2]
 
             if (this.selectedInstance.instanceId !== instanceId) {
-              attributes.color.array[3 * instanceId] = HOVERED_COLOR.r
-              attributes.color.array[3 * instanceId + 1] = HOVERED_COLOR.g
-              attributes.color.array[3 * instanceId + 2] = HOVERED_COLOR.b
+              attributes.color.array[3 * instanceId] = COLOR_HOVERED.r
+              attributes.color.array[3 * instanceId + 1] = COLOR_HOVERED.g
+              attributes.color.array[3 * instanceId + 2] = COLOR_HOVERED.b
             }
 
             if (

@@ -1,9 +1,7 @@
 <template>
   <div v-if="loaded" class="grid">
     <div class="header">
-      <h1 class="total">
-        {{ formattedItemsTotal }} objects, pictures, and maps.
-      </h1>
+      <h1 class="total">{{ formattedItemsTotal }} {{ thing }}.</h1>
     </div>
     <viz class="viz" />
   </div>
@@ -20,14 +18,19 @@ export default {
     return {}
   },
   computed: {
+    thing() {
+      return this.currentBucket ? this.currentBucket.name : 'things'
+    },
     total() {
       return this.itemsTotal
     },
     formattedItemsTotal() {
-      return new Intl.NumberFormat().format(this.totalFromBuckets)
+      return new Intl.NumberFormat().format(
+        this.currentBucket ? this.currentBucket.count : this.totalFromBuckets
+      )
     },
     ...mapGetters(['totalFromBuckets']),
-    ...mapState(['loaded', 'itemsTotal', 'aggs', 'buckets', 'currentBucketId'])
+    ...mapState(['loaded', 'itemsTotal', 'aggs', 'buckets', 'currentBucket'])
   },
   created() {
     this.$store.commit('getBuckets')
@@ -50,9 +53,12 @@ export default {
   pointer-events: none;
 }
 .total {
+  background-color: black;
+  display: inline-block;
   color: wheat;
   font-size: 1.5rem;
   font-weight: normal;
+  padding: 0 0.5rem;
 }
 .filters {
   grid-column: 1/2;

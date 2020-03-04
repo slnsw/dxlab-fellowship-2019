@@ -50,7 +50,7 @@ export default {
     formattedItemsTotal() {
       return new Intl.NumberFormat().format(this.itemsTotal)
     },
-    ...mapState(['loaded', 'buckets', 'itemsTotal', 'aggs', 'currentBucketId'])
+    ...mapState(['loaded', 'buckets', 'itemsTotal', 'aggs'])
   },
   created() {
     this.$store.commit('getBuckets')

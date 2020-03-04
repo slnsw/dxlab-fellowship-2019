@@ -22,14 +22,37 @@ const STUFF = {
   posters: { id: 'b10aqZK7gRzJy', name: 'posters' },
   medals: { id: 'X8gBJlg9E1WqK', name: 'medals' },
   photographs: { id: 'wKK2B5BO3aEYa', name: 'photographs' },
-  archTechDrawings: { id: 'm6zK940qx9v7K', name: 'architectural drawings' },
+  archTechDrawings: {
+    id: 'm6zK940qx9v7K',
+    name: 'architectural    \ndrawings'
+  },
   designDrawings: { id: 'adx22BvP5OZzd', name: 'design drawings' },
   maps: { id: '40XObXd7aA4a', name: 'maps' },
-  manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'manuscript maps' },
+  manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'manuscript    \nmaps' },
   objects: { id: '7MZAw5gxmyyaW', name: 'objects' },
   stamps: { id: 'BRg6jXK4mz4wG', name: 'stamps' },
   ephemera: { id: 'vz2D0Am8wvrlb', name: 'ephemera' },
-  coin: { id: '76pM49Z2jxBzR', name: 'coins' }
+  coin: { id: '76pM49Z2jxBzR', name: 'coins' },
+  journals: { name: 'journals', id: 'Z5AB0OkPYjPb9' },
+  manuscripts: { name: 'manuscripts', id: '330MWgKgY5adZ' },
+  manuscriptNotatedMusic: {
+    name: 'notated music',
+    id: 'oWWJDK5PO44me'
+  },
+  musicalRecordings: {
+    name: 'musical sound\nrecordings ',
+    id: 'KOpMgA2JjBYmO'
+  },
+  nonMusicalRecordings: {
+    name: 'non-musical sound\nrecordings       ',
+    id: 'z02KkaA8xXx4E'
+  },
+  video: { name: 'video', id: 'NWOD2N4edDPzO' },
+  films: { name: 'film', id: 'aXgRM15jrzBWz' },
+  manuscriptMusicScores: {
+    name: 'music scores',
+    id: '9DDK52Ye2G2AD'
+  }
 }
 
 const STUFF_TREE = {
@@ -106,7 +129,6 @@ export default new Vuex.Store({
     buckets: [],
     aggs: AGGS,
     stuff: STUFF,
-    currentBucketId: null,
     currentBucket: null,
     itemsClosest: [],
     itemsMidway: [],
@@ -134,9 +156,13 @@ export default new Vuex.Store({
       state.buckets.map((b) => b.count).reduce((a, b) => a + b, 0)
   },
   mutations: {
-    setBucket(state, bucketId) {
-      state.currentBucketId = bucketId
-      state.currentBucket = state.buckets[bucketId]
+    setBucket(state, bucket) {
+      if (!bucket) {
+        state.currentBucket = null
+        return
+      }
+      const currentBucket = { ...state.stuff[bucket.id], ...bucket }
+      state.currentBucket = currentBucket
     },
     async getBuckets(state) {
       const url = '/_search'
