@@ -16,17 +16,17 @@ import SpriteText from 'three-spritetext'
 import { FormatType } from '@/utils/types'
 
 const FILE_Z = 10
-const BUCKET_Z = 300
+const BUCKET_Z = 1000
 const TEXT_Z = 0.1 // relative
 const MOVE_DURATION = 300
-const TILE_PADDING = 1
 const CAMERA_NEAR = 0.01
-const CAMERA_FAR = 1000
-const CAMERA_FOV = 60
-const SCENE_PADDING = 1.5
-const PARTICLE_SIZE = 100
-const TEXT_SIZE = 10
-const CAMERA_DIST = 10
+const CAMERA_FAR = 4000
+const CAMERA_FOV = 30
+const SCENE_PADDING = 0.95
+const TILE_PADDING = 25
+const TILE_SIZE = 1000
+const TEXT_SIZE = 100
+const CAMERA_DIST = 5
 const SELECTED_COLOR = new THREE.Color('rgb(255, 0, 0)')
 const HOVERED_COLOR = new THREE.Color('rgb(0, 130, 41)')
 const OTHER_COLOR = new THREE.Color('hsl(0, 100%, 30)')
@@ -39,6 +39,8 @@ export default {
       camera: null,
       scene: null,
       bucketsMesh: null,
+      filesMesh: null,
+      selectedBucket: null,
       textGroup: null,
       controls: null,
       lastCamera: null,
@@ -71,14 +73,14 @@ export default {
   watch: {
     currentBucketId() {
       this.paintBuckets()
-      this.moveCameraTo()
+      this.moveCameraTo(this.bucketsMesh)
     }
   },
   mounted() {
     this.init()
     this.createControls()
     this.paintBuckets()
-    this.moveCameraTo()
+    this.moveCameraTo(this.bucketsMesh)
     this.animate()
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mousemove', this.onDocumentMouseMove)
@@ -103,7 +105,7 @@ export default {
       this.scene = new THREE.Scene()
 
       this.raycaster = new THREE.Raycaster()
-      this.raycaster.params.Points.threshold = PARTICLE_SIZE * 0.5
+      this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
       this.mouse = new THREE.Vector2(-1e10, -1e10)
 
       this.camera = this.createBaseCamera()
@@ -115,28 +117,29 @@ export default {
       myText.fontFace = 'Aaux ProLight OSF'
       myText.textHeight = TEXT_SIZE * scale
       myText.position.set(x, y, z)
-      myText.material.rotation = Math.PI / 8
       myText.center = new THREE.Vector2(0, 0)
       return myText
     },
     onDoubleClick() {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
-        const { x, y, z, s } = this.getClickedGeometry()
+        const { x, y, s, id } = this.getClickedGeometry()
+        this.selectedBucket = this.buckets[id]
         const obj = new THREE.Mesh(
-          new THREE.PlaneGeometry(PARTICLE_SIZE * s.x, PARTICLE_SIZE * s.x)
+          new THREE.PlaneGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
         )
         obj.position.set(x, y, FILE_Z + CAMERA_DIST * s.x)
-        this.selectedInstance = { ...this.PAST_INTERSECTED }
         this.moveCameraTo(obj)
+        this.paintFiles(obj)
       }
     },
     onClick() {
+      this.cleanFiles()
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.resetIntersectedColor(this.selectedInstance)
         this.setClickedColor()
         const { x, y, z, s } = this.getClickedGeometry()
         const obj = new THREE.Mesh(
-          new THREE.PlaneGeometry(PARTICLE_SIZE * s.x, PARTICLE_SIZE * s.x)
+          new THREE.PlaneGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
         )
         obj.position.set(x, y, z + CAMERA_DIST * s.x)
         this.moveCameraTo(obj)
@@ -158,7 +161,7 @@ export default {
       this.bucketsMesh.getMatrixAt(id, matrix)
       const s = new THREE.Vector3()
       matrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), s)
-      return { x, y, z, s }
+      return { x, y, z, s, id }
     },
     setClickedColor() {
       const attributes = this.bucketsMesh.geometry.attributes
@@ -182,6 +185,68 @@ export default {
       this.controls.enableDamping = true
       this.controls.dampingFactor = 0.1
     },
+    cleanFiles() {
+      if (!this.filesMesh) return
+      this.scene.remove(this.filesMesh)
+    },
+    paintFiles(obj) {
+      this.cleanFiles()
+
+      const tileCount = this.selectedBucket.count
+      const side = Math.floor(Math.sqrt(tileCount))
+      const w = obj.geometry.parameters.width
+      const s = w / TILE_SIZE
+      const tileSize = w / side
+      const padding = tileSize * (TILE_PADDING / TILE_SIZE)
+      const realW = side * tileSize + (side - 1) * padding
+
+      const x = obj.position.x - realW / 2
+      const y = obj.position.y + realW / 2
+      const z = obj.position.z
+      const id = this.selectedBucket.id
+
+      console.log('p', padding, 's', s, 'w', w, 'ts', tileSize)
+
+      const geometry = new THREE.PlaneBufferGeometry(tileSize, tileSize)
+
+      const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
+
+      this.filesMesh = new THREE.InstancedMesh(geometry, material, tileCount)
+
+      const colors = new Float32Array(tileCount * 3)
+      const positions = new Float32Array(tileCount * 3)
+
+      const color = new THREE.Color()
+      const position = new THREE.Vector3()
+      const transform = new THREE.Object3D()
+
+      for (let i = 0, i3 = 0, l = tileCount; i < l; i++, i3 += 3) {
+        const xT = x + (i % side) * (tileSize + padding)
+        const yT = y + Math.floor(i / side) * -(tileSize + padding)
+        const zT = z
+        transform.position.set(xT, yT, zT)
+        transform.updateMatrix()
+
+        this.filesMesh.setMatrixAt(i, transform.matrix)
+
+        position.set(xT, yT, zT)
+        position.toArray(positions, i * 3)
+        color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
+        color.toArray(colors, i * 3)
+      }
+
+      geometry.setAttribute(
+        'customPosition',
+        new THREE.InstancedBufferAttribute(positions, 3)
+      )
+      geometry.setAttribute(
+        'color',
+        new THREE.InstancedBufferAttribute(colors, 3)
+      )
+      material.vertexColors = THREE.VertexColors
+
+      this.scene.add(this.filesMesh)
+    },
     paintBuckets() {
       this.cleanBuckets()
 
@@ -200,10 +265,7 @@ export default {
 
       const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
 
-      const geometry = new THREE.PlaneBufferGeometry(
-        PARTICLE_SIZE,
-        PARTICLE_SIZE
-      )
+      const geometry = new THREE.PlaneBufferGeometry(TILE_SIZE, TILE_SIZE)
 
       const bucketsMesh = new THREE.InstancedMesh(
         geometry,
@@ -219,7 +281,7 @@ export default {
         const text = this.bucketInfo(b.id).name
         const pct = count / this.itemsTotal
         const scale = Math.sqrt(pct)
-        const w = PARTICLE_SIZE * scale
+        const w = TILE_SIZE * scale
         const x = lastX + w / 2
         lastX = x + w / 2 + TILE_PADDING
         const y = -w / 2
@@ -244,7 +306,7 @@ export default {
         textGroup.add(
           this.createText(
             `${labelStr} (${new Intl.NumberFormat().format(numberStr)})`,
-            x,
+            x - w / 2,
             textTop,
             textZ,
             scale
@@ -296,13 +358,13 @@ export default {
     moveCameraTo(obj) {
       let o
 
-      if (!obj) {
+      if (obj instanceof THREE.InstancedMesh) {
         // centering on the current base bucket
         o = new THREE.Box3()
-        const count = this.bucketsMesh.instanceMatrix.count
+        const count = obj.instanceMatrix.count
         for (let i = 0, i3 = 0, l = count; i < l; i++, i3 += 3) {
           const matrix = new THREE.Matrix4()
-          this.bucketsMesh.getMatrixAt(i, matrix)
+          obj.getMatrixAt(i, matrix)
           const p = new THREE.Vector3()
           const s = new THREE.Vector3()
           matrix.decompose(p, new THREE.Quaternion(), s)
@@ -310,7 +372,7 @@ export default {
           const y = p.y
           const z = p.z
           const objBucket = new THREE.Mesh(
-            new THREE.PlaneGeometry(PARTICLE_SIZE * s.x, PARTICLE_SIZE * s.x)
+            new THREE.PlaneGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
           )
           objBucket.position.set(x, y, z * s.x)
           o.expandByObject(objBucket)
@@ -321,9 +383,10 @@ export default {
 
       const sphere = new THREE.Sphere()
       o.getBoundingSphere(sphere)
-      const side = !obj
-        ? sphere.radius * 0.9 * SCENE_PADDING
-        : sphere.radius * SCENE_PADDING
+      const side =
+        obj instanceof THREE.InstancedMesh
+          ? sphere.radius * 0.9 * SCENE_PADDING
+          : sphere.radius * SCENE_PADDING
 
       const center = new THREE.Vector3()
       o.getCenter(center)
@@ -394,7 +457,7 @@ export default {
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
     },
     resetIntersectedColor(instance) {
-      if (!instance.color) return
+      if (!instance || !instance.color) return
       const geometry = this.bucketsMesh.geometry
       const attributes = geometry.attributes
       attributes.color.array[3 * instance.instanceId] = instance.color.r
