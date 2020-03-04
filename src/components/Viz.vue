@@ -119,7 +119,7 @@ export default {
       text = text ? text : '[undefined]'
       if (isNaN(text) && text.indexOf('|||') !== -1) text = text.split('|||')[1]
       const myText = new SpriteText(text)
-      myText.fontFace = 'Aaux ProLight OSF'
+      myText.fontFace = 'Avenir'
       myText.textHeight = TEXT_SIZE * scale
       myText.position.set(x, y, z)
       myText.center = new THREE.Vector2(0, 0)

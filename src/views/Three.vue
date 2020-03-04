@@ -19,7 +19,12 @@ export default {
   },
   computed: {
     thing() {
-      return this.currentBucket ? this.currentBucket.name : 'things'
+      const l = Object.values(this.stuff).length
+      return this.currentBucket
+        ? this.currentBucket.name.trim()
+        : Object.values(this.stuff)
+            .map((s, index) => (index === l - 1 ? 'and ' + s.name : s.name))
+            .join(', ')
     },
     total() {
       return this.itemsTotal
@@ -30,7 +35,7 @@ export default {
       )
     },
     ...mapGetters(['totalFromBuckets']),
-    ...mapState(['loaded', 'itemsTotal', 'aggs', 'buckets', 'currentBucket'])
+    ...mapState(['loaded', 'itemsTotal', 'stuff', 'buckets', 'currentBucket'])
   },
   created() {
     this.$store.commit('getBuckets')
@@ -47,18 +52,18 @@ export default {
   grid-template-columns: 18rem 1fr;
 }
 .header {
-  grid-column: 2/3;
-  grid-row: 1/2;
+  grid-column: 1/2;
+  grid-row: 1/3;
   z-index: 2;
   pointer-events: none;
 }
 .total {
-  background-color: black;
+  background-color: hsl(0, 0%, 0%, 0.75);
   display: inline-block;
   color: wheat;
   font-size: 1.5rem;
   font-weight: normal;
-  padding: 0 0.5rem;
+  padding: 0.5rem;
 }
 .filters {
   grid-column: 1/2;

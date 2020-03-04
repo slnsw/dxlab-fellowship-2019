@@ -28,7 +28,7 @@ const STUFF = {
   },
   designDrawings: { id: 'adx22BvP5OZzd', name: 'design drawings' },
   maps: { id: '40XObXd7aA4a', name: 'maps' },
-  manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'manuscript    \nmaps' },
+  manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'manuscript   \nmaps' },
   objects: { id: '7MZAw5gxmyyaW', name: 'objects' },
   stamps: { id: 'BRg6jXK4mz4wG', name: 'stamps' },
   ephemera: { id: 'vz2D0Am8wvrlb', name: 'ephemera' },
@@ -44,7 +44,7 @@ const STUFF = {
     id: 'KOpMgA2JjBYmO'
   },
   nonMusicalRecordings: {
-    name: 'non-musical sound\nrecordings       ',
+    name: 'non-musical sound\nrecordings        ',
     id: 'z02KkaA8xXx4E'
   },
   video: { name: 'video', id: 'NWOD2N4edDPzO' },
