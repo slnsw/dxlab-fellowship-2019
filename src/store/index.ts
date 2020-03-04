@@ -106,7 +106,6 @@ const AGGS = {
 
 const baseQuery = () =>
   bodybuilder()
-    .size(0)
     .orFilter('term', 'format_id.keyword', 'J19GWyDjZ8Ny7') // pictures
     .orFilter('term', 'format_id.keyword', 'vpkdDA18BDOdR') // prints
     .orFilter('term', 'format_id.keyword', 'GP85pXKPWzzB') // drawings
@@ -122,6 +121,14 @@ const baseQuery = () =>
     .orFilter('term', 'subject_curated_title', 'stamps') // stamps BRg6jXK4mz4wG
     .orFilter('term', 'format_id.keyword', 'vz2D0Am8wvrlb') // ephemera
     .orFilter('term', 'subject_curated_title', 'coin') // coins 76pM49Z2jxBzR
+    .orFilter('term', 'format_id.keyword', 'Z5AB0OkPYjPb9') // journals
+    .orFilter('term', 'format_id.keyword', '330MWgKgY5adZ') // manuscripts
+    .orFilter('term', 'format_id.keyword', 'oWWJDK5PO44me') // notated music
+    .orFilter('term', 'format_id.keyword', 'KOpMgA2JjBYmO') // musical sound recordings
+    .orFilter('term', 'format_id.keyword', 'z02KkaA8xXx4E') // non-musical sound recordings
+    .orFilter('term', 'format_id.keyword', 'NWOD2N4edDPzO') // video
+    .orFilter('term', 'format_id.keyword', 'aXgRM15jrzBWz') // film
+    .orFilter('term', 'format_id.keyword', '9DDK52Ye2G2AD') // music scores
 
 export default new Vuex.Store({
   state: {
@@ -177,6 +184,8 @@ export default new Vuex.Store({
       await asyncForEach(Object.values(STUFF), async (val, index) => {
         const key = stuffKeys[index]
         const query = baseQuery()
+          .size(10)
+          .rawOption('_source', 'props_file_name_title')
           .filter(
             'term',
             key !== 'medals' && key !== 'stamps' && key !== 'coin'
@@ -191,8 +200,15 @@ export default new Vuex.Store({
           ...query,
           ...params
         })
-        const hits = { id: key, count: baseResponse.data.hits.total.value }
-        buckets.push(hits)
+        const hits = baseResponse.data.hits
+        const images = hits.hits.map(
+          (hit) =>
+            `${hit._source.props_file_name_title[0].substr(0, 4)}/${
+              hit._source.props_file_name_title[0]
+            }`
+        )
+        const bucketData = { id: key, count: hits.total.value, images }
+        buckets.push(bucketData)
       })
       buckets.sort((a, b) => b.count - a.count)
       state.buckets = buckets
