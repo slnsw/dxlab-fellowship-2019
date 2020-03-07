@@ -104,31 +104,25 @@ const AGGS = {
   }
 }
 
-const baseQuery = () =>
-  bodybuilder()
-    .orFilter('term', 'format_id.keyword', 'J19GWyDjZ8Ny7') // pictures
-    .orFilter('term', 'format_id.keyword', 'vpkdDA18BDOdR') // prints
-    .orFilter('term', 'format_id.keyword', 'GP85pXKPWzzB') // drawings
-    .orFilter('term', 'format_id.keyword', '0GB866Xe6mz1q') // paintings
-    .orFilter('term', 'format_id.keyword', 'b10aqZK7gRzJy') // posters
-    .orFilter('term', 'subject_curated_title', 'medals') // medals X8gBJlg9E1WqK
-    .orFilter('term', 'format_id.keyword', 'wKK2B5BO3aEYa') // photographs
-    .orFilter('term', 'format_id.keyword', 'm6zK940qx9v7K') // archTechDrawings
-    .orFilter('term', 'format_id.keyword', 'adx22BvP5OZzd') // designDrawings
-    .orFilter('term', 'format_id.keyword', '40XObXd7aA4a') // maps
-    .orFilter('term', 'format_id.keyword', 'Xp1qba0O2k32v') // manuscriptmaps
-    .orFilter('term', 'format_id.keyword', '7MZAw5gxmyyaW') // objects
-    .orFilter('term', 'subject_curated_title', 'stamps') // stamps BRg6jXK4mz4wG
-    .orFilter('term', 'format_id.keyword', 'vz2D0Am8wvrlb') // ephemera
-    .orFilter('term', 'subject_curated_title', 'coin') // coins 76pM49Z2jxBzR
-    .orFilter('term', 'format_id.keyword', 'Z5AB0OkPYjPb9') // journals
-    .orFilter('term', 'format_id.keyword', '330MWgKgY5adZ') // manuscripts
-    .orFilter('term', 'format_id.keyword', 'oWWJDK5PO44me') // notated music
-    .orFilter('term', 'format_id.keyword', 'KOpMgA2JjBYmO') // musical sound recordings
-    .orFilter('term', 'format_id.keyword', 'z02KkaA8xXx4E') // non-musical sound recordings
-    .orFilter('term', 'format_id.keyword', 'NWOD2N4edDPzO') // video
-    .orFilter('term', 'format_id.keyword', 'aXgRM15jrzBWz') // film
-    .orFilter('term', 'format_id.keyword', '9DDK52Ye2G2AD') // music scores
+const baseQuery = () => {
+  let bb = bodybuilder()
+  for (const [key, value] of Object.entries(STUFF)) {
+    bb = bb.orFilter(
+      'term',
+      key !== 'medals' && key !== 'stamps' && key !== 'coin'
+        ? 'format_id.keyword'
+        : 'subject_curated_title',
+      key !== 'medals' && key !== 'stamps' && key !== 'coin' ? value.id : key
+    )
+  }
+  return bb
+}
+
+const asyncForEach = async (array, callback) => {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index, array)
+  }
+}
 
 export default new Vuex.Store({
   state: {
@@ -176,11 +170,6 @@ export default new Vuex.Store({
       const params = { track_total_hits: true }
       const stuffKeys = Object.keys(STUFF)
       const buckets = []
-      const asyncForEach = async (array, callback) => {
-        for (let index = 0; index < array.length; index++) {
-          await callback(array[index], index, array)
-        }
-      }
       await asyncForEach(Object.values(STUFF), async (val, index) => {
         const key = stuffKeys[index]
         const query = baseQuery()
