@@ -74,8 +74,8 @@ export default {
       })
       return result
     },
-    ...mapGetters(['totalFromBuckets', 'bucketInfo']),
-    ...mapState(['currentBucket', 'itemsTotal', 'buckets'])
+    ...mapGetters(['totalFromBuckets']),
+    ...mapState(['currentBucket', 'itemsTotal', 'stuff'])
   },
   mounted() {
     this.init()
@@ -94,7 +94,7 @@ export default {
   methods: {
     init() {
       this.renderer = new THREE.WebGLRenderer({
-        antialias: false,
+        antialias: true,
         canvas: this.$refs.three
       }) // false improves the frame rate
       this.renderer.outputEncoding = THREE.sRGBEncoding
@@ -142,9 +142,7 @@ export default {
     },
     onDoubleClick() {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
-        this.selectedBucket = this.buckets[
-          this.PAST_INTERSECTED.obj.bucketIndex
-        ]
+        this.selectedBucket = this.stuff[this.PAST_INTERSECTED.obj.bucketIndex]
         this.$store.commit('setBucket', this.selectedBucket)
         const x = this.PAST_INTERSECTED.obj.position.x
         const y = this.PAST_INTERSECTED.obj.position.y
@@ -263,7 +261,8 @@ export default {
     paintBuckets() {
       this.cleanBuckets()
 
-      const buckets = this.buckets
+      const buckets = Object.values(this.stuff)
+      buckets.sort((a, b) => b.count - a.count)
 
       const bucketCount = buckets.length
 
@@ -280,7 +279,7 @@ export default {
       for (let i = 0, i3 = 0, l = bucketCount; i < l; i++, i3 += 3) {
         const b = buckets[i]
         const count = b.count
-        const text = this.bucketInfo(b.id).name
+        const text = b.name
         const pct = count / this.itemsTotal
         const scale = Math.sqrt(pct)
         const w = TILE_SIZE * scale
@@ -308,7 +307,7 @@ export default {
           color: 0xffffff
         })
         const mesh = new THREE.Mesh(geometry, material)
-        mesh.bucketIndex = i
+        mesh.bucketIndex = b.name
         mesh.position.set(x, y, z)
         bucketsGroup.add(mesh)
 

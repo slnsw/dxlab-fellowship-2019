@@ -35,7 +35,7 @@ export default {
       )
     },
     ...mapGetters(['totalFromBuckets']),
-    ...mapState(['loaded', 'itemsTotal', 'stuff', 'buckets', 'currentBucket'])
+    ...mapState(['loaded', 'itemsTotal', 'stuff', 'currentBucket'])
   },
   created() {
     this.$store.commit('getBuckets')
@@ -52,13 +52,13 @@ export default {
   grid-template-columns: 18rem 1fr;
 }
 .header {
+  background-color: hsl(0, 0%, 0%, 0.75);
   grid-column: 1/2;
   grid-row: 1/3;
   z-index: 2;
   pointer-events: none;
 }
 .total {
-  background-color: hsl(0, 0%, 0%, 0.75);
   display: inline-block;
   color: wheat;
   font-size: 1.5rem;
@@ -73,5 +73,11 @@ export default {
 .viz {
   grid-column: 1/3;
   grid-row: 1/3;
+}
+</style>
+
+<style lang="scss">
+body {
+  overflow: hidden;
 }
 </style>

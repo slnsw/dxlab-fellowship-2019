@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const axios = require('axios').default
 
 import Vue from 'vue'
@@ -7,14 +8,16 @@ Vue.use(Vuex)
 
 import bodybuilder from 'bodybuilder'
 
+const MAX_WINDOW_SIZE = 20000
+
 const instance = axios.create({
   baseURL: process.env.VUE_APP_ELASTIC_BASE_URL,
-  timeout: 5000
+  timeout: 600000
 })
 
 const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 
-const STUFF = {
+const STUFF: any = {
   pictures: { id: 'J19GWyDjZ8Ny7', name: 'pictures' },
   prints: { id: 'vpkdDA18BDOdR', name: 'prints' },
   drawings: { id: 'GP85pXKPWzzB', name: 'drawings' },
@@ -55,55 +58,6 @@ const STUFF = {
   }
 }
 
-const STUFF_TREE = {
-  objects: {
-    children: ['objects', 'stamps', 'ephemera', 'medals', 'coin']
-  },
-  maps: {
-    children: ['maps', 'manuscriptMaps']
-  },
-  pictures: {
-    children: [
-      'pictures',
-      'prints',
-      'drawings',
-      'paintings',
-      'posters',
-      'archTechDrawings',
-      'photographs',
-      'designDrawings'
-    ]
-  }
-}
-
-const AGGS = {
-  places: {
-    name: 'places',
-    field: 'place_title',
-    type: 'keyword'
-  },
-  formats: {
-    name: 'formats',
-    field: 'format_id',
-    type: 'keyword'
-  },
-  authors: {
-    name: 'authors',
-    field: 'author_agg',
-    type: 'keyword'
-  },
-  subjects: {
-    name: 'subjects',
-    field: 'subject_agg',
-    type: 'keyword'
-    // },
-    // date: {
-    //   name: 'date',
-    //   field: 'item_date_creation_agg',
-    //   type: 'date'
-  }
-}
-
 const baseQuery = () => {
   let bb = bodybuilder()
   for (const [key, value] of Object.entries(STUFF)) {
@@ -127,8 +81,6 @@ const asyncForEach = async (array, callback) => {
 export default new Vuex.Store({
   state: {
     loaded: false,
-    buckets: [],
-    aggs: AGGS,
     stuff: STUFF,
     currentBucket: null,
     itemsClosest: [],
@@ -152,11 +104,13 @@ export default new Vuex.Store({
     locations: []
   },
   getters: {
-    bucketInfo: (state) => (id) => state.stuff[id],
     totalFromBuckets: (state) =>
-      state.buckets.map((b) => b.count).reduce((a, b) => a + b, 0)
+      Object.values(state.stuff)
+        .map((b: any) => b.count)
+        .reduce((a, b) => a + b, 0)
   },
   mutations: {
+    setStuff: (state, stuff) => (state.stuff = stuff),
     setBucket(state, bucket) {
       if (!bucket) {
         state.currentBucket = null
@@ -165,11 +119,45 @@ export default new Vuex.Store({
       const currentBucket = { ...state.stuff[bucket.id], ...bucket }
       state.currentBucket = currentBucket
     },
+    async getIdsForBucket(state, bucket) {
+      const url = '/_search'
+      const key = bucket.key
+      const id = bucket.id
+      const count = bucket.count
+      const pages = Math.ceil(count / MAX_WINDOW_SIZE)
+      const pageArray = new Array(pages)
+      const params = { track_total_hits: true }
+      let ids = []
+      await asyncForEach(pageArray, async (val, index) => {
+        const query = baseQuery()
+          .size(MAX_WINDOW_SIZE)
+          .from(index * MAX_WINDOW_SIZE)
+          .rawOption('_source', '_id')
+          .filter(
+            'term',
+            key !== 'medals' && key !== 'stamps' && key !== 'coin'
+              ? 'format_id.keyword'
+              : 'subject_curated_title',
+            key !== 'medals' && key !== 'stamps' && key !== 'coin' ? id : key
+          )
+          .build()
+        const baseResponse = await instance.post(url, {
+          ...query,
+          ...params
+        })
+        const hits = baseResponse.data.hits
+        ids = ids.concat(hits.hits.map((hit) => hit._id))
+      })
+      const newBucket = { ...bucket, data: [...ids] }
+      let newStuff = { ...state.stuff }
+      newStuff = { ...newStuff, [key]: newBucket }
+      state.stuff = { ...newStuff }
+    },
     async getBuckets(state) {
       const url = '/_search'
       const params = { track_total_hits: true }
       const stuffKeys = Object.keys(STUFF)
-      const buckets = []
+      const buckets = {}
       await asyncForEach(Object.values(STUFF), async (val, index) => {
         const key = stuffKeys[index]
         const query = baseQuery()
@@ -196,11 +184,14 @@ export default new Vuex.Store({
               hit._source.props_file_name_title[0]
             }`
         )
-        const bucketData = { id: key, count: hits.total.value, images }
-        buckets.push(bucketData)
+        const bucketData = {
+          ...state.stuff[key],
+          count: hits.total.value,
+          images
+        }
+        buckets[key] = bucketData
       })
-      buckets.sort((a, b) => b.count - a.count)
-      state.buckets = buckets
+      state.stuff = buckets
       const baseResponse = await instance.post(url, {
         ...baseQuery().build(),
         ...params

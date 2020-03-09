@@ -1,80 +1,97 @@
 <template>
-  <div class="viewer">
-    <highcharts
-      :constructor-type="'stockChart'"
-      :options="chartOptions"
-    ></highcharts>
-    <filters v-if="loaded" />
-    <things />
+  <div class="processor">
+    <h1>Download bucket file ID lists</h1>
+    <div v-if="loaded">
+      <div v-for="(bucket, index) in sortedStuff" :key="index" class="bucket">
+        <button
+          v-if="!bucket.processed"
+          type="button"
+          @click="processBucket(bucket.key)"
+        >
+          Process
+        </button>
+        <a
+          v-if="bucket.processed && bucket.data && !bucket.downloaded"
+          :href="'data:application/octet-stream,' + encodedData(bucket.key)"
+          :download="bucket.key + '.txt'"
+          @click="downloadBucket(bucket.key)"
+        >
+          Download!
+        </a>
+        <span v-if="bucket.processed && bucket.data && bucket.downloaded">
+          Done!
+        </span>
+        <span v-if="bucket.processed && !bucket.data && !bucket.downloaded">
+          Processing...
+        </span>
+        <span>{{ bucket.name }} ({{ bucket.count }})</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { mapState } from 'vuex'
 
-import Things from '@/components/Things.vue'
-import Filters from '@/components/Filters.vue'
-
 export default {
-  components: { Things, Filters },
+  components: {},
   data() {
-    return {
-      chartOptions: {
-        rangeSelector: {
-          buttons: [
-            {
-              type: 'minute',
-              count: 5,
-              text: '5min',
-              events: {
-                click() {
-                  alert('clicked')
-                }
-              }
-            }
-          ]
-        },
-        series: [
-          {
-            pointInterval: 60 * 1000,
-            data: [1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3]
-          }
-        ]
-      }
-    }
+    return {}
   },
   computed: {
-    dateData() {
-      return this.buckets.date.buckets.map((b) => b.doc_count)
+    sortedStuff() {
+      return Object.values(this.stuff)
+        .filter((s) => s.count > 0)
+        .sort((a, b) => b.count - a.count)
     },
-    formattedItemsTotal() {
-      return new Intl.NumberFormat().format(this.itemsTotal)
-    },
-    ...mapState(['loaded', 'buckets', 'itemsTotal', 'aggs'])
+    ...mapState(['loaded', 'itemsTotal', 'stuff'])
   },
-  created() {
-    this.$store.commit('getBuckets')
+  async created() {
+    await this.$store.commit('getBuckets')
+    const stuff = { ...this.stuff }
+    Object.values(stuff).forEach((element, index) => {
+      const key = Object.keys(stuff)[index]
+      const bucket = { ...element }
+      bucket.processed = bucket.processed || false
+      bucket.downloaded = bucket.downloaded || false
+      bucket.key = key
+      stuff[key] = bucket
+    })
+    this.$store.commit('setStuff', stuff)
   },
   methods: {
-    histWidth() {
-      return window.innerWidth
+    encodedData(key) {
+      return this.stuff[key].data.join(',')
+    },
+    downloadBucket(key) {
+      const buckets = { ...this.stuff }
+      const bucket = { ...buckets[key], downloaded: true }
+      buckets[key] = bucket
+      this.$store.commit('setStuff', buckets)
+    },
+    processBucket(key) {
+      const buckets = { ...this.stuff }
+      const bucket = { ...buckets[key], processed: true }
+      buckets[key] = bucket
+      this.$store.commit('getIdsForBucket', buckets[key])
+      this.$store.commit('setStuff', buckets)
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.viewer {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-  width: 100vw;
+.processor {
+  margin: 0.5rem;
 }
-.histogram {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10rem;
+.bucket {
+  display: flex;
+  margin-bottom: 0.5rem;
+
+  & :first-child {
+    margin-right: 1rem;
+    text-align: center;
+    width: 6rem;
+  }
 }
 </style>
