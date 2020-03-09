@@ -1,4 +1,6 @@
-# viewer
+# Viewer
+
+See `.env.example` for the necessary environment variables and rename to `.env.local` for proper functioning in localhost.
 
 ## Project setup
 ```
@@ -19,6 +21,3 @@ yarn build
 ```
 yarn lint
 ```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).

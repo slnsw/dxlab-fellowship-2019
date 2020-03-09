@@ -12,7 +12,7 @@ const instance = axios.create({
   timeout: 5000
 })
 
-const FILE_BASE_URL = 'https://collection.sl.nsw.gov.au/digital/file'
+const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 
 const STUFF = {
   pictures: { id: 'J19GWyDjZ8Ny7', name: 'pictures' },

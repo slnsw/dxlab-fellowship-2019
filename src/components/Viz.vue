@@ -17,14 +17,15 @@ import SpriteText from 'three-spritetext'
 
 import { FormatType } from '@/utils/types'
 
-const BUCKET_Z = 4000
+const BUCKET_Z = 5500
 const CAMERA_NEAR = 0.01
 const CAMERA_FAR = BUCKET_Z * 2
 const CAMERA_FOV = 30
 const CAMERA_DIST = 5
 const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
 const COLOR_HOVERED = new THREE.Color('rgb(0, 130, 41)')
-const COLOR_OTHER = new THREE.Color('hsl(0, 100%, 30)')
+const COLOR_OTHER = new THREE.Color('hsl(0, 100%, 30%)')
+const CURSOR_SCALE = 4
 const FILE_Z = 10
 const MOVE_DURATION = 300
 const SCENE_PADDING = 0.995
@@ -43,8 +44,9 @@ export default {
       renderer: null,
       camera: null,
       scene: null,
-      bucketsMesh: null,
+      bucketsGroup: null,
       filesMesh: null,
+      cursor: null,
       selectedBucket: null,
       textGroup: null,
       controls: null,
@@ -79,7 +81,7 @@ export default {
     this.init()
     this.createControls()
     this.paintBuckets()
-    this.moveCameraTo(this.bucketsMesh)
+    this.moveCameraTo(this.bucketsGroup)
     this.animate()
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mousemove', this.onDocumentMouseMove)
@@ -95,11 +97,11 @@ export default {
         antialias: false,
         canvas: this.$refs.three
       }) // false improves the frame rate
+      this.renderer.outputEncoding = THREE.sRGBEncoding
+      this.renderer.gammaFactor = 2.2
       this.renderer.setPixelRatio(window.devicePixelRatio)
 
       this.renderer.setSize(window.innerWidth, window.innerHeight)
-
-      this.renderer.outputEncoding = THREE.sRGBEncoding
 
       this.scene = new THREE.Scene()
 
@@ -108,6 +110,19 @@ export default {
       this.mouse = new THREE.Vector2(-1e10, -1e10)
 
       this.camera = this.createBaseCamera()
+
+      // cursor
+      const geometry = new THREE.PlaneBufferGeometry(
+        TILE_SIZE,
+        TILE_SIZE / CURSOR_SCALE
+      )
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xffffff
+      })
+      const mesh = new THREE.Mesh(geometry, material)
+      mesh.visible = false
+      this.cursor = mesh
+      this.scene.add(this.cursor)
 
       const gui = new GUI()
 
@@ -127,13 +142,15 @@ export default {
     },
     onDoubleClick() {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
-        const { x, y, s, id } = this.getClickedGeometry()
-        this.selectedBucket = this.buckets[id]
+        this.selectedBucket = this.buckets[
+          this.PAST_INTERSECTED.obj.bucketIndex
+        ]
         this.$store.commit('setBucket', this.selectedBucket)
-        const obj = new THREE.Mesh(
-          new THREE.PlaneGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
-        )
-        obj.position.set(x, y, FILE_Z + CAMERA_DIST * s.x)
+        const x = this.PAST_INTERSECTED.obj.position.x
+        const y = this.PAST_INTERSECTED.obj.position.y
+        const w = this.PAST_INTERSECTED.obj.geometry.parameters.width
+        const obj = new THREE.Mesh(new THREE.PlaneGeometry(w, w))
+        obj.position.set(x, y, FILE_Z + CAMERA_DIST * w)
         this.moveCameraTo(obj)
         this.paintFiles(obj)
         this.fileMode = true
@@ -144,12 +161,7 @@ export default {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.resetIntersectedColor(this.selectedInstance)
         this.setClickedColor()
-        const { x, y, z, s } = this.getClickedGeometry()
-        const obj = new THREE.Mesh(
-          new THREE.PlaneGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
-        )
-        obj.position.set(x, y, z + CAMERA_DIST * s.x)
-        this.moveCameraTo(obj)
+        this.moveCameraTo(this.PAST_INTERSECTED.obj)
         this.selectedInstance = { ...this.PAST_INTERSECTED }
       } else {
         if (this.selectedInstance) {
@@ -161,24 +173,18 @@ export default {
       this.$store.commit('setBucket', null)
     },
     getClickedGeometry() {
-      const attributes = this.bucketsMesh.geometry.attributes
       const id = this.PAST_INTERSECTED.instanceId
-      const x = attributes.customPosition.array[id * 3]
-      const y = attributes.customPosition.array[id * 3 + 1]
-      const z = attributes.customPosition.array[id * 3 + 2]
-      const matrix = new THREE.Matrix4()
-      this.bucketsMesh.getMatrixAt(id, matrix)
-      const s = new THREE.Vector3()
-      matrix.decompose(new THREE.Vector3(), new THREE.Quaternion(), s)
+      const x = this.PAST_INTERSECTED.obj.position.x
+      const y = this.PAST_INTERSECTED.obj.position.y
+      const z = this.PAST_INTERSECTED.obj.position.z
+      const s = this.PAST_INTERSECTED.obj.geometry.parameters.width / TILE_SIZE
       return { x, y, z, s, id }
     },
     setClickedColor() {
-      const attributes = this.bucketsMesh.geometry.attributes
-      const id = this.PAST_INTERSECTED.instanceId
-      attributes.color.array[id * 3] = COLOR_SELECTED.r
-      attributes.color.array[id * 3 + 1] = COLOR_SELECTED.g
-      attributes.color.array[id * 3 + 2] = COLOR_SELECTED.b
-      attributes.color.needsUpdate = true
+      // this.PAST_INTERSECTED.obj.material.color.r = COLOR_SELECTED.r
+      // this.PAST_INTERSECTED.obj.material.color.g = COLOR_SELECTED.g
+      // this.PAST_INTERSECTED.obj.material.color.b = COLOR_SELECTED.b
+      // this.PAST_INTERSECTED.obj.material.color.needsUpdate = true
     },
     createControls() {
       this.controls = new TrackballControls(this.camera, this.$refs.three)
@@ -262,23 +268,12 @@ export default {
       const bucketCount = buckets.length
 
       const colors = new Float32Array(bucketCount * 3)
-      const positions = new Float32Array(bucketCount * 3)
 
       const color = new THREE.Color()
-      const position = new THREE.Vector3()
-      const transform = new THREE.Object3D()
 
       let lastX = 0
 
-      const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
-
-      const geometry = new THREE.PlaneBufferGeometry(TILE_SIZE, TILE_SIZE)
-
-      const bucketsMesh = new THREE.InstancedMesh(
-        geometry,
-        material,
-        bucketCount
-      )
+      const bucketsGroup = new THREE.Group()
 
       const textGroup = new THREE.Group()
 
@@ -294,16 +289,28 @@ export default {
         const y = -w / 2
         const z = BUCKET_Z
 
-        transform.position.set(x, y, z)
-        transform.scale.set(scale, scale, scale)
-        transform.updateMatrix()
-
-        bucketsMesh.setMatrixAt(i, transform.matrix)
-
-        position.set(x, y, z)
-        position.toArray(positions, i * 3)
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
         color.toArray(colors, i * 3)
+
+        // thumb
+        const geometry = new THREE.PlaneBufferGeometry(
+          TILE_SIZE * scale,
+          TILE_SIZE * scale
+        )
+        const url =
+          process.env.VUE_APP_THUMBS_BASE_URL +
+          '/' +
+          b.images[Math.floor(Math.random() * b.images.length)]
+        const texture = new THREE.TextureLoader().load(url)
+        texture.encoding = THREE.sRGBEncoding
+        const material = new THREE.MeshBasicMaterial({
+          map: texture,
+          color: 0xffffff
+        })
+        const mesh = new THREE.Mesh(geometry, material)
+        mesh.bucketIndex = i
+        mesh.position.set(x, y, z)
+        bucketsGroup.add(mesh)
 
         // text particles
         const textTop = y + w / 2 + TILE_PADDING * scale
@@ -321,32 +328,22 @@ export default {
         )
       }
 
-      geometry.setAttribute(
-        'customPosition',
-        new THREE.InstancedBufferAttribute(positions, 3)
-      )
-      geometry.setAttribute(
-        'color',
-        new THREE.InstancedBufferAttribute(colors, 3)
-      )
-      material.vertexColors = THREE.VertexColors
-
-      this.bucketsMesh = bucketsMesh
+      this.bucketsGroup = bucketsGroup
 
       this.textGroup = textGroup
 
-      this.scene.add(this.bucketsMesh)
+      this.scene.add(this.bucketsGroup)
       this.scene.add(this.textGroup)
     },
     cleanBuckets() {
-      if (!this.bucketsMesh) return
+      if (!this.bucketsGroup) return
       this.textGroup.children.forEach((t) => t.material.map.dispose())
-
-      this.scene.remove(this.bucketsMesh)
+      this.bucketsGroup.children.forEach((t) => {
+        t.geometry.dispose()
+        t.material.map.dispose()
+      })
+      this.scene.remove(this.bucketsGroup)
       this.scene.remove(this.textGroup)
-
-      this.bucketsMesh.material.dispose()
-      this.bucketsMesh.geometry.dispose()
     },
     createBaseCamera() {
       const aspect = window.innerWidth / window.innerHeight
@@ -383,6 +380,14 @@ export default {
           )
           objBucket.position.set(x, y, z * s.x)
           o.expandByObject(objBucket)
+        }
+      } else if (obj instanceof THREE.Group) {
+        // centering on the current base bucket
+        o = new THREE.Box3()
+        const count = obj.children.length
+        for (let i = 0, l = count; i < l; i++) {
+          const child = obj.children[i]
+          o.expandByObject(child)
         }
       } else {
         o = new THREE.Box3().setFromObject(obj)
@@ -464,48 +469,42 @@ export default {
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
     },
     resetIntersectedColor(instance) {
-      if (!instance || !instance.color) return
-      const geometry = this.bucketsMesh.geometry
-      const attributes = geometry.attributes
-      attributes.color.array[3 * instance.instanceId] = instance.color.r
-      attributes.color.array[3 * instance.instanceId + 1] = instance.color.g
-      attributes.color.array[3 * instance.instanceId + 2] = instance.color.b
-      attributes.color.needsUpdate = true
+      if (!instance.obj) return
+      this.cursor.visible = false
     },
     render() {
-      if (this.bucketsMesh) {
-        const geometry = this.bucketsMesh.geometry
-        const attributes = geometry.attributes
+      this.$refs.three.classList.remove('pointer')
 
+      if (this.bucketsGroup) {
         if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
 
-        const intersects = this.raycaster.intersectObject(this.bucketsMesh)
+        const intersects = this.bucketsGroup.children
+          .map((ch) => this.raycaster.intersectObject(ch))
+          .filter((ch) => ch.length > 0)
+          .map((ch) => ch[0])
 
         if (intersects.length > 0) {
-          const instanceId = intersects[0].instanceId
+          this.$refs.three.classList.add('pointer')
+          const obj = intersects[0].object
+          const instanceId = obj.id
           if (this.PAST_INTERSECTED.instanceId !== instanceId) {
-            const r = attributes.color.array[3 * instanceId]
-            const g = attributes.color.array[3 * instanceId + 1]
-            const b = attributes.color.array[3 * instanceId + 2]
-
-            if (this.selectedInstance.instanceId !== instanceId) {
-              attributes.color.array[3 * instanceId] = COLOR_HOVERED.r
-              attributes.color.array[3 * instanceId + 1] = COLOR_HOVERED.g
-              attributes.color.array[3 * instanceId + 2] = COLOR_HOVERED.b
-            }
-
             if (
-              this.PAST_INTERSECTED.color &&
               this.selectedInstance.instanceId !==
-                this.PAST_INTERSECTED.instanceId
+              this.PAST_INTERSECTED.instanceId
             ) {
               this.resetIntersectedColor(this.PAST_INTERSECTED)
             }
 
             this.PAST_INTERSECTED.instanceId = instanceId
-            this.PAST_INTERSECTED.color = { r, g, b }
-
-            attributes.color.needsUpdate = true
+            this.PAST_INTERSECTED.obj = obj
+            const scale = obj.geometry.parameters.width / TILE_SIZE
+            const position = obj.position.clone()
+            position.y -=
+              obj.geometry.parameters.height / 2 +
+              ((TILE_SIZE / CURSOR_SCALE) * scale) / 2
+            this.cursor.position.copy(position)
+            this.cursor.scale = new THREE.Vector3(scale, scale, scale)
+            this.cursor.visible = true
           }
         } else if (
           this.PAST_INTERSECTED.instanceId &&
@@ -526,5 +525,8 @@ export default {
 .three {
   height: 100vh;
   width: 100vw;
+}
+.pointer {
+  cursor: pointer;
 }
 </style>
