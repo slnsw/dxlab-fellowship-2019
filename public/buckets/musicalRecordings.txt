@@ -1,2 +1,1 @@
-bucket|file_ids
-musicalRecordings|8LbQX8azJBbvJ
+8LbQX8azJBbvJ
