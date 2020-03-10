@@ -26,6 +26,7 @@ const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
 const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 50%)')
 const COLOR_OTHER = new THREE.Color('hsl(0, 100%, 30%)')
 const CURSOR_SCALE = 4
+const MAX_VISIBLE_FILES = 2000
 const MOVE_DURATION = 300
 const SCENE_PADDING = 0.995
 const TEXT_SIZE = 100
@@ -109,6 +110,8 @@ export default {
       scene: null,
       bucketsGroup: null,
       filesMesh: null,
+      visibleFiles: [],
+      visibleFilesCount: 0,
       cursor: null,
       selectedBucket: null,
       textGroup: null,
@@ -188,6 +191,7 @@ export default {
       gui.add(this.camera.position, 'x').listen()
       gui.add(this.camera.position, 'y').listen()
       gui.add(this.camera.position, 'z').listen()
+      gui.add(this, 'visibleFilesCount').listen()
     },
     onDoubleClick() {
       if (this.isMoving) return
@@ -248,16 +252,56 @@ export default {
       this.controls.screenSpacePanning = true
       this.controls.enableDamping = true
       this.controls.dampingFactor = 0.1
-      this.controls.addEventListener('end', this.filesInView)
+      this.controls.addEventListener('change', this.filesInView)
     },
     filesInView() {
       if (!this.fileMode) return
+      const cx = this.camera.position.x
+      const cy = this.camera.position.y
       const dz = this.camera.position.z - FILE_Z
       const aspect = this.camera.aspect
       const h = 2 * dz * Math.tan(CAMERA_FOV * 0.5 * (Math.PI / 180))
       const w = h * aspect
-      const { side, realW } = this.filesMesh.mga
-      console.log(w, h, realW, side)
+      const { side, realW, x, y } = this.filesMesh.mga
+      const tileSize = realW / side
+      let minx = cx - w * 0.5
+      let miny = cy - h * 0.5
+      let maxx = cx + w * 0.5
+      let maxy = cy + h * 0.5
+      const fminx = x - realW * 0.5
+      const fminy = y - realW * 0.5
+      const fmaxx = x + realW * 0.5
+      const fmaxy = y + realW * 0.5
+      const results = []
+      this.visibleFilesCount = 0
+      if (minx < fminx && miny < fminy && maxx > fmaxx && maxy > fmaxy) {
+        // all the things
+        const l = this.selectedBucket.count
+        if (l > MAX_VISIBLE_FILES) return
+        for (let i = 0; i < l; i++) {
+          results.push([i % side, Math.floor(i / side)])
+        }
+      } else {
+        // a subset of things
+        if (miny < fminy) miny = fminy
+        if (minx < fminx) minx = fminx
+        if (maxy > fmaxy) maxy = fmaxy
+        if (maxx > fmaxx) maxx = fmaxx
+        const dx = maxx - minx
+        const dy = maxy - miny
+        const row = Math.abs(Math.floor((maxy - fmaxy) / tileSize))
+        const col = Math.abs(Math.floor((minx - fminx) / tileSize))
+        const cc = Math.floor(dx / tileSize)
+        const rr = Math.floor(dy / tileSize)
+        if (cc * rr > MAX_VISIBLE_FILES) return
+        for (let i = 0; i < cc; i++) {
+          for (let j = 0; j < rr; j++) {
+            results.push([row + i, col + j])
+          }
+        }
+      }
+      this.visibleFiles = results
+      this.visibleFilesCount = results.length
     },
     cleanFiles() {
       if (!this.filesMesh) return
@@ -282,7 +326,16 @@ export default {
       const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
 
       this.filesMesh = new THREE.InstancedMesh(geometry, material, tileCount)
-      this.filesMesh.mga = { realW, side }
+
+      // an mga object to hold the bucket file real world data
+      this.filesMesh.mga = {
+        realW,
+        side,
+        tileSize,
+        x: obj.position.x,
+        y: obj.position.y,
+        z: obj.position.z
+      }
 
       const colors = new Float32Array(tileCount * 3)
 
