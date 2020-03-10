@@ -17,7 +17,7 @@ import SpriteText from 'three-spritetext'
 
 import { FormatType } from '@/utils/types'
 
-const BUCKET_Z = 6000
+const BUCKET_Z = 3000
 const CAMERA_NEAR = 0.01
 const CAMERA_FAR = BUCKET_Z * 2
 const CAMERA_FOV = 30
@@ -146,7 +146,7 @@ export default {
         const y = this.PAST_INTERSECTED.obj.position.y
         const w = this.PAST_INTERSECTED.obj.geometry.parameters.width
         const obj = new THREE.Mesh(new THREE.PlaneGeometry(w, w))
-        obj.position.set(x, y, FILE_Z + CAMERA_DIST * w)
+        obj.position.set(x, y, FILE_Z)
         this.moveCameraTo(obj)
         this.paintFiles(obj)
         this.fileMode = true
