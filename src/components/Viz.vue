@@ -40,6 +40,7 @@ export default {
   components: {},
   data() {
     return {
+      isMoving: false,
       fileMode: false,
       renderer: null,
       camera: null,
@@ -137,6 +138,7 @@ export default {
       return myText
     },
     onDoubleClick() {
+      if (this.isMoving) return
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.selectedBucket = this.stuff[this.PAST_INTERSECTED.obj.bucketIndex]
         this.$store.commit('setBucket', this.selectedBucket)
@@ -151,18 +153,21 @@ export default {
       }
     },
     onClick() {
+      if (this.isMoving) return
       this.cleanFiles()
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
-        this.resetIntersectedColor(this.selectedInstance)
-        this.setClickedColor()
-        this.moveCameraTo(this.PAST_INTERSECTED.obj)
-        this.selectedInstance = { ...this.PAST_INTERSECTED }
-      } else {
-        if (this.selectedInstance) {
+        if (
+          this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
+        ) {
           this.resetIntersectedColor(this.selectedInstance)
-          this.selectedInstance = {}
-          this.fileMode = false
+          this.moveCameraTo(this.PAST_INTERSECTED.obj)
+          this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
+      } else {
+        this.moveCameraTo(this.bucketsGroup)
+        this.resetIntersectedColor(this.selectedInstance)
+        this.selectedInstance = {}
+        this.fileMode = false
       }
       this.$store.commit('setBucket', null)
     },
@@ -173,12 +178,6 @@ export default {
       const z = this.PAST_INTERSECTED.obj.position.z
       const s = this.PAST_INTERSECTED.obj.geometry.parameters.width / TILE_SIZE
       return { x, y, z, s, id }
-    },
-    setClickedColor() {
-      // this.PAST_INTERSECTED.obj.material.color.r = COLOR_SELECTED.r
-      // this.PAST_INTERSECTED.obj.material.color.g = COLOR_SELECTED.g
-      // this.PAST_INTERSECTED.obj.material.color.b = COLOR_SELECTED.b
-      // this.PAST_INTERSECTED.obj.material.color.needsUpdate = true
     },
     createControls() {
       this.controls = new TrackballControls(this.camera, this.$refs.three)
@@ -256,7 +255,7 @@ export default {
     paintBuckets() {
       this.cleanBuckets()
 
-      const buckets = Object.values(this.stuff)
+      const buckets = Object.values(this.stuff).filter((b) => b.count > 0)
       buckets.sort((a, b) => b.count - a.count)
 
       const bucketCount = buckets.length
@@ -409,6 +408,7 @@ export default {
       this.toLook = center
 
       this.cameraMoveStart = Date.now()
+      this.isMoving = true
     },
     interpolateCamera() {
       if (!this.lastCamera) return
@@ -439,6 +439,7 @@ export default {
         this.controls.target.copy(this.toLook)
         this.lastCamera = null
         this.toCamera = null
+        this.isMoving = false
       }
     },
     animate() {
@@ -497,10 +498,7 @@ export default {
             this.cursor.scale = new THREE.Vector3(scale, scale, scale)
             this.cursor.visible = true
           }
-        } else if (
-          this.PAST_INTERSECTED.instanceId &&
-          this.selectedInstance.instanceId !== this.PAST_INTERSECTED.instanceId
-        ) {
+        } else if (this.PAST_INTERSECTED.instanceId) {
           this.resetIntersectedColor(this.PAST_INTERSECTED)
           this.PAST_INTERSECTED = {}
         }

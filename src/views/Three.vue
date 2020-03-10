@@ -25,6 +25,7 @@ export default {
       return this.currentBucket
         ? this.currentBucket.name.trim()
         : Object.values(this.stuff)
+            .filter((b) => b.count > 0)
             .map((s, index) => (index === l - 1 ? 'and ' + s.name : s.name))
             .join(', ')
     },
