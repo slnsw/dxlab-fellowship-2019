@@ -1,7 +1,9 @@
 <template>
   <div v-if="loaded" class="grid">
     <div class="header">
-      <h1 class="total">{{ formattedItemsTotal }} {{ thing }}.</h1>
+      <h1 class="total">
+        <strong>{{ formattedItemsTotal }}</strong> {{ thing }}.
+      </h1>
     </div>
     <viz class="viz" />
   </div>
@@ -48,20 +50,20 @@ export default {
   background-color: black;
   color: wheat;
   display: grid;
-  grid-template-rows: 5rem 1fr;
-  grid-template-columns: 18rem 1fr;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 6rem;
 }
 .header {
   background-color: hsl(0, 0%, 0%, 0.75);
   grid-column: 1/2;
-  grid-row: 1/3;
+  grid-row: 2/3;
   z-index: 2;
   pointer-events: none;
 }
 .total {
   display: inline-block;
   color: wheat;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: normal;
   padding: 0.5rem;
 }
@@ -71,7 +73,7 @@ export default {
   z-index: 1;
 }
 .viz {
-  grid-column: 1/3;
+  grid-column: 1/2;
   grid-row: 1/3;
 }
 </style>

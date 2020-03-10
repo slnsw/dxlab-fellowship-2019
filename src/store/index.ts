@@ -24,20 +24,39 @@ const STUFF: any = {
   paintings: { id: '0GB866Xe6mz1q', name: 'paintings' },
   posters: { id: 'b10aqZK7gRzJy', name: 'posters' },
   medals: { id: 'X8gBJlg9E1WqK', name: 'medals' },
-  photographs: { id: 'wKK2B5BO3aEYa', name: 'photographs' },
+  photographs: {
+    id: 'wKK2B5BO3aEYa',
+    name: 'photographs',
+    esQuery: {
+      type: 'must_not',
+      matchType: 'match_phrase_prefix',
+      field: 'item_id_callnumber_key',
+      values: ['SLIDES', 'ON']
+    }
+  },
+  negatives: {
+    id: 'wKK2B5BO3aEYa',
+    name: 'negatives',
+    esQuery: {
+      type: 'should',
+      matchType: 'match_phrase_prefix',
+      field: 'item_id_callnumber_key',
+      values: ['SLIDES', 'ON']
+    }
+  },
   archTechDrawings: {
     id: 'm6zK940qx9v7K',
     name: 'architectural    \ndrawings'
   },
   designDrawings: { id: 'adx22BvP5OZzd', name: 'design drawings' },
-  maps: { id: '40XObXd7aA4a', name: 'maps' },
-  manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'manuscript   \nmaps' },
+  maps: { id: '40XObXd7aA4a', name: 'published       \nmaps' },
+  manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'unpublished \nmaps' },
   objects: { id: '7MZAw5gxmyyaW', name: 'objects' },
   stamps: { id: 'BRg6jXK4mz4wG', name: 'stamps' },
   ephemera: { id: 'vz2D0Am8wvrlb', name: 'ephemera' },
   coin: { id: '76pM49Z2jxBzR', name: 'coins' },
   journals: { name: 'journals', id: 'Z5AB0OkPYjPb9' },
-  manuscripts: { name: 'manuscripts', id: '330MWgKgY5adZ' },
+  // manuscripts: { name: 'manuscripts', id: '330MWgKgY5adZ' },
   manuscriptNotatedMusic: {
     name: 'notated music',
     id: 'oWWJDK5PO44me'
@@ -60,7 +79,7 @@ const STUFF: any = {
 
 const baseQuery = () => {
   let bb = bodybuilder()
-  for (const [key, value] of Object.entries(STUFF)) {
+  Object.entries(STUFF).forEach(([key, value]: any) => {
     bb = bb.orFilter(
       'term',
       key !== 'medals' && key !== 'stamps' && key !== 'coin'
@@ -68,7 +87,7 @@ const baseQuery = () => {
         : 'subject_curated_title',
       key !== 'medals' && key !== 'stamps' && key !== 'coin' ? value.id : key
     )
-  }
+  })
   return bb
 }
 
@@ -76,6 +95,30 @@ const asyncForEach = async (array, callback) => {
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index, array)
   }
+}
+
+const makeFancyFilter = ({ query, esQuery }) => {
+  return query.filter('bool', (b) => {
+    esQuery.values.forEach((val) => {
+      if (esQuery.type === 'must_not') {
+        b = b.notFilter(esQuery.matchType, esQuery.field, val)
+      } else {
+        // should (ignoring must for now)
+        b = b.orFilter(esQuery.matchType, esQuery.field, val)
+      }
+    })
+    return b
+  })
+}
+
+const makeFilter = ({ key, id, query }) => {
+  const field =
+    key !== 'medals' && key !== 'stamps' && key !== 'coin'
+      ? 'format_id.keyword'
+      : 'subject_curated_title'
+  const value =
+    key !== 'medals' && key !== 'stamps' && key !== 'coin' ? id : key
+  return query.filter('term', field, value)
 }
 
 export default new Vuex.Store({
@@ -128,21 +171,17 @@ export default new Vuex.Store({
       const pageArray = new Array(pages)
       const params = { track_total_hits: true }
       let ids = []
-      await asyncForEach(pageArray, async (val, index) => {
-        const query = baseQuery()
+      await asyncForEach(pageArray, async (_, index) => {
+        let query = baseQuery()
           .size(MAX_WINDOW_SIZE)
           .from(index * MAX_WINDOW_SIZE)
           .rawOption('_source', '_id')
-          .filter(
-            'term',
-            key !== 'medals' && key !== 'stamps' && key !== 'coin'
-              ? 'format_id.keyword'
-              : 'subject_curated_title',
-            key !== 'medals' && key !== 'stamps' && key !== 'coin' ? id : key
-          )
-          .build()
+        query = makeFilter({ key, id, query })
+        const esQuery = bucket.esQuery
+        if (esQuery) query = makeFancyFilter({ query, esQuery })
+
         const baseResponse = await instance.post(url, {
-          ...query,
+          ...query.build(),
           ...params
         })
         const hits = baseResponse.data.hits
@@ -160,21 +199,16 @@ export default new Vuex.Store({
       const buckets = {}
       await asyncForEach(Object.values(STUFF), async (val, index) => {
         const key = stuffKeys[index]
-        const query = baseQuery()
+        const id = val.id
+        let query = baseQuery()
           .size(10)
           .rawOption('_source', 'props_file_name_title')
-          .filter(
-            'term',
-            key !== 'medals' && key !== 'stamps' && key !== 'coin'
-              ? 'format_id.keyword'
-              : 'subject_curated_title',
-            key !== 'medals' && key !== 'stamps' && key !== 'coin'
-              ? val.id
-              : key
-          )
-          .build()
+        query = makeFilter({ key, id, query })
+        const esQuery = val.esQuery
+        if (esQuery) query = makeFancyFilter({ query, esQuery })
+
         const baseResponse = await instance.post(url, {
-          ...query,
+          ...query.build(),
           ...params
         })
         const hits = baseResponse.data.hits
@@ -187,6 +221,7 @@ export default new Vuex.Store({
         const bucketData = {
           ...state.stuff[key],
           count: hits.total.value,
+          key,
           images
         }
         buckets[key] = bucketData

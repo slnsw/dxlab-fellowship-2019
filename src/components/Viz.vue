@@ -17,13 +17,13 @@ import SpriteText from 'three-spritetext'
 
 import { FormatType } from '@/utils/types'
 
-const BUCKET_Z = 5500
+const BUCKET_Z = 6000
 const CAMERA_NEAR = 0.01
 const CAMERA_FAR = BUCKET_Z * 2
 const CAMERA_FOV = 30
 const CAMERA_DIST = 5
 const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
-const COLOR_HOVERED = new THREE.Color('rgb(0, 130, 41)')
+const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 50%)')
 const COLOR_OTHER = new THREE.Color('hsl(0, 100%, 30%)')
 const CURSOR_SCALE = 4
 const FILE_Z = 10
@@ -65,15 +65,6 @@ export default {
     formats() {
       return FormatType
     },
-    formatsById() {
-      const formats = this.formats
-      const values = Object.values(formats)
-      const result = {}
-      values.forEach((val) => {
-        result[val.id] = val.title
-      })
-      return result
-    },
     ...mapGetters(['totalFromBuckets']),
     ...mapState(['currentBucket', 'itemsTotal', 'stuff'])
   },
@@ -112,14 +103,19 @@ export default {
       this.camera = this.createBaseCamera()
 
       // cursor
-      const geometry = new THREE.PlaneBufferGeometry(
-        TILE_SIZE,
-        TILE_SIZE / CURSOR_SCALE
+      const geometry = new THREE.ShapeBufferGeometry(
+        new THREE.Shape()
+          .moveTo(TILE_SIZE / 2, TILE_SIZE / 2)
+          .lineTo(TILE_SIZE / 2, -TILE_SIZE / 2)
+          .lineTo(-TILE_SIZE / 2, -TILE_SIZE / 2)
+          .lineTo(-TILE_SIZE / 2, TILE_SIZE / 2)
+          .lineTo(TILE_SIZE / 2, TILE_SIZE / 2)
       )
-      const material = new THREE.MeshBasicMaterial({
-        color: 0xffffff
+      const material = new THREE.LineBasicMaterial({
+        color: COLOR_HOVERED,
+        linewidth: 1
       })
-      const mesh = new THREE.Mesh(geometry, material)
+      const mesh = new THREE.Line(geometry, material)
       mesh.visible = false
       this.cursor = mesh
       this.scene.add(this.cursor)
@@ -216,7 +212,6 @@ export default {
       const x = obj.position.x - realW / 2 + tileSize / 2
       const y = obj.position.y + realW / 2 - tileSize / 2
       const z = obj.position.z
-      const id = this.selectedBucket.id
 
       const geometry = new THREE.PlaneBufferGeometry(tileSize, tileSize)
 
@@ -307,7 +302,7 @@ export default {
           color: 0xffffff
         })
         const mesh = new THREE.Mesh(geometry, material)
-        mesh.bucketIndex = b.name
+        mesh.bucketIndex = b.key
         mesh.position.set(x, y, z)
         bucketsGroup.add(mesh)
 
@@ -485,7 +480,7 @@ export default {
         if (intersects.length > 0) {
           this.$refs.three.classList.add('pointer')
           const obj = intersects[0].object
-          const instanceId = obj.id
+          const instanceId = obj.bucketIndex
           if (this.PAST_INTERSECTED.instanceId !== instanceId) {
             if (
               this.selectedInstance.instanceId !==
@@ -498,9 +493,6 @@ export default {
             this.PAST_INTERSECTED.obj = obj
             const scale = obj.geometry.parameters.width / TILE_SIZE
             const position = obj.position.clone()
-            position.y -=
-              obj.geometry.parameters.height / 2 +
-              ((TILE_SIZE / CURSOR_SCALE) * scale) / 2
             this.cursor.position.copy(position)
             this.cursor.scale = new THREE.Vector3(scale, scale, scale)
             this.cursor.visible = true
