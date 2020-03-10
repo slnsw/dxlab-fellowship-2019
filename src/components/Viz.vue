@@ -19,7 +19,7 @@ import { FormatType } from '@/utils/types'
 
 const BUCKET_Z = 3000
 const FILE_Z = 10
-const CAMERA_NEAR = FILE_Z
+const CAMERA_NEAR = 0.01
 const CAMERA_FAR = BUCKET_Z * 3
 const CAMERA_FOV = 30
 const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
@@ -240,8 +240,8 @@ export default {
       this.controls.rotateSpeed = 1.0
       this.controls.zoomSpeed = 1
       this.controls.panSpeed = 1
-      this.controls.maxDistance = CAMERA_FAR
-      this.controls.minDistance = CAMERA_NEAR
+      this.controls.maxDistance = BUCKET_Z * 1.5
+      this.controls.minDistance = FILE_Z
       // this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
       // this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
       this.controls.noRotate = true
@@ -256,7 +256,8 @@ export default {
       const aspect = this.camera.aspect
       const h = 2 * dz * Math.tan(CAMERA_FOV * 0.5 * (Math.PI / 180))
       const w = h * aspect
-      console.log(w, h, this.filesMesh.realWidth)
+      const { side, realW } = this.filesMesh.mga
+      console.log(w, h, realW, side)
     },
     cleanFiles() {
       if (!this.filesMesh) return
@@ -281,7 +282,7 @@ export default {
       const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
 
       this.filesMesh = new THREE.InstancedMesh(geometry, material, tileCount)
-      this.filesMesh.realWidth = realW
+      this.filesMesh.mga = { realW, side }
 
       const colors = new Float32Array(tileCount * 3)
 
