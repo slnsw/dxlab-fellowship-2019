@@ -18,15 +18,14 @@ import SpriteText from 'three-spritetext'
 import { FormatType } from '@/utils/types'
 
 const BUCKET_Z = 3000
-const CAMERA_NEAR = 0.01
-const CAMERA_FAR = BUCKET_Z * 2
+const FILE_Z = 10
+const CAMERA_NEAR = FILE_Z
+const CAMERA_FAR = BUCKET_Z * 3
 const CAMERA_FOV = 30
-const CAMERA_DIST = 5
 const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
 const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 50%)')
 const COLOR_OTHER = new THREE.Color('hsl(0, 100%, 30%)')
 const CURSOR_SCALE = 4
-const FILE_Z = 10
 const MOVE_DURATION = 300
 const SCENE_PADDING = 0.995
 const TEXT_SIZE = 100
@@ -35,6 +34,69 @@ const TILE_COLOR_DIST = 100
 const TILE_FILE_DIST = 50
 const TILE_PADDING = 25
 const TILE_SIZE = 1000
+
+const getBoundsFromMesh = (obj) => {
+  const o = new THREE.Box3()
+  const count = obj.instanceMatrix.count
+  for (let i = 0, i3 = 0, l = count; i < l; i++, i3 += 3) {
+    const matrix = new THREE.Matrix4()
+    obj.getMatrixAt(i, matrix)
+    const p = new THREE.Vector3()
+    const s = new THREE.Vector3()
+    matrix.decompose(p, new THREE.Quaternion(), s)
+    const x = p.x
+    const y = p.y
+    const z = p.z
+    const objBucket = new THREE.Mesh(
+      new THREE.PlaneGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
+    )
+    objBucket.position.set(x, y, z * s.x)
+    o.expandByObject(objBucket)
+  }
+  return o
+}
+
+const getBoundsFromGroup = (obj) => {
+  const o = new THREE.Box3()
+  const count = obj.children.length
+  for (let i = 0, l = count; i < l; i++) {
+    const child = obj.children[i]
+    o.expandByObject(child)
+  }
+  return o
+}
+
+const easeInOutQuad = (t, b, c, d) => {
+  // t: current time, b: beginning value, c: change In value, d: duration
+  if ((t /= d / 2) < 1) return (c / 2) * t * t + b
+  return (-c / 2) * (--t * (t - 2) - 1) + b
+}
+
+const createBaseCamera = () => {
+  const aspect = window.innerWidth / window.innerHeight
+  const camera = new THREE.PerspectiveCamera(
+    CAMERA_FOV,
+    aspect,
+    CAMERA_NEAR,
+    CAMERA_FAR
+  )
+  camera.position.x = 0
+  camera.position.y = 0
+  camera.position.z = BUCKET_Z + 10
+  camera.updateProjectionMatrix()
+  return camera
+}
+
+const createText = (text, x, y, z, scale) => {
+  text = text ? text : '[undefined]'
+  if (isNaN(text) && text.indexOf('|||') !== -1) text = text.split('|||')[1]
+  const myText = new SpriteText(text)
+  myText.fontFace = 'Avenir'
+  myText.textHeight = TEXT_SIZE * scale
+  myText.position.set(x, y, z)
+  myText.center = new THREE.Vector2(0, 0)
+  return myText
+}
 
 export default {
   components: {},
@@ -101,7 +163,7 @@ export default {
       this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
       this.mouse = new THREE.Vector2(-1e10, -1e10)
 
-      this.camera = this.createBaseCamera()
+      this.camera = createBaseCamera()
 
       // cursor
       const geometry = new THREE.ShapeBufferGeometry(
@@ -126,16 +188,6 @@ export default {
       gui.add(this.camera.position, 'x').listen()
       gui.add(this.camera.position, 'y').listen()
       gui.add(this.camera.position, 'z').listen()
-    },
-    createText(text, x, y, z, scale) {
-      text = text ? text : '[undefined]'
-      if (isNaN(text) && text.indexOf('|||') !== -1) text = text.split('|||')[1]
-      const myText = new SpriteText(text)
-      myText.fontFace = 'Avenir'
-      myText.textHeight = TEXT_SIZE * scale
-      myText.position.set(x, y, z)
-      myText.center = new THREE.Vector2(0, 0)
-      return myText
     },
     onDoubleClick() {
       if (this.isMoving) return
@@ -164,7 +216,11 @@ export default {
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
       } else {
-        this.moveCameraTo(this.bucketsGroup)
+        if (this.selectedInstance.instanceId) {
+          this.moveCameraTo(this.selectedInstance.obj)
+        } else {
+          this.moveCameraTo(this.bucketsGroup)
+        }
         this.resetIntersectedColor(this.selectedInstance)
         this.selectedInstance = {}
         this.fileMode = false
@@ -192,6 +248,15 @@ export default {
       this.controls.screenSpacePanning = true
       this.controls.enableDamping = true
       this.controls.dampingFactor = 0.1
+      this.controls.addEventListener('end', this.filesInView)
+    },
+    filesInView() {
+      if (!this.fileMode) return
+      const dz = this.camera.position.z - FILE_Z
+      const aspect = this.camera.aspect
+      const h = 2 * dz * Math.tan(CAMERA_FOV * 0.5 * (Math.PI / 180))
+      const w = h * aspect
+      console.log(w, h, this.filesMesh.realWidth)
     },
     cleanFiles() {
       if (!this.filesMesh) return
@@ -203,7 +268,6 @@ export default {
       const tileCount = this.selectedBucket.count
       const side = Math.ceil(Math.sqrt(tileCount))
       const w = obj.geometry.parameters.width
-      const s = w / TILE_SIZE
       const tileSize = w / side
       const padding = tileSize * (TILE_PADDING / TILE_SIZE)
       const realW = side * tileSize + (side - 1) * padding
@@ -217,12 +281,11 @@ export default {
       const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
 
       this.filesMesh = new THREE.InstancedMesh(geometry, material, tileCount)
+      this.filesMesh.realWidth = realW
 
       const colors = new Float32Array(tileCount * 3)
-      const positions = new Float32Array(tileCount * 3)
 
       const color = new THREE.Color()
-      const position = new THREE.Vector3()
       const transform = new THREE.Object3D()
 
       for (let i = 0, i3 = 0, l = tileCount; i < l; i++, i3 += 3) {
@@ -234,16 +297,10 @@ export default {
 
         this.filesMesh.setMatrixAt(i, transform.matrix)
 
-        position.set(xT, yT, zT)
-        position.toArray(positions, i * 3)
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
         color.toArray(colors, i * 3)
       }
 
-      geometry.setAttribute(
-        'customPosition',
-        new THREE.InstancedBufferAttribute(positions, 3)
-      )
       geometry.setAttribute(
         'color',
         new THREE.InstancedBufferAttribute(colors, 3)
@@ -311,7 +368,7 @@ export default {
         const labelStr = text
         const numberStr = count
         textGroup.add(
-          this.createText(
+          createText(
             `${labelStr} (${new Intl.NumberFormat().format(numberStr)})`,
             x - w / 2,
             textTop,
@@ -338,50 +395,14 @@ export default {
       this.scene.remove(this.bucketsGroup)
       this.scene.remove(this.textGroup)
     },
-    createBaseCamera() {
-      const aspect = window.innerWidth / window.innerHeight
-      const camera = new THREE.PerspectiveCamera(
-        CAMERA_FOV,
-        aspect,
-        0.1,
-        CAMERA_FAR * 10
-      )
-      camera.position.x = 0
-      camera.position.y = 0
-      camera.position.z = BUCKET_Z + 10
-      camera.updateProjectionMatrix()
-      return camera
-    },
     moveCameraTo(obj) {
       let o
 
       if (obj instanceof THREE.InstancedMesh) {
-        // centering on the current base bucket
-        o = new THREE.Box3()
-        const count = obj.instanceMatrix.count
-        for (let i = 0, i3 = 0, l = count; i < l; i++, i3 += 3) {
-          const matrix = new THREE.Matrix4()
-          obj.getMatrixAt(i, matrix)
-          const p = new THREE.Vector3()
-          const s = new THREE.Vector3()
-          matrix.decompose(p, new THREE.Quaternion(), s)
-          const x = p.x
-          const y = p.y
-          const z = p.z
-          const objBucket = new THREE.Mesh(
-            new THREE.PlaneGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
-          )
-          objBucket.position.set(x, y, z * s.x)
-          o.expandByObject(objBucket)
-        }
+        o = getBoundsFromMesh(obj)
       } else if (obj instanceof THREE.Group) {
         // centering on the current base bucket
-        o = new THREE.Box3()
-        const count = obj.children.length
-        for (let i = 0, l = count; i < l; i++) {
-          const child = obj.children[i]
-          o.expandByObject(child)
-        }
+        o = getBoundsFromGroup(obj)
       } else {
         o = new THREE.Box3().setFromObject(obj)
       }
@@ -421,17 +442,17 @@ export default {
       const yT = this.toCamera.position.y
       const zT = this.toCamera.position.z
       const newPos = new THREE.Vector3()
-      newPos.x = this.easeInOutQuad(t, xF, xT - xF, MOVE_DURATION)
-      newPos.y = this.easeInOutQuad(t, yF, yT - yF, MOVE_DURATION)
-      newPos.z = this.easeInOutQuad(t, zF, zT - zF, MOVE_DURATION)
+      newPos.x = easeInOutQuad(t, xF, xT - xF, MOVE_DURATION)
+      newPos.y = easeInOutQuad(t, yF, yT - yF, MOVE_DURATION)
+      newPos.z = easeInOutQuad(t, zF, zT - zF, MOVE_DURATION)
       this.camera.position.copy(newPos)
 
       const cF = this.controls.target.clone()
       const cT = this.toLook.clone()
       const center = new THREE.Vector3()
-      center.x = this.easeInOutQuad(t, cF.x, cT.x - cF.x, MOVE_DURATION)
-      center.y = this.easeInOutQuad(t, cF.y, cT.y - cF.y, MOVE_DURATION)
-      center.z = this.easeInOutQuad(t, cF.z, cT.z - cF.z, MOVE_DURATION)
+      center.x = easeInOutQuad(t, cF.x, cT.x - cF.x, MOVE_DURATION)
+      center.y = easeInOutQuad(t, cF.y, cT.y - cF.y, MOVE_DURATION)
+      center.z = easeInOutQuad(t, cF.z, cT.z - cF.z, MOVE_DURATION)
       this.controls.target.copy(center)
 
       if (t > MOVE_DURATION) {
@@ -447,11 +468,6 @@ export default {
       this.interpolateCamera()
       this.controls.update()
       this.render()
-    },
-    easeInOutQuad(t, b, c, d) {
-      // t: current time, b: beginning value, c: change In value, d: duration
-      if ((t /= d / 2) < 1) return (c / 2) * t * t + b
-      return (-c / 2) * (--t * (t - 2) - 1) + b
     },
     onResize() {
       this.camera.aspect = window.innerWidth / window.innerHeight
