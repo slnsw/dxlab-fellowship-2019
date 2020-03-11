@@ -279,7 +279,7 @@ export default {
         const l = this.selectedBucket.count
         if (l > MAX_VISIBLE_FILES) return
         for (let i = 0; i < l; i++) {
-          results.push([i % side, Math.floor(i / side)])
+          results.push(i)
         }
       } else {
         // a subset of things
@@ -296,11 +296,11 @@ export default {
         if (cc * rr > MAX_VISIBLE_FILES) return
         for (let i = 0; i < cc; i++) {
           for (let j = 0; j < rr; j++) {
-            results.push([row + i, col + j])
+            results.push(((col + i) % side) + (row + j) * side)
           }
         }
       }
-      this.visibleFiles = results
+      this.visibleFiles = results.sort((a, b) => a - b)
       this.visibleFilesCount = results.length
     },
     cleanFiles() {

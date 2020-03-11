@@ -11,7 +11,6 @@ import bodybuilder from 'bodybuilder'
 const MAX_WINDOW_SIZE = 20000
 
 const instance = axios.create({
-  baseURL: process.env.VUE_APP_ELASTIC_BASE_URL,
   timeout: 600000
 })
 
@@ -154,16 +153,20 @@ export default new Vuex.Store({
   },
   mutations: {
     setStuff: (state, stuff) => (state.stuff = stuff),
-    setBucket(state, bucket) {
+    async setBucket(state, bucket) {
       if (!bucket) {
         state.currentBucket = null
         return
       }
+      const url = '/buckets/' + bucket.key + '.txt'
+      const response = await instance.get(url)
+      const ids = response.data
       const currentBucket = { ...state.stuff[bucket.id], ...bucket }
+      currentBucket.ids = ids.split(',')
       state.currentBucket = currentBucket
     },
     async getIdsForBucket(state, bucket) {
-      const url = '/_search'
+      const url = process.env.VUE_APP_ELASTIC_BASE_URL + '/_search'
       const key = bucket.key
       const id = bucket.id
       const count = bucket.count
@@ -193,7 +196,7 @@ export default new Vuex.Store({
       state.stuff = { ...newStuff }
     },
     async getBuckets(state) {
-      const url = '/_search'
+      const url = process.env.VUE_APP_ELASTIC_BASE_URL + '/_search'
       const params = { track_total_hits: true }
       const stuffKeys = Object.keys(STUFF)
       const buckets = {}
