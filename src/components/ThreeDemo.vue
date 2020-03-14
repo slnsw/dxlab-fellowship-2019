@@ -1,5 +1,5 @@
 <template>
-  <canvas ref="three" class="three" @click="onClick"></canvas>
+  <canvas ref="three" class="three"></canvas>
 </template>
 
 <script>
@@ -7,38 +7,63 @@ import * as THREE from 'three'
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 
-const MAX_PARTICLES = 10000
-const START_PARTICLES = 100
-const MOVE_DURATION = 300
-const TILE_PADDING = 0.05
-const CAMERA_NEAR = 0.1
+const START_PARTICLES = 64
 const CAMERA_FAR = 100000
 const CAMERA_FOV = 60
-const SCENE_PADDING = 0.7
-const PARTICLE_SIZE = 1
-const SELECTED_COLOR = new THREE.Color(255, 0, 0)
-const HOVERED_COLOR = new THREE.Color(0, 130, 41)
+const SPRITE_URL = '/medals.jpg'
+const texture = new THREE.TextureLoader().load(SPRITE_URL)
+texture.encoding = THREE.sRGBEncoding
+
+const vShader = `
+attribute vec2 offset;
+attribute float size;
+
+varying vec2 vOffset;
+
+void main() {
+
+    vOffset = offset;
+
+    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+    gl_PointSize = 64.0;
+    gl_PointSize = size * ( 256000.0 / -mvPosition.z );
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+}
+`
+
+const fShader = `
+uniform sampler2D texture;
+uniform vec2 repeat;
+
+varying vec2 vOffset;
+
+void main() {
+
+    vec2 uv = vec2( gl_PointCoord.x, 1.0 - gl_PointCoord.y );
+
+    vec4 tex = texture2D( texture, uv * repeat + vOffset );
+
+    if ( tex.a < 0.5 ) discard;
+
+    gl_FragColor = tex;
+
+}
+`
 
 export default {
   components: {},
   data() {
     return {
-      categories: ['format', 'author', 'subject'],
       renderer: null,
       camera: null,
       scene: null,
       particles: null,
       controls: null,
       particleCount: START_PARTICLES,
-      lastCamera: null,
-      toCamera: null,
-      toLook: null,
-      cameraMoveStart: null,
-      zoom: 1,
       mouse: {},
-      raycaster: null,
-      PAST_INTERSECTED: {},
-      selectedInstance: {}
+      raycaster: null
     }
   },
   computed: {},
@@ -46,7 +71,6 @@ export default {
     this.init()
     this.createControls()
     this.refreshParticles()
-    this.moveCameraTo()
     this.animate()
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mousemove', this.onDocumentMouseMove)
@@ -59,7 +83,7 @@ export default {
   methods: {
     init() {
       this.renderer = new THREE.WebGLRenderer({
-        antialias: false,
+        antialias: true,
         canvas: this.$refs.three
       }) // false improves the frame rate
       this.renderer.setPixelRatio(window.devicePixelRatio)
@@ -67,142 +91,188 @@ export default {
       this.renderer.setSize(window.innerWidth, window.innerHeight)
 
       this.renderer.outputEncoding = THREE.sRGBEncoding
+      this.renderer.gammaFactor = 2.2
 
       this.scene = new THREE.Scene()
 
       this.raycaster = new THREE.Raycaster()
-      this.raycaster.params.Points.threshold = PARTICLE_SIZE * 0.5
       this.mouse = new THREE.Vector2(-1e10, -1e10)
 
       this.camera = this.createBaseCamera()
     },
-    onClick() {
-      if (this.PAST_INTERSECTED.instanceId !== undefined) {
-        this.resetIntersectedColor(this.selectedInstance)
-        const x = this.particles.geometry.attributes.customPosition.array[
-          this.PAST_INTERSECTED.instanceId * 3
-        ]
-        const y = this.particles.geometry.attributes.customPosition.array[
-          this.PAST_INTERSECTED.instanceId * 3 + 1
-        ]
-        const z = this.particles.geometry.attributes.customPosition.array[
-          this.PAST_INTERSECTED.instanceId * 3 + 2
-        ]
-        this.particles.geometry.attributes.color.array[
-          this.PAST_INTERSECTED.instanceId * 3
-        ] = SELECTED_COLOR.r
-        this.particles.geometry.attributes.color.array[
-          this.PAST_INTERSECTED.instanceId * 3 + 1
-        ] = SELECTED_COLOR.g
-        this.particles.geometry.attributes.color.array[
-          this.PAST_INTERSECTED.instanceId * 3 + 2
-        ] = SELECTED_COLOR.b
-        this.particles.geometry.attributes.color.needsUpdate = true
-        const obj = new THREE.Mesh(new THREE.PlaneGeometry(1, 1))
-        obj.position.set(x, y, z)
-        this.selectedInstance = { ...this.PAST_INTERSECTED }
-        this.moveCameraTo(obj)
-      }
-    },
     createControls() {
       this.controls = new TrackballControls(this.camera, this.$refs.three)
-      this.resetControls()
 
       const gui = new GUI()
-      gui
-        .add(this, 'particleCount', 1, MAX_PARTICLES)
-        .step(10)
-        .onFinishChange(() => {
-          this.refreshParticles()
-          this.moveCameraTo()
-        })
-        .listen()
 
-      const f1 = gui.addFolder('Camera')
-      f1.add(this.camera.position, 'x', 0, 100)
+      gui
+        .add(this.camera.position, 'x', 0, 100)
         .step(1)
         .listen()
-      f1.add(this.camera.position, 'y', 0, 100)
+      gui
+        .add(this.camera.position, 'y', 0, 100)
         .step(1)
         .listen()
-      f1.add(this.camera.position, 'z', 0, 1000)
+      gui
+        .add(this.camera.position, 'z', 0, 1000)
         .step(1)
         .listen()
-    },
-    resetControls() {
-      this.controls.rotateSpeed = 1.0
-      this.controls.zoomSpeed = 1
-      this.controls.panSpeed = 1
-      this.controls.maxDistance = CAMERA_FAR
-      this.controls.minDistance = CAMERA_NEAR
-      this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
-      this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
-      this.controls.noRotate = true
-      this.controls.screenSpacePanning = true
-      this.controls.enableDamping = true
-      this.controls.dampingFactor = 0.1
     },
     refreshParticles() {
-      this.cleanParticles()
-
       const particleCount = this.particleCount
+      const geometry = new THREE.Geometry()
+      const material = new THREE.MeshBasicMaterial({
+        map: texture
+      })
 
-      const side = Math.floor(Math.sqrt(particleCount))
+      // Identify the total number of cols & rows in the image atlas
+      const atlas = { width: 256, height: 256, cols: 8, rows: 8 }
 
-      const geometry = new THREE.PlaneBufferGeometry(
-        PARTICLE_SIZE,
-        PARTICLE_SIZE
-      )
+      // Identify the subimage size in px
+      const tile = {
+        width: atlas.width / atlas.cols,
+        height: atlas.width / atlas.cols
+      }
 
-      const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
+      let xini = -atlas.width / 2
+      let yini = atlas.height / 2
+      const tileSize = 1 / atlas.cols
 
-      this.particles = new THREE.InstancedMesh(
-        geometry,
-        material,
-        particleCount
-      )
+      for (let i = 0; i < particleCount; i++) {
+        // Create x, y, z coords for this subimage
+        // inverted because the top-left is the first image but bottom left is the origin in webgl
+        const coords = {
+          x: xini + (i % atlas.cols) * tile.width,
+          y: yini - Math.floor(i / atlas.rows) * tile.width,
+          z: -400
+        }
 
-      const colors = new Float32Array(particleCount * 3)
-      const positions = new Float32Array(particleCount * 3)
+        geometry.vertices.push(
+          new THREE.Vector3(coords.x, coords.y, coords.z),
+          new THREE.Vector3(coords.x + tile.width, coords.y, coords.z),
+          new THREE.Vector3(
+            coords.x + tile.width,
+            coords.y + tile.height,
+            coords.z
+          ),
+          new THREE.Vector3(coords.x, coords.y + tile.height, coords.z)
+        )
 
-      const color = new THREE.Color()
+        // Add the first face (the lower-right triangle)
+        const faceOne = new THREE.Face3(
+          geometry.vertices.length - 4,
+          geometry.vertices.length - 3,
+          geometry.vertices.length - 2
+        )
+
+        // Add the second face (the upper-left triangle)
+        const faceTwo = new THREE.Face3(
+          geometry.vertices.length - 4,
+          geometry.vertices.length - 2,
+          geometry.vertices.length - 1
+        )
+
+        // Add those faces to the geometry
+        geometry.faces.push(faceOne, faceTwo)
+
+        // Identify this subimage's offset in the x dimension
+        // An xOffset of 0 means the subimage starts flush with
+        // the left-hand edge of the atlas
+        const xOffset = (i % atlas.rows) * tileSize
+
+        // Identify the subimage's offset in the y dimension
+        // A yOffset of 0 means the subimage starts flush with
+        // the top edge of the atlas
+        const yOffset = (atlas.rows - 1 - Math.floor(i / atlas.rows)) * tileSize
+
+        // Use the xOffset and yOffset (and the knowledge that
+        // each row and column contains only 10 images) to specify
+        // the regions of the current image
+        geometry.faceVertexUvs[0].push([
+          new THREE.Vector2(xOffset, yOffset),
+          new THREE.Vector2(xOffset + tileSize, yOffset),
+          new THREE.Vector2(xOffset + tileSize, yOffset + tileSize)
+        ])
+
+        // Map the region of the image described by the lower-left,
+        // upper-right, and upper-left vertices to `faceTwo`
+        geometry.faceVertexUvs[0].push([
+          new THREE.Vector2(xOffset, yOffset),
+          new THREE.Vector2(xOffset + tileSize, yOffset + tileSize),
+          new THREE.Vector2(xOffset, yOffset + tileSize)
+        ])
+      }
+
+      // Combine the image geometry and material into a mesh
+      const mesh = new THREE.Mesh(geometry, material)
+
+      // Set the position of the image mesh in the x,y,z dimensions
+      mesh.position.set(0, 0, 0)
+
+      // Add the image to the scene
+      this.scene.add(mesh)
+
+      // point cloud version
+
+      // geometry
+      const pgeometry = new THREE.BufferGeometry()
+
+      // attributes
+      const positions = new Float32Array(particleCount * 3) // 3 coordinates per point
+      const offsets = new Float32Array(particleCount * 2) // 2 coordinates per point
+      const sizes = new Float32Array(particleCount)
+
+      // populate offsets
+      const offset = new THREE.Vector2()
       const position = new THREE.Vector3()
-      const transform = new THREE.Object3D()
 
-      for (let i = 0, i3 = 0, l = particleCount; i < l; i++, i3 += 3) {
-        const x = (i % side) * (PARTICLE_SIZE + TILE_PADDING) - side * 0.5
-        const y =
-          Math.floor(i / side) * -(PARTICLE_SIZE + TILE_PADDING) + side * 0.5
-        const z = 0
-        transform.position.set(x, y, z)
-        transform.updateMatrix()
+      xini = 0
+      yini = atlas.height / 2 + tile.width / 2
 
-        this.particles.setMatrixAt(i, transform.matrix)
+      for (let i = 0, index = 0, l = particleCount; i < l; i++, index += 2) {
+        offset.set(
+          (i % atlas.rows) * tileSize,
+          (atlas.rows - 1 - Math.floor(i / atlas.rows)) * tileSize
+        )
+
+        const x = xini + (i % atlas.cols) * tile.width
+        const y = yini - Math.floor(i / atlas.rows) * tile.width
+        const z = -400
 
         position.set(x, y, z)
         position.toArray(positions, i * 3)
-        color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
-        color.toArray(colors, i * 3)
+
+        sizes[i] = tileSize
+
+        offsets[index] = offset.x
+        offsets[index + 1] = offset.y
       }
 
-      geometry.setAttribute(
-        'customPosition',
-        new THREE.InstancedBufferAttribute(positions, 3)
+      pgeometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(positions, 3)
       )
-      geometry.setAttribute(
-        'color',
-        new THREE.InstancedBufferAttribute(colors, 3)
-      )
-      material.vertexColors = THREE.VertexColors
+      pgeometry.setAttribute('offset', new THREE.BufferAttribute(offsets, 2))
+      pgeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
+      // uniforms
+      const uniforms = {
+        texture: { value: texture },
+        repeat: { value: new THREE.Vector2(tileSize, tileSize) }
+      }
 
-      this.scene.add(this.particles)
-    },
-    cleanParticles() {
-      if (!this.particles) return
-      this.particles.material.dispose()
-      this.particles.geometry.dispose()
+      // material
+      const pmaterial = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: vShader,
+        fragmentShader: fShader,
+        transparent: true
+      })
 
-      this.scene.remove(this.particles)
+      // point cloud
+      const pointCloud = new THREE.Points(pgeometry, pmaterial)
+      pointCloud.position.set(atlas.width, 0, 0)
+
+      this.scene.add(pointCloud)
     },
     createBaseCamera() {
       const aspect = window.innerWidth / window.innerHeight
@@ -218,83 +288,10 @@ export default {
       camera.updateProjectionMatrix()
       return camera
     },
-    moveCameraTo(obj) {
-      let o = obj
-
-      if (!obj) o = this.particles
-
-      o.geometry.computeBoundingSphere()
-
-      const fov = CAMERA_FOV * (Math.PI / 180)
-
-      let side = !obj
-        ? Math.ceil(Math.sqrt(this.particleCount))
-        : o.geometry.boundingSphere.radius
-      side = side * SCENE_PADDING
-
-      const center = new THREE.Vector3(o.position.x, o.position.y, 0)
-
-      const dist = Math.abs(side / Math.sin(fov / 2))
-
-      const dir = new THREE.Vector3().subVectors(
-        this.camera.position,
-        this.controls.target
-      )
-
-      const newPos = new THREE.Vector3().addVectors(center, dir.setLength(dist))
-
-      this.lastCamera = this.camera.clone()
-      this.toCamera = this.camera.clone()
-      this.toCamera.position.copy(newPos)
-      this.toLook = center
-
-      this.cameraMoveStart = Date.now()
-    },
-    interpolateCamera() {
-      if (!this.lastCamera) return
-      const t = Date.now() - this.cameraMoveStart
-
-      const xF = this.lastCamera.position.x
-      const yF = this.lastCamera.position.y
-      const zF = this.lastCamera.position.z
-      const xT = this.toCamera.position.x
-      const yT = this.toCamera.position.y
-      const zT = this.toCamera.position.z
-      const newPos = new THREE.Vector3()
-      newPos.x = this.easeInOutQuad(t, xF, xT - xF, MOVE_DURATION)
-      newPos.y = this.easeInOutQuad(t, yF, yT - yF, MOVE_DURATION)
-      newPos.z = this.easeInOutQuad(t, zF, zT - zF, MOVE_DURATION)
-      this.camera.position.copy(newPos)
-
-      const cF = this.controls.target.clone()
-      const cT = this.toLook.clone()
-      const center = new THREE.Vector3()
-      center.x = this.easeInOutQuad(t, cF.x, cT.x - cF.x, MOVE_DURATION)
-      center.y = this.easeInOutQuad(t, cF.y, cT.y - cF.y, MOVE_DURATION)
-      center.z = this.easeInOutQuad(t, cF.z, cT.z - cF.z, MOVE_DURATION)
-      this.controls.target.copy(center)
-
-      if (t > MOVE_DURATION) {
-        this.camera.position.copy(this.toCamera.position)
-        this.controls.target.copy(this.toLook)
-        this.lastCamera = null
-        this.toCamera = null
-      }
-    },
     animate() {
       requestAnimationFrame(this.animate)
-      this.interpolateCamera()
       this.controls.update()
       this.render()
-    },
-    easeInOutQuad(t, b, c, d) {
-      // t: current time, b: beginning value, c: change In value, d: duration
-      if ((t /= d / 2) < 1) return (c / 2) * t * t + b
-      return (-c / 2) * (--t * (t - 2) - 1) + b
-    },
-    easeOutQuad(t, b, c, d) {
-      // t: current time, b: beginning value, c: change In value, d: duration
-      return -c * (t /= d) * (t - 2) + b
     },
     onResize() {
       this.camera.aspect = window.innerWidth / window.innerHeight
@@ -306,57 +303,7 @@ export default {
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
     },
-    resetIntersectedColor(instance) {
-      if (!instance.color) return
-      const geometry = this.particles.geometry
-      const attributes = geometry.attributes
-      attributes.color.array[3 * instance.instanceId] = instance.color.r
-      attributes.color.array[3 * instance.instanceId + 1] = instance.color.g
-      attributes.color.array[3 * instance.instanceId + 2] = instance.color.b
-      attributes.color.needsUpdate = true
-    },
     render() {
-      const geometry = this.particles.geometry
-      const attributes = geometry.attributes
-
-      if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
-
-      const intersects = this.raycaster.intersectObject(this.particles)
-
-      if (intersects.length > 0) {
-        const instanceId = intersects[0].instanceId
-        if (this.PAST_INTERSECTED.instanceId !== instanceId) {
-          const r = attributes.color.array[3 * instanceId]
-          const g = attributes.color.array[3 * instanceId + 1]
-          const b = attributes.color.array[3 * instanceId + 2]
-
-          if (this.selectedInstance.instanceId !== instanceId) {
-            attributes.color.array[3 * instanceId] = HOVERED_COLOR.r
-            attributes.color.array[3 * instanceId + 1] = HOVERED_COLOR.g
-            attributes.color.array[3 * instanceId + 2] = HOVERED_COLOR.b
-          }
-
-          if (
-            this.PAST_INTERSECTED.color &&
-            this.selectedInstance.instanceId !==
-              this.PAST_INTERSECTED.instanceId
-          ) {
-            this.resetIntersectedColor(this.PAST_INTERSECTED)
-          }
-
-          this.PAST_INTERSECTED.instanceId = instanceId
-          this.PAST_INTERSECTED.color = { r, g, b }
-
-          attributes.color.needsUpdate = true
-        }
-      } else if (
-        this.PAST_INTERSECTED.instanceId &&
-        this.selectedInstance.instanceId !== this.PAST_INTERSECTED.instanceId
-      ) {
-        this.resetIntersectedColor(this.PAST_INTERSECTED)
-        this.PAST_INTERSECTED = {}
-      }
-
       this.renderer.render(this.scene, this.camera)
     }
   }

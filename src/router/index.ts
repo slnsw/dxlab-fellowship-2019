@@ -5,13 +5,19 @@ Vue.use(VueRouter)
 
 const routes = [
   {
-    path: '/home',
-    name: 'Home',
-    meta: { title: 'Downloader' },
+    path: '/gen/ids',
+    name: 'Ids',
+    meta: { title: 'Generate ID Lists' },
     // route level code-splitting
     // this generates a separate chunk (home.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "home" */ '../views/Home.vue')
+    component: () => import(/* webpackChunkName: "home" */ '../views/Ids.vue')
+  },
+  {
+    path: '/test',
+    name: 'Test',
+    meta: { title: 'Test' },
+    component: () => import(/* webpackChunkName: "home" */ '../views/Test.vue')
   },
   {
     path: '/',

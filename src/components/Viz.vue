@@ -22,15 +22,17 @@ const FILE_Z = 10
 const CAMERA_NEAR = 0.01
 const CAMERA_FAR = BUCKET_Z * 3
 const CAMERA_FOV = 30
+const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
 const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
 const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 50%)')
 const COLOR_OTHER = new THREE.Color('hsl(0, 100%, 30%)')
 const CURSOR_SCALE = 4
-const MAX_VISIBLE_FILES = 2000
+const MAX_VISIBLE_FILES = 1000
 const MOVE_DURATION = 300
 const SCENE_PADDING = 0.995
 const TEXT_SIZE = 100
 const TEXT_Z = 0.1 // relative
+const THUMB_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
 const TILE_COLOR_DIST = 100
 const TILE_FILE_DIST = 50
 const TILE_PADDING = 25
@@ -104,12 +106,15 @@ export default {
   data() {
     return {
       isMoving: false,
+      lastChange: 0,
       fileMode: false,
       renderer: null,
       camera: null,
       scene: null,
       bucketsGroup: null,
       filesMesh: null,
+      filesGroup: null,
+      filesLoaded: null,
       visibleFiles: [],
       visibleFilesCount: 0,
       cursor: null,
@@ -252,10 +257,12 @@ export default {
       this.controls.screenSpacePanning = true
       this.controls.enableDamping = true
       this.controls.dampingFactor = 0.1
-      this.controls.addEventListener('change', this.filesInView)
     },
     filesInView() {
       if (!this.fileMode) return
+      const now = Date.now()
+      if (now - this.lastChange < CHANGE_DELAY) return
+      this.lastChange = now
       const cx = this.camera.position.x
       const cy = this.camera.position.y
       const dz = this.camera.position.z - FILE_Z
@@ -302,13 +309,65 @@ export default {
       }
       this.visibleFiles = results.sort((a, b) => a - b)
       this.visibleFilesCount = results.length
+      this.loadFiles()
+    },
+    loadFiles() {
+      if (!this.currentBucket) return
+      const ids = this.currentBucket.ids
+      this.visibleFiles.forEach((idx) => {
+        const id = ids[idx]
+        const url = THUMB_BASE_URL + '/' + id
+        this.putFileInIndex(url, idx)
+      })
+    },
+    putFileInIndex(url, idx) {
+      if (this.filesLoaded.has(idx)) return
+      const tileSize = this.filesMesh.mga.tileSize
+
+      const matrix = new THREE.Matrix4()
+      this.filesMesh.getMatrixAt(idx, matrix)
+
+      const p = new THREE.Vector3()
+      matrix.decompose(p, new THREE.Quaternion(), new THREE.Vector3())
+      const x = p.x
+      const y = p.y
+      const z = p.z
+
+      const transform = new THREE.Object3D()
+      transform.position.set(x, y, z)
+      transform.scale.set(0, 0, 0)
+      transform.updateMatrix()
+      this.filesMesh.setMatrixAt(idx, transform.matrix)
+      this.filesMesh.instanceMatrix.needsUpdate = true
+
+      const texture = new THREE.TextureLoader().load(url)
+      texture.encoding = THREE.sRGBEncoding
+
+      const material = new THREE.MeshBasicMaterial({ map: texture })
+
+      const fileMesh = new THREE.Mesh(
+        new THREE.PlaneBufferGeometry(tileSize, tileSize),
+        material
+      )
+      fileMesh.position.set(x, y, z)
+      this.filesGroup.add(fileMesh)
+      this.filesLoaded.add(idx)
     },
     cleanFiles() {
+      this.filesLoaded = null
       if (!this.filesMesh) return
       this.scene.remove(this.filesMesh)
+      if (!this.filesGroup) return
+      this.filesGroup.children.forEach((t) => {
+        t.geometry.dispose()
+        t.material.map.dispose()
+      })
+      this.scene.remove(this.filesGroup)
     },
     paintFiles(obj) {
       this.cleanFiles()
+
+      this.filesLoaded = new Set()
 
       const tileCount = this.selectedBucket.count
       const side = Math.ceil(Math.sqrt(tileCount))
@@ -362,6 +421,8 @@ export default {
       material.vertexColors = THREE.VertexColors
 
       this.scene.add(this.filesMesh)
+      this.filesGroup = new THREE.Group()
+      this.scene.add(this.filesGroup)
     },
     paintBuckets() {
       this.cleanBuckets()
@@ -538,6 +599,7 @@ export default {
       this.cursor.visible = false
     },
     render() {
+      this.filesInView()
       this.$refs.three.classList.remove('pointer')
 
       if (this.bucketsGroup) {

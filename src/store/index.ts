@@ -8,13 +8,14 @@ Vue.use(Vuex)
 
 import bodybuilder from 'bodybuilder'
 
+const TILE_SIZE = 32
 const MAX_WINDOW_SIZE = 20000
+const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
+const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
 
 const instance = axios.create({
   timeout: 600000
 })
-
-const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 
 const STUFF: any = {
   pictures: { id: 'J19GWyDjZ8Ny7', name: 'pictures' },
@@ -120,30 +121,20 @@ const makeFilter = ({ key, id, query }) => {
   return query.filter('term', field, value)
 }
 
+const getIdAtlas = async (bucket) => {
+  const ids = bucket.ids
+  const url = THUMBS_BASE_URL + '/bucket'
+  const img = await instance.post(url, { ids })
+  return img
+}
+
 export default new Vuex.Store({
   state: {
     loaded: false,
     stuff: STUFF,
     currentBucket: null,
-    itemsClosest: [],
-    itemsMidway: [],
-    itemsFarthest: [],
-    filters: {
-      search: '',
-      subjects: [],
-      languages: [],
-      places: [],
-      formats: [],
-      authors: [],
-      startDate: '',
-      endDate: ''
-    },
     itemsTotal: 0,
-    formatGroups: [],
-    subjects: [],
-    authors: [],
-    languages: [],
-    locations: []
+    atlases: {}
   },
   getters: {
     totalFromBuckets: (state) =>
@@ -162,7 +153,9 @@ export default new Vuex.Store({
       const response = await instance.get(url)
       const ids = response.data
       const currentBucket = { ...state.stuff[bucket.id], ...bucket }
+      const img = getIdAtlas(ids)
       currentBucket.ids = ids.split(',')
+      currentBucket.img = img
       state.currentBucket = currentBucket
     },
     async getIdsForBucket(state, bucket) {
