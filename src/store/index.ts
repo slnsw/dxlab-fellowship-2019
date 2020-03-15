@@ -121,6 +121,27 @@ const makeFilter = ({ key, id, query }) => {
   return query.filter('term', field, value)
 }
 
+const loadImage = (url): any => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.addEventListener('load', () => resolve(img))
+    img.addEventListener('error', reject)
+    img.src = url
+  })
+}
+
+const getPixels = async (bucket) => {
+  // gets image as canvas that can be queried like:
+  // pixelData = canvas.getContext('2d').getImageData(x, y, 1, 1).data
+  const url = '/pixels/' + bucket.key + '.png'
+  const img = await loadImage(url)
+  const canvas = document.createElement('canvas')
+  canvas.width = img.width
+  canvas.height = img.height
+  canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height)
+  return canvas
+}
+
 const getIdAtlas = async (bucket) => {
   const ids = bucket.ids
   const url = THUMBS_BASE_URL + '/bucket'
@@ -153,9 +174,10 @@ export default new Vuex.Store({
       const response = await instance.get(url)
       const ids = response.data
       const currentBucket = { ...state.stuff[bucket.id], ...bucket }
-      const img = getIdAtlas(ids)
+      // const img = getIdAtlas(ids)
       currentBucket.ids = ids.split(',')
-      currentBucket.img = img
+      // currentBucket.img = img
+      currentBucket.pixels = await getPixels(bucket)
       state.currentBucket = currentBucket
     },
     async getIdsForBucket(state, bucket) {

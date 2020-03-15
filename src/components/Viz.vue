@@ -110,6 +110,7 @@ export default {
       fileMode: false,
       renderer: null,
       camera: null,
+      cameraObj: null,
       scene: null,
       bucketsGroup: null,
       filesMesh: null,
@@ -153,6 +154,13 @@ export default {
     window.removeEventListener('resize', this.onResize)
     document.removeEventListener('mousemove', this.onDocumentMouseMove)
   },
+  watch: {
+    currentBucket(newB, oldB) {
+      if (newB) {
+        if (this.cameraObj) this.paintFiles(this.cameraObj)
+      }
+    }
+  },
   methods: {
     init() {
       this.renderer = new THREE.WebGLRenderer({
@@ -161,6 +169,7 @@ export default {
       }) // false improves the frame rate
       this.renderer.outputEncoding = THREE.sRGBEncoding
       this.renderer.gammaFactor = 2.2
+      this.renderer.gammaOutput = true
       this.renderer.setPixelRatio(window.devicePixelRatio)
 
       this.renderer.setSize(window.innerWidth, window.innerHeight)
@@ -202,15 +211,15 @@ export default {
       if (this.isMoving) return
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.selectedBucket = this.stuff[this.PAST_INTERSECTED.obj.bucketIndex]
-        this.$store.commit('setBucket', this.selectedBucket)
         const x = this.PAST_INTERSECTED.obj.position.x
         const y = this.PAST_INTERSECTED.obj.position.y
         const w = this.PAST_INTERSECTED.obj.geometry.parameters.width
         const obj = new THREE.Mesh(new THREE.PlaneGeometry(w, w))
         obj.position.set(x, y, FILE_Z)
         this.moveCameraTo(obj)
-        this.paintFiles(obj)
         this.fileMode = true
+        this.cameraObj = obj
+        this.$store.commit('setBucket', this.selectedBucket)
       }
     },
     onClick() {
@@ -259,7 +268,7 @@ export default {
       this.controls.dampingFactor = 0.1
     },
     filesInView() {
-      if (!this.fileMode) return
+      if (!this.fileMode || !this.filesMesh) return
       const now = Date.now()
       if (now - this.lastChange < CHANGE_DELAY) return
       this.lastChange = now
@@ -382,7 +391,7 @@ export default {
 
       const geometry = new THREE.PlaneBufferGeometry(tileSize, tileSize)
 
-      const material = new THREE.MeshBasicMaterial({ color: 0xffff00 })
+      const material = new THREE.MeshBasicMaterial()
 
       this.filesMesh = new THREE.InstancedMesh(geometry, material, tileCount)
 
@@ -400,6 +409,7 @@ export default {
 
       const color = new THREE.Color()
       const transform = new THREE.Object3D()
+      const pixels = this.currentBucket.pixels
 
       for (let i = 0, i3 = 0, l = tileCount; i < l; i++, i3 += 3) {
         const xT = x + (i % side) * (tileSize + padding)
@@ -410,7 +420,12 @@ export default {
 
         this.filesMesh.setMatrixAt(i, transform.matrix)
 
-        color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
+        const pixel = pixels
+          .getContext('2d')
+          .getImageData(i % side, Math.floor(i / side), 1, 1).data
+
+        color.setRGB(pixel[0] / 255, pixel[1] / 255, pixel[2] / 255)
+        color.convertSRGBToLinear()
         color.toArray(colors, i * 3)
       }
 
