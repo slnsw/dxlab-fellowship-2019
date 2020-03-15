@@ -20,7 +20,7 @@ import { FormatType } from '@/utils/types'
 const BUCKET_Z = 3000
 const FILE_Z = 10
 const CAMERA_NEAR = 0.01
-const CAMERA_FAR = BUCKET_Z * 3
+const CAMERA_FAR = BUCKET_Z * 2
 const CAMERA_FOV = 30
 const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
 const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
