@@ -41,12 +41,13 @@ const TILE_SIZE = 1000
 const getBoundsFromMesh = (obj) => {
   const o = new THREE.Box3()
   const count = obj.instanceMatrix.count
+  const matrix = new THREE.Matrix4()
+  const p = new THREE.Vector3()
+  const s = new THREE.Vector3()
+  const q = new THREE.Quaternion()
   for (let i = 0, i3 = 0, l = count; i < l; i++, i3 += 3) {
-    const matrix = new THREE.Matrix4()
     obj.getMatrixAt(i, matrix)
-    const p = new THREE.Vector3()
-    const s = new THREE.Vector3()
-    matrix.decompose(p, new THREE.Quaternion(), s)
+    matrix.decompose(p, q, s)
     const x = p.x
     const y = p.y
     const z = p.z
