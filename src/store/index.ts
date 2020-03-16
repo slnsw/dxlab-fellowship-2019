@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const axios = require('axios').default
 
@@ -8,7 +9,12 @@ Vue.use(Vuex)
 
 import bodybuilder from 'bodybuilder'
 
+import * as THREE from 'three'
+
+import AjaxTextureLoader from '@/utils/AjaxTextureLoader'
+
 const TILE_SIZE = 32
+const MAX_QUERY_LIMIT = 4096
 const MAX_WINDOW_SIZE = 20000
 const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
@@ -130,7 +136,21 @@ const loadImage = (url): any => {
   })
 }
 
-const getPixels = async (bucket) => {
+const asyncLoadTexture = (url): any => {
+  return new Promise((resolve, reject) => {
+    const texture = new AjaxTextureLoader()
+    texture.load(
+      url,
+      (img) => {
+        resolve(img)
+      },
+      () => {},
+      reject
+    )
+  })
+}
+
+const getPixelsForBucket = async (bucket) => {
   // gets image as canvas that can be queried like:
   // pixelData = canvas.getContext('2d').getImageData(x, y, 1, 1).data
   const url = '/pixels/' + bucket.key + '.png'
@@ -142,19 +162,13 @@ const getPixels = async (bucket) => {
   return canvas
 }
 
-const getIdAtlas = async (bucket) => {
-  const ids = bucket.ids
-  const url = THUMBS_BASE_URL + '/bucket'
-  const img = await instance.post(url, { ids })
-  return img
-}
-
 export default new Vuex.Store({
   state: {
     loaded: false,
     stuff: STUFF,
     currentBucket: null,
     itemsTotal: 0,
+    loadedAtlas: 0,
     atlases: {}
   },
   getters: {
@@ -163,7 +177,40 @@ export default new Vuex.Store({
         .map((b: any) => b.count)
         .reduce((a, b) => a + b, 0)
   },
+  actions: {
+    getcurrentAtlases({ dispatch, commit, state }) {
+      const bucket = state.currentBucket
+      const ids = state.currentBucket.ids
+      const atlasCount = Math.ceil(ids.length / MAX_QUERY_LIMIT)
+      commit('setLoadedAtlas', atlasCount)
+      for (let index = 0; index < atlasCount; index++) {
+        dispatch('getAtlasForBucketIndex', { bucket, index })
+      }
+    },
+    getAtlasForBucketIndex({ commit }, { bucket, index }) {
+      const url = '/atlas/' + bucket.key + '_' + index + '.jpg'
+      const texture = new AjaxTextureLoader()
+      texture.load(url, (atlas) => {
+        commit('decreaseLoadedAtlas')
+        atlas.encoding = THREE.sRGBEncoding
+        commit('setAtlasForBucketIndex', { bucket, index, atlas })
+      })
+    }
+  },
   mutations: {
+    setLoadedAtlas: (state, value) => {
+      state.loadedAtlas = value
+    },
+    decreaseLoadedAtlas: (state) => {
+      state.loadedAtlas--
+    },
+    setAtlasForBucketIndex: (state, { bucket, index, atlas }) => {
+      const atlases = { ...state.atlases }
+      const newBucket = { ...atlases[bucket.key] }
+      newBucket[index] = atlas
+      atlases[bucket.key] = newBucket
+      state.atlases = atlases
+    },
     setStuff: (state, stuff) => (state.stuff = stuff),
     async setBucket(state, bucket) {
       if (!bucket) {
@@ -174,10 +221,8 @@ export default new Vuex.Store({
       const response = await instance.get(url)
       const ids = response.data
       const currentBucket = { ...state.stuff[bucket.id], ...bucket }
-      // const img = getIdAtlas(ids)
       currentBucket.ids = ids.split(',')
-      // currentBucket.img = img
-      currentBucket.pixels = await getPixels(bucket)
+      currentBucket.pixels = await getPixelsForBucket(currentBucket)
       state.currentBucket = currentBucket
     },
     async getIdsForBucket(state, bucket) {
@@ -254,6 +299,5 @@ export default new Vuex.Store({
       state.loaded = true
     }
   },
-  actions: {},
   modules: {}
 })

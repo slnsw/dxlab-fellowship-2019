@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { mapState, mapGetters } from 'vuex'
+import { mapState, mapGetters, mapActions } from 'vuex'
 
 import * as THREE from 'three'
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js'
@@ -139,7 +139,13 @@ export default {
       return FormatType
     },
     ...mapGetters(['totalFromBuckets']),
-    ...mapState(['currentBucket', 'itemsTotal', 'stuff'])
+    ...mapState([
+      'atlases',
+      'loadedAtlas',
+      'currentBucket',
+      'itemsTotal',
+      'stuff'
+    ])
   },
   mounted() {
     this.init()
@@ -156,10 +162,14 @@ export default {
     document.removeEventListener('mousemove', this.onDocumentMouseMove)
   },
   watch: {
-    currentBucket(newB, oldB) {
+    currentBucket(newB) {
       if (newB) {
         if (this.cameraObj) this.paintFiles(this.cameraObj)
+        this.getcurrentAtlases()
       }
+    },
+    loadedAtlas(newCount) {
+      if (newCount === 0) this.paintAtlas()
     }
   },
   methods: {
@@ -373,6 +383,9 @@ export default {
         t.material.map.dispose()
       })
       this.scene.remove(this.filesGroup)
+    },
+    paintAtlas() {
+      console.log('painting atlases')
     },
     paintFiles(obj) {
       this.cleanFiles()
@@ -615,7 +628,7 @@ export default {
       this.cursor.visible = false
     },
     render() {
-      this.filesInView()
+      // this.filesInView()
       this.$refs.three.classList.remove('pointer')
 
       if (this.bucketsGroup) {
@@ -653,7 +666,8 @@ export default {
       }
 
       this.renderer.render(this.scene, this.camera)
-    }
+    },
+    ...mapActions(['getcurrentAtlases'])
   }
 }
 </script>
