@@ -52,7 +52,7 @@ const getBoundsFromMesh = (obj) => {
     const y = p.y
     const z = p.z
     const objBucket = new THREE.Mesh(
-      new THREE.PlaneGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
+      new THREE.PlaneBufferGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
     )
     objBucket.position.set(x, y, z * s.x)
     o.expandByObject(objBucket)
@@ -166,11 +166,11 @@ export default {
     init() {
       this.renderer = new THREE.WebGLRenderer({
         antialias: true,
-        canvas: this.$refs.three
+        canvas: this.$refs.three,
+        powerPreference: 'high-performance'
       }) // false improves the frame rate
       this.renderer.outputEncoding = THREE.sRGBEncoding
       this.renderer.gammaFactor = 2.2
-      this.renderer.gammaOutput = true
       this.renderer.setPixelRatio(window.devicePixelRatio)
 
       this.renderer.setSize(window.innerWidth, window.innerHeight)
@@ -215,7 +215,7 @@ export default {
         const x = this.PAST_INTERSECTED.obj.position.x
         const y = this.PAST_INTERSECTED.obj.position.y
         const w = this.PAST_INTERSECTED.obj.geometry.parameters.width
-        const obj = new THREE.Mesh(new THREE.PlaneGeometry(w, w))
+        const obj = new THREE.Mesh(new THREE.PlaneBufferGeometry(w, w))
         obj.position.set(x, y, FILE_Z)
         this.moveCameraTo(obj)
         this.fileMode = true
