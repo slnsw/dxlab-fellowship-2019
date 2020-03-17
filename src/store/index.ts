@@ -162,10 +162,55 @@ const getPixelsForBucket = async (bucket) => {
   return canvas
 }
 
+const getColorsPositions = (pixels) => {
+  const width = pixels.width
+  const height = pixels.height
+  const tileCount = width * height
+  const imgData = pixels.getContext('2d').getImageData(0, 0, width, height)
+
+  const positions = new Float32Array(width * height * 3)
+  const colors = new Float32Array(width * height * 3)
+  const hsls = new Float32Array(width * height * 3)
+
+  const color = new THREE.Color()
+  for (let i = 0, i4 = 0, l = tileCount; i < l; i++, i4 += 4) {
+    color.setRGB(
+      imgData.data[i4] / 255,
+      imgData.data[i4 + 1] / 255,
+      imgData.data[i4 + 2] / 255
+    )
+    color.convertSRGBToLinear()
+    const hsl = { h: 0, s: 0, l: 0 }
+    color.getHSL(hsl)
+
+    const x = i % width
+    const y = Math.floor(i / width)
+    const z = 0
+
+    positions[i * 3] = x
+    positions[i * 3 + 1] = y
+    positions[i * 3 + 2] = z
+
+    colors[i * 3] = color.r
+    colors[i * 3 + 1] = color.g
+    colors[i * 3 + 2] = color.b
+
+    hsls[i * 3] = hsl.h
+    hsls[i * 3 + 1] = hsl.s
+    hsls[i * 3 + 2] = hsl.l
+  }
+  return { colors, positions, hsls }
+}
+
 export default new Vuex.Store({
   state: {
     loaded: false,
+    sort: 'default',
     stuff: STUFF,
+    huePositions: null,
+    hueColors: null,
+    defaultPositions: null,
+    defaultColors: null,
     currentBucket: null,
     itemsTotal: 0,
     loadedAtlas: 0,
@@ -198,6 +243,10 @@ export default new Vuex.Store({
     }
   },
   mutations: {
+    setSort: (state, value) => {
+      if (!value) value = 'default'
+      state.sort = value
+    },
     setLoadedAtlas: (state, value) => {
       state.loadedAtlas = value
     },
@@ -223,6 +272,11 @@ export default new Vuex.Store({
       const currentBucket = { ...state.stuff[bucket.id], ...bucket }
       currentBucket.ids = ids.split(',')
       currentBucket.pixels = await getPixelsForBucket(currentBucket)
+      const { colors, positions, hsls } = getColorsPositions(
+        currentBucket.pixels
+      )
+      state.defaultColors = colors
+      state.defaultPositions = positions
       state.currentBucket = currentBucket
     },
     async getIdsForBucket(state, bucket) {

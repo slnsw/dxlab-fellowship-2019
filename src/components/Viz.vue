@@ -140,10 +140,15 @@ export default {
     },
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
+      'defaultPositions',
+      'defaultColors',
+      'huePositions',
+      'hueColors',
       'atlases',
       'loadedAtlas',
       'currentBucket',
       'itemsTotal',
+      'sort',
       'stuff'
     ])
   },
@@ -164,15 +169,32 @@ export default {
   watch: {
     currentBucket(newB) {
       if (newB) {
-        if (this.cameraObj) this.paintFiles(this.cameraObj)
+        if (this.cameraObj) {
+          this.initFiles(this.cameraObj)
+          this.paintFiles(this.defaultColors)
+          this.paintSort()
+        }
         this.getcurrentAtlases()
       }
     },
     loadedAtlas(newCount) {
       if (newCount === 0) this.paintAtlas()
+    },
+    sort() {
+      this.paintSort()
     }
   },
   methods: {
+    paintSort() {
+      if (!this.filesMesh) return
+      if (this.sort === 'default') {
+        this.changeFilePositions(this.defaultPositions)
+      } else if (this.sort === 'hue') {
+        const sorted = [...this.sortPositions]
+        sorted.sort((a, b) => a.hsl.h - b.hsl.h)
+        this.changeFilePositions(sorted)
+      }
+    },
     init() {
       this.renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -387,7 +409,7 @@ export default {
     paintAtlas() {
       console.log('painting atlases')
     },
-    paintFiles(obj) {
+    initFiles(obj) {
       this.cleanFiles()
 
       this.filesLoaded = new Set()
@@ -399,13 +421,10 @@ export default {
       const padding = tileSize * (TILE_PADDING / TILE_SIZE)
       const realW = side * tileSize + (side - 1) * padding
 
-      const x = obj.position.x - realW / 2 + tileSize / 2
-      const y = obj.position.y + realW / 2 - tileSize / 2
-      const z = obj.position.z
-
       const geometry = new THREE.PlaneBufferGeometry(tileSize, tileSize)
 
       const material = new THREE.MeshBasicMaterial()
+      material.vertexColors = THREE.VertexColors
 
       this.filesMesh = new THREE.InstancedMesh(geometry, material, tileCount)
 
@@ -419,39 +438,35 @@ export default {
         z: obj.position.z
       }
 
-      const colors = new Float32Array(tileCount * 3)
-
-      const color = new THREE.Color()
-      const transform = new THREE.Object3D()
-      const pixels = this.currentBucket.pixels
-
-      for (let i = 0, i3 = 0, l = tileCount; i < l; i++, i3 += 3) {
-        const xT = x + (i % side) * (tileSize + padding)
-        const yT = y + Math.floor(i / side) * -(tileSize + padding)
-        const zT = z
-        transform.position.set(xT, yT, zT)
-        transform.updateMatrix()
-
-        this.filesMesh.setMatrixAt(i, transform.matrix)
-
-        const pixel = pixels
-          .getContext('2d')
-          .getImageData(i % side, Math.floor(i / side), 1, 1).data
-
-        color.setRGB(pixel[0] / 255, pixel[1] / 255, pixel[2] / 255)
-        color.convertSRGBToLinear()
-        color.toArray(colors, i * 3)
-      }
-
-      geometry.setAttribute(
-        'color',
-        new THREE.InstancedBufferAttribute(colors, 3)
-      )
-      material.vertexColors = THREE.VertexColors
-
       this.scene.add(this.filesMesh)
       this.filesGroup = new THREE.Group()
       this.scene.add(this.filesGroup)
+    },
+    paintFiles(colors) {
+      this.filesMesh.geometry.setAttribute(
+        'color',
+        new THREE.InstancedBufferAttribute(colors, 3)
+      )
+    },
+    changeFilePositions(positions) {
+      const { realW, tileSize } = this.filesMesh.mga
+      const x = this.filesMesh.mga.x - realW / 2 + tileSize / 2
+      const y = this.filesMesh.mga.y + realW / 2 - tileSize / 2
+      const z = this.filesMesh.mga.z
+
+      const padding = tileSize * (TILE_PADDING / TILE_SIZE)
+
+      const transform = new THREE.Object3D()
+      const tileCount = this.selectedBucket.count
+
+      for (let i = 0, i3 = 0, l = tileCount; i < l; i++, i3 += 3) {
+        const xT = x + positions[i3] * (tileSize + padding)
+        const yT = y + positions[i3 + 1] * -(tileSize + padding)
+        const zT = z + positions[i3 + 2]
+        transform.position.set(xT, yT, zT)
+        transform.updateMatrix()
+        this.filesMesh.setMatrixAt(i, transform.matrix)
+      }
     },
     paintBuckets() {
       this.cleanBuckets()
