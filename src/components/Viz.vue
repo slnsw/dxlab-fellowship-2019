@@ -117,6 +117,9 @@ export default {
       filesMesh: null,
       filesGroup: null,
       filesLoaded: null,
+      filesMoveStart: null,
+      filesMoveFrom: null,
+      filesMoveTo: null,
       visibleFiles: [],
       visibleFilesCount: 0,
       cursor: null,
@@ -179,8 +182,10 @@ export default {
     loadedAtlas(newCount) {
       if (newCount === 0) this.paintAtlas()
     },
-    sort() {
-      this.paintSort()
+    sort(to, from) {
+      this.filesMoveStart = Date.now()
+      this.filesMoveFrom = from
+      this.filesMoveTo = to
     }
   },
   methods: {
@@ -466,6 +471,30 @@ export default {
       }
       this.filesMesh.instanceMatrix.needsUpdate = true
     },
+    interpolateFiles() {
+      if (!this.filesMoveStart) return
+      const t = Date.now() - this.filesMoveStart
+      let from, to
+      if (this.filesMoveFrom === 'default') {
+        from = this.defaultPositions
+        to = this.huePositions
+      } else {
+        from = this.huePositions
+        to = this.defaultPositions
+      }
+      const l = from.length
+      let interpolatedPos = new Float32Array(l)
+      for (let i = 0; i < l; i++) {
+        const F = from[i]
+        const T = to[i]
+        interpolatedPos[i] = easeInOutQuad(t, F, T - F, MOVE_DURATION)
+      }
+      if (t > MOVE_DURATION) {
+        interpolatedPos = to
+        this.filesMoveStart = null
+      }
+      this.changeFilePositions(interpolatedPos)
+    },
     paintBuckets() {
       this.cleanBuckets()
 
@@ -623,6 +652,7 @@ export default {
     animate() {
       requestAnimationFrame(this.animate)
       this.interpolateCamera()
+      this.interpolateFiles()
       this.controls.update()
       this.render()
     },
