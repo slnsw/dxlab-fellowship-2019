@@ -159,7 +159,7 @@ const getPixelsForBucket = async (bucket) => {
   canvas.width = img.width
   canvas.height = img.height
   canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height)
-  return canvas
+  return { pixels: canvas, width: img.width }
 }
 
 const getColorsPositions = (pixels) => {
@@ -202,13 +202,33 @@ const getColorsPositions = (pixels) => {
   return { colors, positions, hsls }
 }
 
+const sortByHue = ({ hsls, width }) => {
+  const l = hsls.length / 3
+  const toSort = []
+  for (let i = 0, i3 = 0; i < l; i++, i3 += 3) {
+    toSort.push({ h: hsls[i3], l: hsls[i3 + 2], i })
+  }
+  toSort.sort((a, b) => (a.h > b.h ? 1 : a.h < b.h ? -1 : b.l - a.l))
+  const sorted = toSort.map((i) => i.i)
+  const huePositions = new Float32Array(hsls.length)
+  sorted.forEach((i, idx) => {
+    // the i-th color item needs to go to x,y based on idx
+    const x = idx % width
+    const y = Math.floor(idx / width)
+    const z = 0
+    huePositions[i * 3] = x
+    huePositions[i * 3 + 1] = y
+    huePositions[i * 3 + 2] = z
+  })
+  return huePositions
+}
+
 export default new Vuex.Store({
   state: {
     loaded: false,
     sort: 'default',
     stuff: STUFF,
     huePositions: null,
-    hueColors: null,
     defaultPositions: null,
     defaultColors: null,
     currentBucket: null,
@@ -271,12 +291,14 @@ export default new Vuex.Store({
       const ids = response.data
       const currentBucket = { ...state.stuff[bucket.id], ...bucket }
       currentBucket.ids = ids.split(',')
-      currentBucket.pixels = await getPixelsForBucket(currentBucket)
+      const { pixels, width } = await getPixelsForBucket(currentBucket)
+      currentBucket.pixels = pixels
       const { colors, positions, hsls } = getColorsPositions(
         currentBucket.pixels
       )
       state.defaultColors = colors
       state.defaultPositions = positions
+      state.huePositions = sortByHue({ hsls, width })
       state.currentBucket = currentBucket
     },
     async getIdsForBucket(state, bucket) {

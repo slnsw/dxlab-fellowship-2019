@@ -143,7 +143,6 @@ export default {
       'defaultPositions',
       'defaultColors',
       'huePositions',
-      'hueColors',
       'atlases',
       'loadedAtlas',
       'currentBucket',
@@ -190,9 +189,7 @@ export default {
       if (this.sort === 'default') {
         this.changeFilePositions(this.defaultPositions)
       } else if (this.sort === 'hue') {
-        const sorted = [...this.sortPositions]
-        sorted.sort((a, b) => a.hsl.h - b.hsl.h)
-        this.changeFilePositions(sorted)
+        this.changeFilePositions(this.huePositions)
       }
     },
     init() {
@@ -467,6 +464,7 @@ export default {
         transform.updateMatrix()
         this.filesMesh.setMatrixAt(i, transform.matrix)
       }
+      this.filesMesh.instanceMatrix.needsUpdate = true
     },
     paintBuckets() {
       this.cleanBuckets()
