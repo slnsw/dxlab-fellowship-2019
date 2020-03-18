@@ -191,11 +191,8 @@ export default {
   methods: {
     paintSort() {
       if (!this.filesMesh) return
-      if (this.sort === 'default') {
-        this.changeFilePositions(this.defaultPositions)
-      } else if (this.sort === 'hue') {
-        this.changeFilePositions(this.huePositions)
-      }
+      this.filesMoveStart = Date.now() - MOVE_DURATION
+      this.filesMoveTo = this.sort
     },
     init() {
       this.renderer = new THREE.WebGLRenderer({
@@ -450,27 +447,6 @@ export default {
         new THREE.InstancedBufferAttribute(colors, 3)
       )
     },
-    changeFilePositions(positions) {
-      const { realW, tileSize } = this.filesMesh.mga
-      const x = this.filesMesh.mga.x - realW / 2 + tileSize / 2
-      const y = this.filesMesh.mga.y + realW / 2 - tileSize / 2
-      const z = this.filesMesh.mga.z
-
-      const padding = tileSize * (TILE_PADDING / TILE_SIZE)
-
-      const transform = new THREE.Object3D()
-      const tileCount = this.selectedBucket.count
-
-      for (let i = 0, i3 = 0, l = tileCount; i < l; i++, i3 += 3) {
-        const xT = x + positions[i3] * (tileSize + padding)
-        const yT = y + positions[i3 + 1] * -(tileSize + padding)
-        const zT = z + positions[i3 + 2]
-        transform.position.set(xT, yT, zT)
-        transform.updateMatrix()
-        this.filesMesh.setMatrixAt(i, transform.matrix)
-      }
-      this.filesMesh.instanceMatrix.needsUpdate = true
-    },
     interpolateFiles() {
       if (!this.filesMoveStart) return
       const t = Date.now() - this.filesMoveStart
@@ -482,18 +458,40 @@ export default {
         from = this.huePositions
         to = this.defaultPositions
       }
-      const l = from.length
-      let interpolatedPos = new Float32Array(l)
-      for (let i = 0; i < l; i++) {
-        const F = from[i]
-        const T = to[i]
-        interpolatedPos[i] = easeInOutQuad(t, F, T - F, MOVE_DURATION)
-      }
-      if (t > MOVE_DURATION) {
-        interpolatedPos = to
+      if (t >= MOVE_DURATION) {
+        from = to
         this.filesMoveStart = null
       }
-      this.changeFilePositions(interpolatedPos)
+
+      const { realW, tileSize } = this.filesMesh.mga
+      const x = this.filesMesh.mga.x - realW / 2 + tileSize / 2
+      const y = this.filesMesh.mga.y + realW / 2 - tileSize / 2
+      const z = this.filesMesh.mga.z
+
+      const padding = tileSize * (TILE_PADDING / TILE_SIZE)
+
+      const transform = new THREE.Object3D()
+      const tileCount = this.selectedBucket.count
+
+      for (let i = 0, i3 = 0, l = tileCount; i < l; i++, i3 += 3) {
+        const xF = from[i3]
+        const yF = from[i3 + 1]
+        const zF = from[i3 + 2]
+        const xT = to[i3]
+        const yT = to[i3 + 1]
+        const zT = to[i3 + 2]
+        let xx = easeInOutQuad(t, xF, xT - xF, MOVE_DURATION)
+        let yy = easeInOutQuad(t, yF, yT - yF, MOVE_DURATION)
+        let zz = easeInOutQuad(t, zF, zT - zF, MOVE_DURATION)
+
+        xx = x + xx * (tileSize + padding)
+        yy = y + yy * -(tileSize + padding)
+        zz = z + zz
+        transform.position.set(xx, yy, zz)
+        transform.updateMatrix()
+        this.filesMesh.setMatrixAt(i, transform.matrix)
+      }
+      this.filesMesh.instanceMatrix.needsUpdate = true
     },
     paintBuckets() {
       this.cleanBuckets()
