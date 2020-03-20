@@ -69,7 +69,7 @@ export default {
 
 <style lang="scss" scoped>
 $main-color: wheat;
-$bg-color: hsl(0, 0%, 0%, 1);
+$bg-color: hsl(0, 0%, 15%);
 $bg-active: hsl(0, 0%, 44%);
 
 .grid {

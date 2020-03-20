@@ -207,6 +207,7 @@ export default {
       this.renderer.setSize(window.innerWidth, window.innerHeight)
 
       this.scene = new THREE.Scene()
+      this.scene.background = new THREE.Color('hsl(0, 0%, 15%)')
 
       this.raycaster = new THREE.Raycaster()
       this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
