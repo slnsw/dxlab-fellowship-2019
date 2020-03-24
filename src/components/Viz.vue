@@ -262,8 +262,9 @@ export default {
         console.log('clicked on', this.PAST_INTERSECTED)
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
+          this.fileMode = false
           this.cleanFiles()
-          this.moveCameraTo(this.bucketsGroup)
+          this.moveCameraTo(this.selectedInstance.obj)
         } else {
           // clicked a file
           const matrix = new THREE.Matrix4()
@@ -280,7 +281,6 @@ export default {
           const z = p.z
           const obj = new THREE.Mesh(new THREE.PlaneBufferGeometry(s.x, s.x))
           obj.position.set(x, y, z)
-          this.selectedInstance = { ...this.PAST_INTERSECTED }
           this.moveCameraTo(obj)
         }
         return
@@ -305,14 +305,6 @@ export default {
         this.fileMode = false
       }
       this.$store.commit('setBucket', null)
-    },
-    getClickedGeometry() {
-      const id = this.PAST_INTERSECTED.instanceId
-      const x = this.PAST_INTERSECTED.obj.position.x
-      const y = this.PAST_INTERSECTED.obj.position.y
-      const z = this.PAST_INTERSECTED.obj.position.z
-      const s = this.PAST_INTERSECTED.obj.geometry.parameters.width / TILE_SIZE
-      return { x, y, z, s, id }
     },
     createControls() {
       this.controls = new TrackballControls(this.camera, this.$refs.three)
