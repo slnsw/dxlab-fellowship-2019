@@ -776,9 +776,11 @@ export default {
       // position hover
       elem.classList.remove('hidden')
       let left = (window.innerWidth * (this.mouse.x + 1)) / 2
-      const top = (window.innerHeight * (this.mouse.y - 1)) / -2
       if (left + HOVER_WIDTH > window.innerWidth)
         left = left - HOVER_WIDTH - HOVER_PADDING * 4
+      let top = (window.innerHeight * (this.mouse.y - 1)) / -2 - HOVER_WIDTH / 2
+      if (top + HOVER_WIDTH > window.innerHeight) top = top - HOVER_WIDTH / 2
+      if (top < 0) top = HOVER_PADDING
       elem.style.left = left + HOVER_PADDING + 'px'
       elem.style.top = top + HOVER_PADDING + 'px'
     },
@@ -795,7 +797,7 @@ export default {
       this.lastFileId = fileId
       let url = '/files/' + fileId
       const response = await instance.get(url)
-      const image = response.data.file.image.variants['300_0'].url
+      const image = response.data.file.image.variants['300_300'].url
       const title = response.data.file.title
       url = THUMBS_BASE_URL + '/data/' + fileId
       const colorResponse = await instance.get(url)
@@ -858,9 +860,13 @@ export default {
   cursor: pointer;
 }
 .file {
+  justify-content: center;
   background-color: transparentize($color: $bg-color, $amount: 0.5);
+  display: flex;
+  flex-direction: column;
   padding: 0.5rem;
   position: absolute;
+  min-height: calc(300px + 1rem);
   min-width: calc(300px + 1rem);
   max-width: calc(300px + 1rem);
   z-index: 1;
