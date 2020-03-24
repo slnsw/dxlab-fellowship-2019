@@ -80,7 +80,7 @@ $bg-active: hsl(0, 0%, 44%);
   color: $main-color;
   display: grid;
   grid-template-columns: 12rem 1fr 12rem;
-  grid-template-rows: 1fr 6rem;
+  grid-template-rows: 1fr 2.5rem;
 }
 .header {
   background-color: transparentize($color: $bg-color, $amount: 0.5);

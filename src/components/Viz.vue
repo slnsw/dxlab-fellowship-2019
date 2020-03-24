@@ -258,12 +258,39 @@ export default {
     },
     onClick() {
       if (this.isMoving) return
-      this.cleanFiles()
+      if (this.fileMode) {
+        console.log('clicked on', this.PAST_INTERSECTED)
+        if (this.PAST_INTERSECTED.instanceId === undefined) {
+          // clicked outside
+          this.cleanFiles()
+          this.moveCameraTo(this.bucketsGroup)
+        } else {
+          // clicked a file
+          const matrix = new THREE.Matrix4()
+          this.PAST_INTERSECTED.obj.getMatrixAt(
+            this.PAST_INTERSECTED.instanceId,
+            matrix
+          )
+          const p = new THREE.Vector3()
+          const s = new THREE.Vector3()
+          const q = new THREE.Quaternion()
+          matrix.decompose(p, q, s)
+          const x = p.x
+          const y = p.y
+          const z = p.z
+          const obj = new THREE.Mesh(new THREE.PlaneBufferGeometry(s.x, s.x))
+          obj.position.set(x, y, z)
+          this.selectedInstance = { ...this.PAST_INTERSECTED }
+          this.moveCameraTo(obj)
+        }
+        return
+      }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
+        // there is a selected thing
         if (
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
-          this.hideCursor(this.selectedInstance)
+          this.hideCursor()
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
@@ -273,7 +300,7 @@ export default {
         } else {
           this.moveCameraTo(this.bucketsGroup)
         }
-        this.hideCursor(this.selectedInstance)
+        this.hideCursor()
         this.selectedInstance = {}
         this.fileMode = false
       }
@@ -592,6 +619,7 @@ export default {
       } else {
         o = new THREE.Box3().setFromObject(obj)
       }
+      console.log('moveto', obj, o)
 
       const sphere = new THREE.Sphere()
       o.getBoundingSphere(sphere)
@@ -666,13 +694,12 @@ export default {
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
     },
-    hideCursor(instance) {
-      if (!instance.obj) return
+    hideCursor() {
       this.cursor.visible = false
     },
     render() {
       // this.filesInView()
-      this.$refs.three.classList.remove('pointer')
+      if (this.$refs.three) this.$refs.three.classList.remove('pointer')
 
       if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
 
@@ -686,17 +713,18 @@ export default {
         const intersects = this.raycaster.intersectObject(this.filesMesh)
 
         if (intersects.length > 0) {
-          this.$refs.three.classList.add('pointer')
+          if (this.$refs.three) this.$refs.three.classList.add('pointer')
           const instanceId = intersects[0].instanceId
           if (this.PAST_INTERSECTED.instanceId !== instanceId) {
             this.PAST_INTERSECTED.instanceId = instanceId
-            console.log('two', this.PAST_INTERSECTED.instanceId, instanceId)
+            const obj = intersects[0].object
+            this.PAST_INTERSECTED.obj = obj
             const imageId = this.currentBucket.ids[instanceId]
             const url = FILES_BASE_URL + '/' + imageId
-            console.log('id:', imageId, url, instanceId, this.PAST_INTERSECTED)
+            // console.log('id:', imageId, url, instanceId, this.PAST_INTERSECTED)
           }
         } else if (this.PAST_INTERSECTED.instanceId) {
-          this.hideCursor(this.PAST_INTERSECTED)
+          this.hideCursor()
           this.PAST_INTERSECTED = {}
         }
       }
@@ -709,7 +737,7 @@ export default {
           .map((ch) => ch[0])
 
         if (intersects.length > 0) {
-          this.$refs.three.classList.add('pointer')
+          if (this.$refs.three) this.$refs.three.classList.add('pointer')
           const obj = intersects[0].object
           const instanceId = obj.bucketIndex
           if (this.PAST_INTERSECTED.instanceId !== instanceId) {
@@ -717,9 +745,8 @@ export default {
               this.selectedInstance.instanceId !==
               this.PAST_INTERSECTED.instanceId
             ) {
-              this.hideCursor(this.PAST_INTERSECTED)
+              this.hideCursor()
             }
-            console.log('id:', instanceId)
 
             this.PAST_INTERSECTED.instanceId = instanceId
             this.PAST_INTERSECTED.obj = obj
@@ -730,7 +757,7 @@ export default {
             this.cursor.visible = true
           }
         } else if (this.PAST_INTERSECTED.instanceId) {
-          this.hideCursor(this.PAST_INTERSECTED)
+          this.hideCursor()
           this.PAST_INTERSECTED = {}
         }
       }
