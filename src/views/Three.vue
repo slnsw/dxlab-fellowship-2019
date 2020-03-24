@@ -19,9 +19,6 @@
         color
       </router-link>
     </div>
-    <div class="file">
-      <h2>The file</h2>
-    </div>
     <viz class="viz" />
   </div>
 </template>
@@ -71,9 +68,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$main-color: wheat;
-$bg-color: hsl(0, 0%, 15%);
-$bg-active: hsl(0, 0%, 44%);
+@import '@/assets/variables';
 
 .grid {
   background-color: $bg-color;
@@ -106,11 +101,6 @@ $bg-active: hsl(0, 0%, 44%);
   li {
     margin: 0 0 0 0.5rem;
   }
-}
-.file {
-  grid-column: 3/4;
-  grid-row: 1/3;
-  z-index: 1;
 }
 .sort-button {
   background-color: $main-color;

@@ -1,13 +1,38 @@
 <template>
-  <canvas
-    ref="three"
-    class="three"
-    @dblclick.prevent="onDoubleClick"
-    @click.prevent="onClick"
-  ></canvas>
+  <div class="three">
+    <div class="file" ref="file">
+      <div class="loading" v-if="!fileData.title">Loading...</div>
+      <div v-if="fileData.palette" class="palette">
+        <span
+          class="color"
+          v-for="(color, index) in fileData.palette"
+          :key="index"
+          :style="{
+            backgroundColor: color.color,
+            width: color.percent * 100 + '%'
+          }"
+        ></span>
+      </div>
+      <img
+        v-if="fileData.image"
+        :src="fileData.image"
+        alt=""
+        class="thumbnail"
+      />
+      <p v-if="fileData.title">{{ fileData.title }}</p>
+    </div>
+    <canvas
+      ref="three"
+      class="three"
+      @dblclick.prevent="onDoubleClick"
+      @click.prevent="onClick"
+    ></canvas>
+  </div>
 </template>
 
 <script>
+const axios = require('axios').default
+
 import { mapState, mapGetters, mapActions } from 'vuex'
 
 import * as THREE from 'three'
@@ -17,6 +42,7 @@ import SpriteText from 'three-spritetext'
 
 import { FormatType } from '@/utils/types'
 
+const API_CALL_DELAY = 500 // ms to wait before hitting api
 const BUCKET_Z = 3000
 const FILE_Z = 10
 const CAMERA_NEAR = 0.01
@@ -27,17 +53,27 @@ const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
 const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 50%)')
 const COLOR_OTHER = new THREE.Color('hsl(0, 100%, 30%)')
 const CURSOR_SCALE = 4
+const HOVER_PADDING = 10
+const HOVER_WIDTH = 300
 const MAX_VISIBLE_FILES = 1000
 const MOVE_DURATION = 300
 const SCENE_PADDING = 0.995
 const TEXT_SIZE = 100
 const TEXT_Z = 0.1 // relative
+const API_KEY = process.env.VUE_APP_API_KEY
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
 const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
 const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const TILE_COLOR_DIST = 100
 const TILE_FILE_DIST = 50
 const TILE_PADDING = 25
 const TILE_SIZE = 1000
+
+const instance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { 'x-api-key': API_KEY },
+  timeout: 10000
+})
 
 const getBoundsFromMesh = (obj) => {
   const o = new THREE.Box3()
@@ -107,8 +143,11 @@ export default {
   components: {},
   data() {
     return {
+      fileData: {},
       isMoving: false,
+      lastMouseMoveId: null,
       lastChange: 0,
+      lastFileId: null,
       fileMode: false,
       renderer: null,
       camera: null,
@@ -241,8 +280,14 @@ export default {
       // gui.add(this.camera.position, 'z').listen()
       // gui.add(this, 'visibleFilesCount').listen()
     },
-    onDoubleClick() {
-      if (this.isMoving) return
+    onDoubleClick(e) {
+      if (this.fileMode) {
+        if (this.PAST_INTERSECTED.fileId !== undefined) {
+          const url = FILES_BASE_URL + '/' + this.PAST_INTERSECTED.fileId
+          window.open(url, '_blank')
+        }
+        return
+      }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.selectedBucket = this.stuff[this.PAST_INTERSECTED.obj.bucketIndex]
         const x = this.PAST_INTERSECTED.obj.position.x
@@ -259,7 +304,6 @@ export default {
     onClick() {
       if (this.isMoving) return
       if (this.fileMode) {
-        console.log('clicked on', this.PAST_INTERSECTED)
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
           this.fileMode = false
@@ -611,7 +655,6 @@ export default {
       } else {
         o = new THREE.Box3().setFromObject(obj)
       }
-      console.log('moveto', obj, o)
 
       const sphere = new THREE.Sphere()
       o.getBoundingSphere(sphere)
@@ -682,9 +725,12 @@ export default {
       this.renderer.setSize(window.innerWidth, window.innerHeight)
     },
     onDocumentMouseMove(event) {
+      if (this.lastMouseMoveId) window.clearTimeout(this.lastMouseMoveId)
+      this.lastMouseMoveId = window.setTimeout(this.loadFile, API_CALL_DELAY)
       event.preventDefault()
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+      this.positionFile(this.PAST_INTERSECTED.fileId)
     },
     hideCursor() {
       this.cursor.visible = false
@@ -708,18 +754,59 @@ export default {
           if (this.$refs.three) this.$refs.three.classList.add('pointer')
           const instanceId = intersects[0].instanceId
           if (this.PAST_INTERSECTED.instanceId !== instanceId) {
-            this.PAST_INTERSECTED.instanceId = instanceId
+            // new thing so clear fileData
+            this.fileData = {}
             const obj = intersects[0].object
+            this.PAST_INTERSECTED.instanceId = instanceId
             this.PAST_INTERSECTED.obj = obj
-            const imageId = this.currentBucket.ids[instanceId]
-            const url = FILES_BASE_URL + '/' + imageId
-            // console.log('id:', imageId, url, instanceId, this.PAST_INTERSECTED)
+            this.PAST_INTERSECTED.fileId = this.currentBucket.ids[instanceId]
           }
         } else if (this.PAST_INTERSECTED.instanceId) {
-          this.hideCursor()
           this.PAST_INTERSECTED = {}
         }
       }
+    },
+    positionFile(visible) {
+      if (!this.$refs.file) return
+      const elem = this.$refs.file
+      if (!visible) {
+        elem.classList.add('hidden')
+        return
+      }
+      // position hover
+      elem.classList.remove('hidden')
+      let left = (window.innerWidth * (this.mouse.x + 1)) / 2
+      const top = (window.innerHeight * (this.mouse.y - 1)) / -2
+      if (left + HOVER_WIDTH > window.innerWidth)
+        left = left - HOVER_WIDTH - HOVER_PADDING * 4
+      elem.style.left = left + HOVER_PADDING + 'px'
+      elem.style.top = top + HOVER_PADDING + 'px'
+    },
+    async loadFile() {
+      // get data from API
+      if (!this.$refs.file) return
+      if (!this.PAST_INTERSECTED.fileId) {
+        this.lastFileId = null
+        return
+      }
+      const fileId = this.PAST_INTERSECTED.fileId
+      if (fileId === this.lastFileId) return
+      this.fileData = {}
+      this.lastFileId = fileId
+      let url = '/files/' + fileId
+      const response = await instance.get(url)
+      const image = response.data.file.image.variants['300_0'].url
+      const title = response.data.file.title
+      url = THUMBS_BASE_URL + '/data/' + fileId
+      const colorResponse = await instance.get(url)
+      const paletteStr = colorResponse.data.palette_colors
+      const palette = paletteStr
+        .split(',')
+        .map((i) => i.split(':'))
+        .map((p) => {
+          return { color: p[0], percent: Number(p[1]) }
+        })
+      this.fileData = { image, title, palette }
     },
     pickBucket() {
       if (this.bucketsGroup && !this.fileMode) {
@@ -760,11 +847,40 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import '@/assets/variables';
+
 .three {
   height: 100vh;
   width: 100vw;
+  position: relative;
 }
 .pointer {
   cursor: pointer;
+}
+.file {
+  background-color: transparentize($color: $bg-color, $amount: 0.5);
+  padding: 0.5rem;
+  position: absolute;
+  min-width: calc(300px + 1rem);
+  max-width: calc(300px + 1rem);
+  z-index: 1;
+
+  &.hidden {
+    display: none;
+  }
+}
+.loading {
+  text-align: center;
+}
+.palette {
+  display: flex;
+}
+.color {
+  font-size: 0.75rem;
+  height: 2rem;
+  padding: 0.5rem;
+}
+.thumbnail {
+  width: 100%;
 }
 </style>
