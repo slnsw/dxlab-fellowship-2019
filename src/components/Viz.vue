@@ -32,7 +32,8 @@ const MOVE_DURATION = 300
 const SCENE_PADDING = 0.995
 const TEXT_SIZE = 100
 const TEXT_Z = 0.1 // relative
-const THUMB_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
+const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
+const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const TILE_COLOR_DIST = 100
 const TILE_FILE_DIST = 50
 const TILE_PADDING = 25
@@ -233,12 +234,12 @@ export default {
       this.cursor = mesh
       this.scene.add(this.cursor)
 
-      const gui = new GUI()
+      // const gui = new GUI()
 
-      gui.add(this.camera.position, 'x').listen()
-      gui.add(this.camera.position, 'y').listen()
-      gui.add(this.camera.position, 'z').listen()
-      gui.add(this, 'visibleFilesCount').listen()
+      // gui.add(this.camera.position, 'x').listen()
+      // gui.add(this.camera.position, 'y').listen()
+      // gui.add(this.camera.position, 'z').listen()
+      // gui.add(this, 'visibleFilesCount').listen()
     },
     onDoubleClick() {
       if (this.isMoving) return
@@ -262,7 +263,7 @@ export default {
         if (
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
-          this.resetIntersectedColor(this.selectedInstance)
+          this.hideCursor(this.selectedInstance)
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
@@ -272,7 +273,7 @@ export default {
         } else {
           this.moveCameraTo(this.bucketsGroup)
         }
-        this.resetIntersectedColor(this.selectedInstance)
+        this.hideCursor(this.selectedInstance)
         this.selectedInstance = {}
         this.fileMode = false
       }
@@ -358,7 +359,7 @@ export default {
       const ids = this.currentBucket.ids
       this.visibleFiles.forEach((idx) => {
         const id = ids[idx]
-        const url = THUMB_BASE_URL + '/' + id
+        const url = THUMBS_BASE_URL + '/' + id
         this.putFileInIndex(url, idx)
       })
     },
@@ -665,7 +666,7 @@ export default {
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
     },
-    resetIntersectedColor(instance) {
+    hideCursor(instance) {
       if (!instance.obj) return
       this.cursor.visible = false
     },
@@ -673,9 +674,35 @@ export default {
       // this.filesInView()
       this.$refs.three.classList.remove('pointer')
 
-      if (this.bucketsGroup) {
-        if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
+      if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
 
+      this.pickBucket()
+      this.pickFile()
+
+      this.renderer.render(this.scene, this.camera)
+    },
+    pickFile() {
+      if (this.filesMesh && this.fileMode) {
+        const intersects = this.raycaster.intersectObject(this.filesMesh)
+
+        if (intersects.length > 0) {
+          this.$refs.three.classList.add('pointer')
+          const instanceId = intersects[0].instanceId
+          if (this.PAST_INTERSECTED.instanceId !== instanceId) {
+            this.PAST_INTERSECTED.instanceId = instanceId
+            console.log('two', this.PAST_INTERSECTED.instanceId, instanceId)
+            const imageId = this.currentBucket.ids[instanceId]
+            const url = FILES_BASE_URL + '/' + imageId
+            console.log('id:', imageId, url, instanceId, this.PAST_INTERSECTED)
+          }
+        } else if (this.PAST_INTERSECTED.instanceId) {
+          this.hideCursor(this.PAST_INTERSECTED)
+          this.PAST_INTERSECTED = {}
+        }
+      }
+    },
+    pickBucket() {
+      if (this.bucketsGroup && !this.fileMode) {
         const intersects = this.bucketsGroup.children
           .map((ch) => this.raycaster.intersectObject(ch))
           .filter((ch) => ch.length > 0)
@@ -690,8 +717,9 @@ export default {
               this.selectedInstance.instanceId !==
               this.PAST_INTERSECTED.instanceId
             ) {
-              this.resetIntersectedColor(this.PAST_INTERSECTED)
+              this.hideCursor(this.PAST_INTERSECTED)
             }
+            console.log('id:', instanceId)
 
             this.PAST_INTERSECTED.instanceId = instanceId
             this.PAST_INTERSECTED.obj = obj
@@ -702,12 +730,10 @@ export default {
             this.cursor.visible = true
           }
         } else if (this.PAST_INTERSECTED.instanceId) {
-          this.resetIntersectedColor(this.PAST_INTERSECTED)
+          this.hideCursor(this.PAST_INTERSECTED)
           this.PAST_INTERSECTED = {}
         }
       }
-
-      this.renderer.render(this.scene, this.camera)
     },
     ...mapActions(['getcurrentAtlases'])
   }

@@ -19,6 +19,9 @@
         color
       </router-link>
     </div>
+    <div class="file">
+      <h2>The file</h2>
+    </div>
     <viz class="viz" />
   </div>
 </template>
@@ -76,13 +79,13 @@ $bg-active: hsl(0, 0%, 44%);
   background-color: $bg-color;
   color: $main-color;
   display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr 6rem 2.5rem;
+  grid-template-columns: 12rem 1fr 12rem;
+  grid-template-rows: 1fr 6rem;
 }
 .header {
   background-color: transparentize($color: $bg-color, $amount: 0.5);
   grid-column: 1/2;
-  grid-row: 2/3;
+  grid-row: 1/2;
   z-index: 2;
   pointer-events: none;
 }
@@ -97,12 +100,17 @@ $bg-active: hsl(0, 0%, 44%);
   background-color: transparentize($color: $bg-color, $amount: 0.5);
   display: flex;
   grid-column: 1/2;
-  grid-row: 3/4;
+  grid-row: 2/3;
   z-index: 1;
 
   li {
     margin: 0 0 0 0.5rem;
   }
+}
+.file {
+  grid-column: 3/4;
+  grid-row: 1/3;
+  z-index: 1;
 }
 .sort-button {
   background-color: $main-color;
@@ -118,8 +126,8 @@ $bg-active: hsl(0, 0%, 44%);
   }
 }
 .viz {
-  grid-column: 1/2;
-  grid-row: 1/4;
+  grid-column: 1/4;
+  grid-row: 1/3;
 }
 </style>
 
