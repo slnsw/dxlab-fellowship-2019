@@ -54,7 +54,6 @@ const STUFF: any = {
     id: 'm6zK940qx9v7K',
     name: 'architectural    \ndrawings'
   },
-  designDrawings: { id: 'adx22BvP5OZzd', name: 'design drawings' },
   maps: { id: '40XObXd7aA4a', name: 'published       \nmaps' },
   manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'unpublished \nmaps' },
   objects: { id: '7MZAw5gxmyyaW', name: 'objects' },
@@ -67,20 +66,7 @@ const STUFF: any = {
     name: 'notated music',
     id: 'oWWJDK5PO44me'
   },
-  musicalRecordings: {
-    name: 'musical sound\nrecordings ',
-    id: 'KOpMgA2JjBYmO'
-  },
-  nonMusicalRecordings: {
-    name: 'non-musical sound\nrecordings        ',
-    id: 'z02KkaA8xXx4E'
-  },
-  video: { name: 'video', id: 'NWOD2N4edDPzO' },
-  films: { name: 'film', id: 'aXgRM15jrzBWz' },
-  manuscriptMusicScores: {
-    name: 'music scores',
-    id: '9DDK52Ye2G2AD'
-  }
+  video: { name: 'video', id: 'NWOD2N4edDPzO' }
 }
 
 const baseQuery = () => {
