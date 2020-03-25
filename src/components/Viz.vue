@@ -52,7 +52,7 @@ const BASE_SCALE = 0.3
 const BUCKET_Z = 3000
 const FILE_Z = 10
 const CAMERA_NEAR = 0.01
-const CAMERA_FAR = 8000
+const CAMERA_FAR = 9000
 const CAMERA_FOV = 45
 const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
 const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
@@ -63,12 +63,12 @@ const HOVER_PADDING = 10
 const HOVER_WIDTH = 300
 const MAX_VISIBLE_FILES = 1000
 const MOVE_DURATION = 300
-const SCENE_PADDING = 0.995
+const SCENE_PADDING = 1.0
 const TEXT_SIZE = 100
 const TEXT_Z = 0.1 // relative
 const TILE_COLOR_DIST = 100
 const TILE_FILE_DIST = 50
-const TILE_PADDING = 25
+const TILE_PADDING = 300
 const TILE_SIZE = 1000
 
 const instance = axios.create({
@@ -145,7 +145,7 @@ export default {
   components: {},
   data() {
     return {
-      scaled: true,
+      scaled: false,
       fileData: {},
       isMoving: false,
       lastMouseMoveId: null,
@@ -205,11 +205,13 @@ export default {
     this.animate()
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mousemove', this.onDocumentMouseMove)
+    document.addEventListener('mouseout', this.onDocumentMouseOut)
   },
   beforeDestroy() {
     // Unregister resize before destroying this Vue instance
     window.removeEventListener('resize', this.onResize)
     document.removeEventListener('mousemove', this.onDocumentMouseMove)
+    document.removeEventListener('mouseout', this.onDocumentMouseOut)
   },
   watch: {
     currentBucket(newB) {
@@ -226,7 +228,7 @@ export default {
       if (newCount === 0) this.paintAtlas()
     },
     scaled(newScale) {
-      console.log(newScale)
+      // console.log(newScale)
     },
     sort(to, from) {
       this.filesMoveStart = Date.now()
@@ -235,9 +237,6 @@ export default {
     }
   },
   methods: {
-    toggleScale() {
-      this.scaled != this.scaled
-    },
     paintSort() {
       if (!this.filesMesh) return
       this.filesMoveStart = Date.now() - MOVE_DURATION
@@ -282,9 +281,9 @@ export default {
       this.cursor = mesh
       this.scene.add(this.cursor)
 
-      const gui = new GUI()
+      // const gui = new GUI()
 
-      gui.add(this, 'scaled')
+      // gui.add(this, 'scaled')
     },
     onDoubleClick(e) {
       if (this.fileMode) {
@@ -523,7 +522,7 @@ export default {
       if (!this.filesMoveStart) return
       const t = Date.now() - this.filesMoveStart
       let from, to
-      if (this.filesMoveFrom === 'default') {
+      if (!this.filesMoveFrom || this.filesMoveFrom === 'default') {
         from = this.defaultPositions
         to = this.huePositions
       } else {
@@ -572,16 +571,11 @@ export default {
       buckets.sort((a, b) => b.count - a.count)
 
       const bucketCount = buckets.length
-
       const colors = new Float32Array(bucketCount * 3)
-
       const color = new THREE.Color()
-
-      let lastX = 0
-
       const bucketsGroup = new THREE.Group()
-
       const textGroup = new THREE.Group()
+      const side = Math.ceil(Math.sqrt(bucketCount))
 
       for (let i = 0, i3 = 0, l = bucketCount; i < l; i++, i3 += 3) {
         const b = buckets[i]
@@ -590,9 +584,8 @@ export default {
         const pct = count / this.itemsTotal
         const scale = this.scaled ? Math.sqrt(pct) : BASE_SCALE
         const w = TILE_SIZE * scale
-        const x = lastX + w / 2
-        lastX = x + w / 2 + TILE_PADDING * scale
-        const y = -w / 2
+        const x = (i % side) * (w + TILE_PADDING * scale) + w / 2
+        const y = -(Math.floor(i / side) * (w + TILE_PADDING * scale) + -w / 2)
         const z = BUCKET_Z
 
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
@@ -616,7 +609,7 @@ export default {
         bucketsGroup.add(mesh)
 
         // text particles
-        const textTop = y + w / 2 + TILE_PADDING * scale
+        const textTop = y + w / 2
         const textZ = BUCKET_Z + TEXT_Z * scale
         const labelStr = text
         const numberStr = count
@@ -659,8 +652,6 @@ export default {
       } else {
         o = new THREE.Box3().setFromObject(obj)
       }
-
-      console.log(obj, o)
 
       const sphere = new THREE.Sphere()
       o.getBoundingSphere(sphere)
@@ -730,6 +721,11 @@ export default {
       this.camera.updateProjectionMatrix()
       this.renderer.setSize(window.innerWidth, window.innerHeight)
     },
+    onDocumentMouseOut(event) {
+      this.lastFileId = null
+      this.fileData = {}
+      if (this.$refs.file) this.$refs.file.classList.add('hidden')
+    },
     onDocumentMouseMove(event) {
       if (this.lastMouseMoveId) window.clearTimeout(this.lastMouseMoveId)
       this.lastMouseMoveId = window.setTimeout(this.loadFile, API_CALL_DELAY)
@@ -776,6 +772,7 @@ export default {
       if (!this.$refs.file) return
       const elem = this.$refs.file
       if (!visible) {
+        this.lastFileId = null
         elem.classList.add('hidden')
         return
       }
