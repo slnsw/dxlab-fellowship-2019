@@ -1,7 +1,6 @@
 <template>
   <div class="three">
     <div class="file" ref="file">
-      <div class="loading" v-if="!fileData.title">Loading...</div>
       <div v-if="fileData.palette" class="palette">
         <span
           class="color"
@@ -13,6 +12,7 @@
           }"
         ></span>
       </div>
+      <div class="loading" v-if="!fileData.title">Loading...</div>
       <img
         v-if="fileData.image"
         :src="fileData.image"
@@ -784,7 +784,7 @@ export default {
       elem.style.left = left + HOVER_PADDING + 'px'
       elem.style.top = top + HOVER_PADDING + 'px'
     },
-    async loadFile() {
+    loadFile() {
       // get data from API
       if (!this.$refs.file) return
       if (!this.PAST_INTERSECTED.fileId) {
@@ -796,19 +796,22 @@ export default {
       this.fileData = {}
       this.lastFileId = fileId
       let url = '/files/' + fileId
-      const response = await instance.get(url)
-      const image = response.data.file.image.variants['300_300'].url
-      const title = response.data.file.title
+      instance.get(url).then((response) => {
+        const image = response.data.file.image.variants['300_300'].url
+        const title = response.data.file.title
+        this.fileData = { ...this.fileData, image, title }
+      })
       url = THUMBS_BASE_URL + '/data/' + fileId
-      const colorResponse = await instance.get(url)
-      const paletteStr = colorResponse.data.palette_colors
-      const palette = paletteStr
-        .split(',')
-        .map((i) => i.split(':'))
-        .map((p) => {
-          return { color: p[0], percent: Number(p[1]) }
-        })
-      this.fileData = { image, title, palette }
+      instance.get(url).then((colorResponse) => {
+        const paletteStr = colorResponse.data.palette_colors
+        const palette = paletteStr
+          .split(',')
+          .map((i) => i.split(':'))
+          .map((p) => {
+            return { color: p[0], percent: Number(p[1]) }
+          })
+        this.fileData = { ...this.fileData, palette }
+      })
     },
     pickBucket() {
       if (this.bucketsGroup && !this.fileMode) {
@@ -860,8 +863,7 @@ export default {
   cursor: pointer;
 }
 .file {
-  justify-content: center;
-  background-color: transparentize($color: $bg-color, $amount: 0.5);
+  background-color: transparentize($color: $bg-color, $amount: 0.25);
   display: flex;
   flex-direction: column;
   padding: 0.5rem;
@@ -876,7 +878,11 @@ export default {
   }
 }
 .loading {
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 300px;
+  height: 300px;
 }
 .palette {
   display: flex;
@@ -887,6 +893,8 @@ export default {
   padding: 0.5rem;
 }
 .thumbnail {
-  width: 100%;
+  background-color: lighten($color: $bg-color, $amount: 10%);
+  width: 300px;
+  height: 300px;
 }
 </style>
