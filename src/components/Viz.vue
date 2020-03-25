@@ -522,7 +522,7 @@ export default {
       if (!this.filesMoveStart) return
       const t = Date.now() - this.filesMoveStart
       let from, to
-      if (!this.filesMoveFrom || this.filesMoveFrom === 'default') {
+      if (this.filesMoveTo === 'hue') {
         from = this.defaultPositions
         to = this.huePositions
       } else {
