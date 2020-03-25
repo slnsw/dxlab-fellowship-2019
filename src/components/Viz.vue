@@ -1,6 +1,6 @@
 <template>
   <div class="three">
-    <div class="file" ref="file">
+    <div class="file hidden" ref="file">
       <div v-if="fileData.palette" class="palette">
         <span
           class="color"
@@ -42,12 +42,18 @@ import SpriteText from 'three-spritetext'
 
 import { FormatType } from '@/utils/types'
 
+const API_KEY = process.env.VUE_APP_API_KEY
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
+const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
+const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const API_CALL_DELAY = 500 // ms to wait before hitting api
+
+const BASE_SCALE = 0.3
 const BUCKET_Z = 3000
 const FILE_Z = 10
 const CAMERA_NEAR = 0.01
-const CAMERA_FAR = BUCKET_Z * 2
-const CAMERA_FOV = 30
+const CAMERA_FAR = 8000
+const CAMERA_FOV = 45
 const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
 const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
 const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 50%)')
@@ -60,10 +66,6 @@ const MOVE_DURATION = 300
 const SCENE_PADDING = 0.995
 const TEXT_SIZE = 100
 const TEXT_Z = 0.1 // relative
-const API_KEY = process.env.VUE_APP_API_KEY
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
-const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
-const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const TILE_COLOR_DIST = 100
 const TILE_FILE_DIST = 50
 const TILE_PADDING = 25
@@ -143,6 +145,7 @@ export default {
   components: {},
   data() {
     return {
+      scaled: true,
       fileData: {},
       isMoving: false,
       lastMouseMoveId: null,
@@ -222,6 +225,9 @@ export default {
     loadedAtlas(newCount) {
       if (newCount === 0) this.paintAtlas()
     },
+    scaled(newScale) {
+      console.log(newScale)
+    },
     sort(to, from) {
       this.filesMoveStart = Date.now()
       this.filesMoveFrom = from
@@ -229,6 +235,9 @@ export default {
     }
   },
   methods: {
+    toggleScale() {
+      this.scaled != this.scaled
+    },
     paintSort() {
       if (!this.filesMesh) return
       this.filesMoveStart = Date.now() - MOVE_DURATION
@@ -250,7 +259,7 @@ export default {
       this.scene.background = new THREE.Color('hsl(0, 0%, 15%)')
 
       this.raycaster = new THREE.Raycaster()
-      this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
+      // this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
       this.mouse = new THREE.Vector2(-1e10, -1e10)
 
       this.camera = createBaseCamera()
@@ -273,12 +282,9 @@ export default {
       this.cursor = mesh
       this.scene.add(this.cursor)
 
-      // const gui = new GUI()
+      const gui = new GUI()
 
-      // gui.add(this.camera.position, 'x').listen()
-      // gui.add(this.camera.position, 'y').listen()
-      // gui.add(this.camera.position, 'z').listen()
-      // gui.add(this, 'visibleFilesCount').listen()
+      gui.add(this, 'scaled')
     },
     onDoubleClick(e) {
       if (this.fileMode) {
@@ -290,9 +296,13 @@ export default {
       }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.selectedBucket = this.stuff[this.PAST_INTERSECTED.obj.bucketIndex]
+        const tileCount = this.selectedBucket.count
+        const side = Math.ceil(Math.sqrt(tileCount))
+        const pct = tileCount / this.itemsTotal
+        const scale = this.scaled ? BASE_SCALE : Math.sqrt(pct)
         const x = this.PAST_INTERSECTED.obj.position.x
         const y = this.PAST_INTERSECTED.obj.position.y
-        const w = this.PAST_INTERSECTED.obj.geometry.parameters.width
+        const w = this.PAST_INTERSECTED.obj.geometry.parameters.width * scale
         const obj = new THREE.Mesh(new THREE.PlaneBufferGeometry(w, w))
         obj.position.set(x, y, FILE_Z)
         this.moveCameraTo(obj)
@@ -309,6 +319,7 @@ export default {
           this.fileMode = false
           this.cleanFiles()
           this.moveCameraTo(this.selectedInstance.obj)
+          this.$store.commit('setBucket', null)
         } else {
           // clicked a file
           const matrix = new THREE.Matrix4()
@@ -330,7 +341,7 @@ export default {
         return
       }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
-        // there is a selected thing
+        // there is a selected bucket
         if (
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
@@ -339,11 +350,7 @@ export default {
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
       } else {
-        if (this.selectedInstance.instanceId) {
-          this.moveCameraTo(this.selectedInstance.obj)
-        } else {
-          this.moveCameraTo(this.bucketsGroup)
-        }
+        this.moveCameraTo(this.bucketsGroup)
         this.hideCursor()
         this.selectedInstance = {}
         this.fileMode = false
@@ -355,8 +362,8 @@ export default {
       this.controls.rotateSpeed = 1.0
       this.controls.zoomSpeed = 1
       this.controls.panSpeed = 1
-      this.controls.maxDistance = BUCKET_Z * 1.5
-      this.controls.minDistance = FILE_Z
+      // this.controls.maxDistance = BUCKET_Z * 1.5
+      this.controls.minDistance = 2
       // this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
       // this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
       this.controls.noRotate = true
@@ -581,7 +588,7 @@ export default {
         const count = b.count
         const text = b.name
         const pct = count / this.itemsTotal
-        const scale = Math.sqrt(pct)
+        const scale = this.scaled ? Math.sqrt(pct) : BASE_SCALE
         const w = TILE_SIZE * scale
         const x = lastX + w / 2
         lastX = x + w / 2 + TILE_PADDING * scale
@@ -592,12 +599,9 @@ export default {
         color.toArray(colors, i * 3)
 
         // thumb
-        const geometry = new THREE.PlaneBufferGeometry(
-          TILE_SIZE * scale,
-          TILE_SIZE * scale
-        )
+        const geometry = new THREE.PlaneBufferGeometry(w, w)
         const url =
-          process.env.VUE_APP_THUMBS_BASE_URL +
+          THUMBS_BASE_URL +
           '/' +
           b.images[Math.floor(Math.random() * b.images.length)]
         const texture = new THREE.TextureLoader().load(url)
@@ -655,6 +659,8 @@ export default {
       } else {
         o = new THREE.Box3().setFromObject(obj)
       }
+
+      console.log(obj, o)
 
       const sphere = new THREE.Sphere()
       o.getBoundingSphere(sphere)

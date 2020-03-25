@@ -21,7 +21,7 @@ const routes = [
   },
   {
     path: '/',
-    name: 'Three',
+    name: 'Viewer',
     meta: {
       title: 'Bird’s Eye',
       metaTags: [
@@ -37,7 +37,7 @@ const routes = [
       ]
     },
     component: () =>
-      import(/* webpackChunkName: "three" */ '../views/Three.vue')
+      import(/* webpackChunkName: "three" */ '../views/Viewer.vue')
   }
 ]
 
