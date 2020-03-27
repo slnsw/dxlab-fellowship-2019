@@ -258,7 +258,7 @@ export default {
       this.scene.background = new THREE.Color('hsl(0, 0%, 15%)')
 
       this.raycaster = new THREE.Raycaster()
-      // this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
+      this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
       this.mouse = new THREE.Vector2(-1e10, -1e10)
 
       this.camera = createBaseCamera()
@@ -491,12 +491,11 @@ export default {
       const padding = tileSize * (TILE_PADDING / TILE_SIZE)
       const realW = side * tileSize + (side - 1) * padding
 
-      const geometry = new THREE.PlaneBufferGeometry(tileSize, tileSize)
+      const geometry = new THREE.BufferGeometry()
 
-      const material = new THREE.MeshBasicMaterial()
-      material.vertexColors = THREE.VertexColors
+      const material = new THREE.PointsMaterial()
 
-      this.filesObject = new THREE.InstancedMesh(geometry, material, tileCount)
+      this.filesObject = new THREE.Points(geometry, material)
 
       // an mga object to hold the bucket file real world data
       this.filesObject.mga = {
@@ -515,7 +514,7 @@ export default {
     paintFiles(colors) {
       this.filesObject.geometry.setAttribute(
         'color',
-        new THREE.InstancedBufferAttribute(colors, 3)
+        new THREE.Float32BufferAttribute(colors, 3)
       )
     },
     interpolateFiles() {
@@ -541,8 +540,10 @@ export default {
 
       const padding = tileSize * (TILE_PADDING / TILE_SIZE)
 
-      const transform = new THREE.Object3D()
       const tileCount = this.selectedBucket.count
+
+      const positions = new Float32Array(tileCount * 3)
+      const position = new THREE.Vector3()
 
       for (let i = 0, i3 = 0, l = tileCount; i < l; i++, i3 += 3) {
         const xF = from[i3]
@@ -558,11 +559,13 @@ export default {
         xx = x + xx * (tileSize + padding)
         yy = y + yy * -(tileSize + padding)
         zz = z + zz
-        transform.position.set(xx, yy, zz)
-        transform.updateMatrix()
-        this.filesObject.setMatrixAt(i, transform.matrix)
+        position.set(xx, yy, zz)
+        position.toArray(positions, i3)
       }
-      this.filesObject.instanceMatrix.needsUpdate = true
+      this.filesObject.geometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(positions, 3)
+      )
     },
     paintBuckets() {
       this.cleanBuckets()
