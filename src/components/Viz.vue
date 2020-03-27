@@ -27,6 +27,24 @@
       @dblclick.prevent="onDoubleClick"
       @click.prevent="onClick"
     ></canvas>
+    <script type="x-shader/x-vertex" ref="vShader">
+      attribute float size;
+      varying vec3 vColor;
+      void main() {
+        vColor = color;
+        vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+        gl_PointSize = size * ( 300.0 / -mvPosition.z );
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    </script>
+    <script type="x-shader/x-fragment" ref="fShader">
+      uniform sampler2D pointTexture;
+      varying vec3 vColor;
+      void main() {
+        gl_FragColor = vec4( vColor, 1.0 );
+        gl_FragColor = gl_FragColor * texture2D( pointTexture, gl_PointCoord );
+      }
+    </script>
   </div>
 </template>
 
@@ -41,6 +59,7 @@ import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls
 import SpriteText from 'three-spritetext'
 
 import { FormatType } from '@/utils/types'
+import { PointsMaterial } from 'three'
 
 const API_KEY = process.env.VUE_APP_API_KEY
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
@@ -493,7 +512,31 @@ export default {
 
       const geometry = new THREE.BufferGeometry()
 
-      const material = new THREE.PointsMaterial()
+      const material = new PointsMaterial()
+      material.vertexColors = THREE.VertexColors
+
+      // const material = new THREE.RawShaderMaterial({
+      //   vertexShader: this.$refs.vShader.textContent,
+      //   fragmentShader: this.$refs.fShader.textContent,
+      //   uniforms: {
+      //     texture: {
+      //       type: 't',
+      //       value: texture
+      //     },
+      //     atlasPx: {
+      //       type: 'f',
+      //       value: 256
+      //     },
+      //     cellPx: {
+      //       type: 'f',
+      //       value: 32
+      //     },
+      //     pointScale: {
+      //       type: 'f',
+      //       value: getPointSize()
+      //     }
+      //   }
+      // })
 
       this.filesObject = new THREE.Points(geometry, material)
 
