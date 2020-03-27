@@ -27,49 +27,6 @@
       @dblclick.prevent="onDoubleClick"
       @click.prevent="onClick"
     ></canvas>
-    <script type="x-shader/x-vertex" ref="vShader">
-      precision mediump float;
-
-      // these come built in with three.js; they're basically always used in the same way (see below)
-      uniform mat4 projectionMatrix;
-      uniform mat4 modelViewMatrix;
-      uniform vec3 cameraPosition;
-
-      // these are uniforms we specified
-      uniform float atlasPx;
-      uniform float cellPx;
-      uniform float pointScale;
-
-      // these are the buffer attributes we specified when creating the geometry
-      attribute vec2 position;
-      attribute vec2 uv;
-
-      // these are attributes we will pass from the vertex to the fragment shader
-      varying vec2 vUv;
-
-      attribute float size;
-      varying vec3 vColor;
-      void main() {
-        vColor = color;
-        vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-        gl_PointSize = size * ( 1000.0 / -mvPosition.z );
-        gl_Position = projectionMatrix * mvPosition;
-      }
-    </script>
-    <script type="x-shader/x-fragment" ref="fShader">
-      precision mediump float;
-
-      uniform sampler2D texture;
-      uniform float atlasPx;
-      uniform float cellPx;
-
-      varying vec2 vUv;
-
-      varying vec3 vColor;
-      void main() {
-        gl_FragColor = vec4( vColor, 1.0 );
-      }
-    </script>
   </div>
 </template>
 
@@ -98,6 +55,9 @@ const CAMERA_MAX_DIST = 4
 const CAMERA_MIN_DIST = 0
 
 // tile stuff
+const ATLAS_SIZE = 2048
+const ATLAS_PER_SIDE = 64
+const ATLAS_TILE_SIZE = 32
 const BASE_SCALE = 0.3
 const BUCKET_Z = 1
 const FILE_Z = 0.003
@@ -118,6 +78,61 @@ const instance = axios.create({
   headers: { 'x-api-key': API_KEY },
   timeout: 10000
 })
+
+const vShader = `
+precision mediump float;
+
+// these come built in with three.js; they're basically always used in the same way (see below)
+uniform mat4 projectionMatrix;
+uniform mat4 modelViewMatrix;
+uniform vec3 cameraPosition;
+
+// these are uniforms we specified
+uniform float atlasPx;
+uniform float cellPx;
+uniform float pointScale;
+
+// these are the buffer attributes we specified when creating the geometry
+attribute vec3 position;
+attribute vec2 uv;
+
+// these are attributes we will pass from the vertex to the fragment shader
+varying vec2 vUv;
+
+attribute float size;
+attribute vec3 color;
+varying vec3 vColor;
+
+void main() {
+  vColor = color;
+  vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+  gl_PointSize = size * ( 1000.0 / -mvPosition.z );
+  gl_Position = projectionMatrix * mvPosition;
+
+  // pass the varying data to the fragment shader
+  vUv = uv;
+}
+`
+
+const fShader = `
+precision mediump float;
+
+uniform sampler2D texture;
+uniform float atlasPx;
+uniform float cellPx;
+
+varying vec2 vUv;
+
+varying vec3 vColor;
+void main() {
+  vec2 uv = (vUv * cellPx + gl_PointCoord.xy * cellPx) / atlasPx;
+
+  gl_FragColor = texture2D(texture, uv);
+
+  // this line mixes the actual texture color with some red
+  //gl_FragColor = mix(gl_FragColor, vec4(1.0, 0.0, 0.0, 1.0), 0.5);
+}
+`
 
 const getBoundsFromMesh = (obj) => {
   const o = new THREE.Box3()
@@ -518,37 +533,42 @@ export default {
 
       const geometry = new THREE.BufferGeometry()
 
-      // const material = new PointsMaterial()
-      // material.vertexColors = THREE.VertexColors
-
-      console.log(this.$refs.vShader.textContent)
-      console.log(this.$refs.fShader.textContent)
+      const url = '/atlas/' + this.currentBucket.key + '_0.jpg'
+      const texture = new THREE.TextureLoader().load(url)
+      texture.flipY = false
 
       const material = new THREE.RawShaderMaterial({
-        vertexShader: this.$refs.vShader.textContent,
-        fragmentShader: this.$refs.fShader.textContent,
-        // uniforms: {
-        //   texture: {
-        //     type: 't',
-        //     value: texture
-        //   },
-        //   atlasPx: {
-        //     type: 'f',
-        //     value: 256
-        //   },
-        //   cellPx: {
-        //     type: 'f',
-        //     value: 32
-        //   },
-        //   pointScale: {
-        //     type: 'f',
-        //     value: getPointSize()
-        //   }
-        // },
+        vertexShader: vShader,
+        fragmentShader: fShader,
+        uniforms: {
+          texture: {
+            type: 't',
+            value: texture
+          },
+          atlasPx: {
+            type: 'f',
+            value: ATLAS_SIZE
+          },
+          cellPx: {
+            type: 'f',
+            value: ATLAS_TILE_SIZE
+          }
+        },
         depthTest: true,
         transparent: true,
         vertexColors: true
       })
+
+      const uvs = new Float32Array(tileCount * 2)
+
+      for (let i = 0; i < tileCount; i++) {
+        const x = i % ATLAS_PER_SIDE
+        const y = Math.floor(i / ATLAS_PER_SIDE)
+        uvs[i * 2] = x
+        uvs[i * 2 + 1] = y
+      }
+
+      geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2, true))
 
       geometry.setAttribute(
         'color',
@@ -810,7 +830,7 @@ export default {
       if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
 
       this.pickBucket()
-      // this.pickFile()
+      this.pickFile()
 
       this.renderer.render(this.scene, this.camera)
     },
