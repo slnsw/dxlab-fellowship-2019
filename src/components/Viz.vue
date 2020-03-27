@@ -33,7 +33,7 @@
       void main() {
         vColor = color;
         vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-        gl_PointSize = size * ( 300.0 / -mvPosition.z );
+        gl_PointSize = size * ( 1000.0 / -mvPosition.z );
         gl_Position = projectionMatrix * mvPosition;
       }
     </script>
@@ -42,7 +42,6 @@
       varying vec3 vColor;
       void main() {
         gl_FragColor = vec4( vColor, 1.0 );
-        gl_FragColor = gl_FragColor * texture2D( pointTexture, gl_PointCoord );
       }
     </script>
   </div>
@@ -57,9 +56,6 @@ import * as THREE from 'three'
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 import SpriteText from 'three-spritetext'
-
-import { FormatType } from '@/utils/types'
-import { PointsMaterial } from 'three'
 
 const API_KEY = process.env.VUE_APP_API_KEY
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
@@ -200,9 +196,6 @@ export default {
     }
   },
   computed: {
-    formats() {
-      return FormatType
-    },
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
       'defaultPositions',
@@ -237,7 +230,6 @@ export default {
       if (newB) {
         if (this.cameraObj) {
           this.initFiles(this.cameraObj)
-          this.paintFiles(this.defaultColors)
           this.paintSort()
         }
         this.getcurrentAtlases()
@@ -277,7 +269,7 @@ export default {
       this.scene.background = new THREE.Color('hsl(0, 0%, 15%)')
 
       this.raycaster = new THREE.Raycaster()
-      this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
+      // this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
       this.mouse = new THREE.Vector2(-1e10, -1e10)
 
       this.camera = createBaseCamera()
@@ -512,31 +504,47 @@ export default {
 
       const geometry = new THREE.BufferGeometry()
 
-      const material = new PointsMaterial()
-      material.vertexColors = THREE.VertexColors
+      // const material = new PointsMaterial()
+      // material.vertexColors = THREE.VertexColors
 
-      // const material = new THREE.RawShaderMaterial({
-      //   vertexShader: this.$refs.vShader.textContent,
-      //   fragmentShader: this.$refs.fShader.textContent,
-      //   uniforms: {
-      //     texture: {
-      //       type: 't',
-      //       value: texture
-      //     },
-      //     atlasPx: {
-      //       type: 'f',
-      //       value: 256
-      //     },
-      //     cellPx: {
-      //       type: 'f',
-      //       value: 32
-      //     },
-      //     pointScale: {
-      //       type: 'f',
-      //       value: getPointSize()
-      //     }
-      //   }
-      // })
+      const material = new THREE.ShaderMaterial({
+        vertexShader: this.$refs.vShader.textContent,
+        fragmentShader: this.$refs.fShader.textContent,
+        // uniforms: {
+        //   texture: {
+        //     type: 't',
+        //     value: texture
+        //   },
+        //   atlasPx: {
+        //     type: 'f',
+        //     value: 256
+        //   },
+        //   cellPx: {
+        //     type: 'f',
+        //     value: 32
+        //   },
+        //   pointScale: {
+        //     type: 'f',
+        //     value: getPointSize()
+        //   }
+        // },
+        depthTest: false,
+        transparent: true,
+        vertexColors: true
+      })
+
+      geometry.setAttribute(
+        'color',
+        new THREE.Float32BufferAttribute(this.defaultColors, 3)
+      )
+
+      geometry.setAttribute(
+        'size',
+        new THREE.Float32BufferAttribute(
+          new Float32Array(tileCount).fill(tileSize, 0, tileCount),
+          1
+        )
+      )
 
       this.filesObject = new THREE.Points(geometry, material)
 
@@ -553,12 +561,6 @@ export default {
       this.scene.add(this.filesObject)
       this.filesGroup = new THREE.Group()
       this.scene.add(this.filesGroup)
-    },
-    paintFiles(colors) {
-      this.filesObject.geometry.setAttribute(
-        'color',
-        new THREE.Float32BufferAttribute(colors, 3)
-      )
     },
     interpolateFiles() {
       if (!this.filesMoveStart) return
@@ -800,7 +802,7 @@ export default {
 
         if (intersects.length > 0) {
           if (this.$refs.three) this.$refs.three.classList.add('pointer')
-          const instanceId = intersects[0].instanceId
+          const instanceId = intersects[0].index
           if (this.PAST_INTERSECTED.instanceId !== instanceId) {
             // new thing so clear fileData
             this.fileData = {}
