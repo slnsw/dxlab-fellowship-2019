@@ -28,6 +28,25 @@
       @click.prevent="onClick"
     ></canvas>
     <script type="x-shader/x-vertex" ref="vShader">
+      precision mediump float;
+
+      // these come built in with three.js; they're basically always used in the same way (see below)
+      uniform mat4 projectionMatrix;
+      uniform mat4 modelViewMatrix;
+      uniform vec3 cameraPosition;
+
+      // these are uniforms we specified
+      uniform float atlasPx;
+      uniform float cellPx;
+      uniform float pointScale;
+
+      // these are the buffer attributes we specified when creating the geometry
+      attribute vec2 position;
+      attribute vec2 uv;
+
+      // these are attributes we will pass from the vertex to the fragment shader
+      varying vec2 vUv;
+
       attribute float size;
       varying vec3 vColor;
       void main() {
@@ -38,7 +57,14 @@
       }
     </script>
     <script type="x-shader/x-fragment" ref="fShader">
-      uniform sampler2D pointTexture;
+      precision mediump float;
+
+      uniform sampler2D texture;
+      uniform float atlasPx;
+      uniform float cellPx;
+
+      varying vec2 vUv;
+
       varying vec3 vColor;
       void main() {
         gl_FragColor = vec4( vColor, 1.0 );
@@ -495,7 +521,10 @@ export default {
       // const material = new PointsMaterial()
       // material.vertexColors = THREE.VertexColors
 
-      const material = new THREE.ShaderMaterial({
+      console.log(this.$refs.vShader.textContent)
+      console.log(this.$refs.fShader.textContent)
+
+      const material = new THREE.RawShaderMaterial({
         vertexShader: this.$refs.vShader.textContent,
         fragmentShader: this.$refs.fShader.textContent,
         // uniforms: {
@@ -516,7 +545,7 @@ export default {
         //     value: getPointSize()
         //   }
         // },
-        depthTest: false,
+        depthTest: true,
         transparent: true,
         vertexColors: true
       })
@@ -781,7 +810,7 @@ export default {
       if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
 
       this.pickBucket()
-      this.pickFile()
+      // this.pickFile()
 
       this.renderer.render(this.scene, this.camera)
     },
