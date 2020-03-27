@@ -157,7 +157,7 @@ export default {
       cameraObj: null,
       scene: null,
       bucketsGroup: null,
-      filesMesh: null,
+      filesObject: null,
       filesGroup: null,
       filesLoaded: null,
       filesMoveStart: null,
@@ -238,7 +238,7 @@ export default {
   },
   methods: {
     paintSort() {
-      if (!this.filesMesh) return
+      if (!this.filesObject) return
       this.filesMoveStart = Date.now() - MOVE_DURATION
       this.filesMoveTo = this.sort
     },
@@ -371,7 +371,7 @@ export default {
       this.controls.dampingFactor = 0.1
     },
     filesInView() {
-      if (!this.fileMode || !this.filesMesh) return
+      if (!this.fileMode || !this.filesObject) return
       const now = Date.now()
       if (now - this.lastChange < CHANGE_DELAY) return
       this.lastChange = now
@@ -381,7 +381,7 @@ export default {
       const aspect = this.camera.aspect
       const h = 2 * dz * Math.tan(CAMERA_FOV * 0.5 * (Math.PI / 180))
       const w = h * aspect
-      const { side, realW, x, y } = this.filesMesh.mga
+      const { side, realW, x, y } = this.filesObject.mga
       const tileSize = realW / side
       let minx = cx - w * 0.5
       let miny = cy - h * 0.5
@@ -434,10 +434,10 @@ export default {
     },
     putFileInIndex(url, idx) {
       if (this.filesLoaded.has(idx)) return
-      const tileSize = this.filesMesh.mga.tileSize
+      const tileSize = this.filesObject.mga.tileSize
 
       const matrix = new THREE.Matrix4()
-      this.filesMesh.getMatrixAt(idx, matrix)
+      this.filesObject.getMatrixAt(idx, matrix)
 
       const p = new THREE.Vector3()
       matrix.decompose(p, new THREE.Quaternion(), new THREE.Vector3())
@@ -449,8 +449,8 @@ export default {
       transform.position.set(x, y, z)
       transform.scale.set(0, 0, 0)
       transform.updateMatrix()
-      this.filesMesh.setMatrixAt(idx, transform.matrix)
-      this.filesMesh.instanceMatrix.needsUpdate = true
+      this.filesObject.setMatrixAt(idx, transform.matrix)
+      this.filesObject.instanceMatrix.needsUpdate = true
 
       const texture = new THREE.TextureLoader().load(url)
       texture.encoding = THREE.sRGBEncoding
@@ -467,8 +467,8 @@ export default {
     },
     cleanFiles() {
       this.filesLoaded = null
-      if (!this.filesMesh) return
-      this.scene.remove(this.filesMesh)
+      if (!this.filesObject) return
+      this.scene.remove(this.filesObject)
       if (!this.filesGroup) return
       this.filesGroup.children.forEach((t) => {
         t.geometry.dispose()
@@ -496,10 +496,10 @@ export default {
       const material = new THREE.MeshBasicMaterial()
       material.vertexColors = THREE.VertexColors
 
-      this.filesMesh = new THREE.InstancedMesh(geometry, material, tileCount)
+      this.filesObject = new THREE.InstancedMesh(geometry, material, tileCount)
 
       // an mga object to hold the bucket file real world data
-      this.filesMesh.mga = {
+      this.filesObject.mga = {
         realW,
         side,
         tileSize,
@@ -508,12 +508,12 @@ export default {
         z: obj.position.z
       }
 
-      this.scene.add(this.filesMesh)
+      this.scene.add(this.filesObject)
       this.filesGroup = new THREE.Group()
       this.scene.add(this.filesGroup)
     },
     paintFiles(colors) {
-      this.filesMesh.geometry.setAttribute(
+      this.filesObject.geometry.setAttribute(
         'color',
         new THREE.InstancedBufferAttribute(colors, 3)
       )
@@ -534,10 +534,10 @@ export default {
         this.filesMoveStart = null
       }
 
-      const { realW, tileSize } = this.filesMesh.mga
-      const x = this.filesMesh.mga.x - realW / 2 + tileSize / 2
-      const y = this.filesMesh.mga.y + realW / 2 - tileSize / 2
-      const z = this.filesMesh.mga.z
+      const { realW, tileSize } = this.filesObject.mga
+      const x = this.filesObject.mga.x - realW / 2 + tileSize / 2
+      const y = this.filesObject.mga.y + realW / 2 - tileSize / 2
+      const z = this.filesObject.mga.z
 
       const padding = tileSize * (TILE_PADDING / TILE_SIZE)
 
@@ -560,9 +560,9 @@ export default {
         zz = z + zz
         transform.position.set(xx, yy, zz)
         transform.updateMatrix()
-        this.filesMesh.setMatrixAt(i, transform.matrix)
+        this.filesObject.setMatrixAt(i, transform.matrix)
       }
-      this.filesMesh.instanceMatrix.needsUpdate = true
+      this.filesObject.instanceMatrix.needsUpdate = true
     },
     paintBuckets() {
       this.cleanBuckets()
@@ -749,8 +749,8 @@ export default {
       this.renderer.render(this.scene, this.camera)
     },
     pickFile() {
-      if (this.filesMesh && this.fileMode) {
-        const intersects = this.raycaster.intersectObject(this.filesMesh)
+      if (this.filesObject && this.fileMode) {
+        const intersects = this.raycaster.intersectObject(this.filesObject)
 
         if (intersects.length > 0) {
           if (this.$refs.three) this.$refs.three.classList.add('pointer')
