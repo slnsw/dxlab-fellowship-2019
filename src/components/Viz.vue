@@ -57,34 +57,35 @@ import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 import SpriteText from 'three-spritetext'
 
+// api stuff
 const API_KEY = process.env.VUE_APP_API_KEY
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
 const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
 const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const API_CALL_DELAY = 500 // ms to wait before hitting api
 
-const BASE_SCALE = 0.3
-const BUCKET_Z = 3000
-const FILE_Z = 10
-const CAMERA_NEAR = 0.01
-const CAMERA_FAR = 9000
+// camera stuff
+const CAMERA_NEAR = 0.001
+const CAMERA_FAR = 4
 const CAMERA_FOV = 45
+const CAMERA_MAX_DIST = 4
+const CAMERA_MIN_DIST = 0
+
+// tile stuff
+const BASE_SCALE = 0.3
+const BUCKET_Z = 1
+const FILE_Z = 0.003
 const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
-const COLOR_SELECTED = new THREE.Color('rgb(255, 0, 0)')
 const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 50%)')
-const COLOR_OTHER = new THREE.Color('hsl(0, 100%, 30%)')
-const CURSOR_SCALE = 4
 const HOVER_PADDING = 10
 const HOVER_WIDTH = 300
 const MAX_VISIBLE_FILES = 1000
 const MOVE_DURATION = 300
 const SCENE_PADDING = 1.0
-const TEXT_SIZE = 100
+const TEXT_SIZE = 0.1
 const TEXT_Z = 0.1 // relative
-const TILE_COLOR_DIST = 100
-const TILE_FILE_DIST = 50
-const TILE_PADDING = 300
-const TILE_SIZE = 1000
+const TILE_PADDING = 0.3
+const TILE_SIZE = 0.9
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -307,7 +308,6 @@ export default {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.selectedBucket = this.stuff[this.PAST_INTERSECTED.obj.bucketIndex]
         const tileCount = this.selectedBucket.count
-        const side = Math.ceil(Math.sqrt(tileCount))
         const pct = tileCount / this.itemsTotal
         const scale = this.scaled ? BASE_SCALE : Math.sqrt(pct)
         const x = this.PAST_INTERSECTED.obj.position.x
@@ -332,21 +332,9 @@ export default {
           this.$store.commit('setBucket', null)
         } else {
           // clicked a file
-          const matrix = new THREE.Matrix4()
-          this.PAST_INTERSECTED.obj.getMatrixAt(
-            this.PAST_INTERSECTED.instanceId,
-            matrix
-          )
-          const p = new THREE.Vector3()
-          const s = new THREE.Vector3()
-          const q = new THREE.Quaternion()
-          matrix.decompose(p, q, s)
-          const x = p.x
-          const y = p.y
-          const z = p.z
-          const obj = new THREE.Mesh(new THREE.PlaneBufferGeometry(s.x, s.x))
-          obj.position.set(x, y, z)
-          this.moveCameraTo(obj)
+          const p = new THREE.Object3D()
+          p.position.set(this.PAST_INTERSECTED.obj)
+          this.moveCameraTo(p)
         }
         return
       }
@@ -372,8 +360,8 @@ export default {
       this.controls.rotateSpeed = 1.0
       this.controls.zoomSpeed = 1
       this.controls.panSpeed = 1
-      // this.controls.maxDistance = BUCKET_Z * 1.5
-      this.controls.minDistance = 2
+      this.controls.maxDistance = CAMERA_MAX_DIST
+      this.controls.minDistance = CAMERA_MIN_DIST
       // this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
       // this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
       this.controls.noRotate = true
@@ -635,6 +623,7 @@ export default {
         const x = (i % side) * (w + TILE_PADDING * scale) + w / 2
         const y = -(Math.floor(i / side) * (w + TILE_PADDING * scale) + -w / 2)
         const z = BUCKET_Z
+        console.log(x, y)
 
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
         color.toArray(colors, i * 3)
@@ -806,7 +795,7 @@ export default {
           if (this.PAST_INTERSECTED.instanceId !== instanceId) {
             // new thing so clear fileData
             this.fileData = {}
-            const obj = intersects[0].object
+            const obj = intersects[0].point
             this.PAST_INTERSECTED.instanceId = instanceId
             this.PAST_INTERSECTED.obj = obj
             this.PAST_INTERSECTED.fileId = this.currentBucket.ids[instanceId]
