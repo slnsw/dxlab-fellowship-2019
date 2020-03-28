@@ -58,7 +58,7 @@ const CAMERA_MIN_DIST = 0
 const ATLAS_SIZE = 2048
 const ATLAS_PER_SIDE = 64
 const ATLAS_TILE_SIZE = 32
-const BASE_SCALE = 0.3
+const BASE_SCALE = 0.5
 const BUCKET_Z = 1
 const FILE_Z = 0.003
 const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
@@ -68,7 +68,7 @@ const HOVER_WIDTH = 300
 const MAX_VISIBLE_FILES = 1000
 const MOVE_DURATION = 300
 const SCENE_PADDING = 1.0
-const TEXT_SIZE = 0.1
+const TEXT_SIZE = 0.06
 const TEXT_Z = 0 // relative
 const TILE_PADDING = 0.3
 const TILE_SIZE = 0.9
@@ -679,6 +679,9 @@ export default {
       const bucketsGroup = new THREE.Group()
       const textGroup = new THREE.Group()
       const side = Math.ceil(Math.sqrt(bucketCount))
+      const xini = -1
+      const yini = 1
+      const spacing = 2 / (side - 1)
 
       for (let i = 0, i3 = 0, l = bucketCount; i < l; i++, i3 += 3) {
         const b = buckets[i]
@@ -687,9 +690,11 @@ export default {
         const pct = count / this.itemsTotal
         const scale = this.scaled ? Math.sqrt(pct) : BASE_SCALE
         const w = TILE_SIZE * scale
-        const x = (i % side) * (w + TILE_PADDING * scale) + w / 2
-        const y = -(Math.floor(i / side) * (w + TILE_PADDING * scale) + -w / 2)
+        const x = xini + (i % side) * spacing
+        const y = yini - Math.floor(i / side) * spacing
         const z = BUCKET_Z
+
+        console.log(x, y)
 
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
         color.toArray(colors, i * 3)

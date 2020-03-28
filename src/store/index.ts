@@ -53,16 +53,16 @@ const STUFF: any = {
   },
   archTechDrawings: {
     id: 'm6zK940qx9v7K',
-    name: 'architectural    \ndrawings'
+    name: 'architectural drawings'
   },
-  maps: { id: '40XObXd7aA4a', name: 'published       \nmaps' },
-  manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'unpublished \nmaps' },
+  maps: { id: '40XObXd7aA4a', name: 'published maps' },
+  manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'unpublished maps' },
   objects: { id: '7MZAw5gxmyyaW', name: 'objects' },
   stamps: { id: 'BRg6jXK4mz4wG', name: 'stamps' },
   ephemera: { id: 'vz2D0Am8wvrlb', name: 'ephemera' },
   coin: { id: '76pM49Z2jxBzR', name: 'coins' },
   journals: { name: 'journals', id: 'Z5AB0OkPYjPb9' },
-  // manuscripts: { name: 'manuscripts', id: '330MWgKgY5adZ' },
+  manuscripts: { name: 'manuscripts', id: '330MWgKgY5adZ' },
   manuscriptNotatedMusic: {
     name: 'notated music',
     id: 'oWWJDK5PO44me'
