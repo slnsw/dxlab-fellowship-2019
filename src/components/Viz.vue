@@ -63,7 +63,7 @@ const BASE_SCALE = 0.49
 const BUCKET_Z = 1
 const FILE_Z = 0.003
 const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
-const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 50%)')
+const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 29%)')
 const HOVER_PADDING = 10
 const HOVER_WIDTH = 300
 const MAX_VISIBLE_FILES = 1000
@@ -71,7 +71,7 @@ const MOVE_DURATION = 300
 const SCENE_PADDING = 1.0
 const TEXT_SIZE = 0.06
 const TEXT_Z = 0 // relative
-const TILE_PADDING = 0.15
+const TILE_PADDING = 0.03125
 const TILE_SIZE = 0.9
 
 const instance = axios.create({
@@ -993,13 +993,13 @@ export default {
             const scale = obj.geometry.parameters.width / TILE_SIZE
             const position = new THREE.Vector3(
               obj.position.x,
-              obj.position.y + scale * 0.05,
+              obj.position.y + scale * 0.045,
               obj.position.z - 0.001
             )
             this.cursor.position.copy(position)
             this.cursor.scale = new THREE.Vector3(
               scale * 1.02,
-              scale * 1.14,
+              scale * 1.12,
               scale
             )
             this.cursor.visible = true
