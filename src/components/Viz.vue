@@ -71,7 +71,7 @@ const MOVE_DURATION = 300
 const SCENE_PADDING = 1.0
 const TEXT_SIZE = 0.06
 const TEXT_Z = 0 // relative
-const TILE_PADDING = 0.3
+const TILE_PADDING = 0.15
 const TILE_SIZE = 0.9
 
 const instance = axios.create({
@@ -838,7 +838,7 @@ export default {
       const h = window.innerHeight
       this.camera.aspect = w / h
       this.camera.updateProjectionMatrix()
-      this.renderer.setSize(w, h, false)
+      this.renderer.setSize(w, h)
       this.pickingTexture.setSize(w, h)
     },
     onDocumentMouseOut(event) {
@@ -903,11 +903,12 @@ export default {
     },
     pickFile() {
       if (this.filesObject && this.fileMode) {
-        const intersects = this.raycaster.intersectObject(this.filesObject)
+        const intersects = [] // this.raycaster.intersectObject(this.filesObject)
 
         if (intersects.length > 0) {
           if (this.$refs.three) this.$refs.three.classList.add('pointer')
           const instanceId = intersects[0].index
+          console.log(intersects[0])
           if (this.PAST_INTERSECTED.instanceId !== instanceId) {
             // new thing so clear fileData
             this.fileData = {}
