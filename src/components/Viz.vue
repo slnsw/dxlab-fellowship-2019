@@ -59,7 +59,7 @@ const CAMERA_MIN_DIST = 0
 const ATLAS_SIZE = 2048
 const ATLAS_PER_SIDE = 64
 const ATLAS_TILE_SIZE = 32
-const BASE_SCALE = 0.5
+const BASE_SCALE = 0.49
 const BUCKET_Z = 1
 const FILE_Z = 0.003
 const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
@@ -730,7 +730,9 @@ export default {
         const numberStr = count
         textGroup.add(
           createText(
-            `${labelStr}: ${new Intl.NumberFormat().format(numberStr)}`,
+            `${labelStr.toUpperCase()}: ${new Intl.NumberFormat().format(
+              numberStr
+            )}`,
             x - w / 2,
             textTop,
             textZ,
@@ -868,14 +870,14 @@ export default {
         (this.pixelBuffer[1] << 8) |
         this.pixelBuffer[2]
 
-      console.log(
-        id - 1 >= 0
-          ? 'You are hovering point ' + (id - 1).toString()
-          : 'You are hovering point',
-        x,
-        y,
-        this.pixelBuffer
-      )
+      // console.log(
+      //   id - 1 >= 0
+      //     ? 'You are hovering point ' + (id - 1).toString()
+      //     : 'You are hovering point',
+      //   x,
+      //   y,
+      //   this.pixelBuffer
+      // )
     },
     onDocumentMouseMove(event) {
       if (this.lastMouseMoveId) window.clearTimeout(this.lastMouseMoveId)
@@ -901,7 +903,7 @@ export default {
     },
     pickFile() {
       if (this.filesObject && this.fileMode) {
-        const intersects = [] //this.raycaster.intersectObject(this.filesObject)
+        const intersects = this.raycaster.intersectObject(this.filesObject)
 
         if (intersects.length > 0) {
           if (this.$refs.three) this.$refs.three.classList.add('pointer')
