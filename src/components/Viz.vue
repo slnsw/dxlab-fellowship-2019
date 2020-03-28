@@ -199,7 +199,7 @@ const createText = (text, x, y, z, scale) => {
   text = text ? text : '[undefined]'
   if (isNaN(text) && text.indexOf('|||') !== -1) text = text.split('|||')[1]
   const myText = new SpriteText(text)
-  myText.fontFace = 'Avenir'
+  myText.fontFace = 'Sackers Square Gothic'
   myText.textHeight = TEXT_SIZE * scale
   myText.position.set(x, y, z)
   myText.center = new THREE.Vector2(0, 0)
