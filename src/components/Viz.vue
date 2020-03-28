@@ -109,7 +109,7 @@ void main() {
   vColor = color;
   vAtlases = atlases;
   vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-  gl_PointSize = size * ( 1400.0 / -mvPosition.z );
+  gl_PointSize = size * ( 2250.0 / -mvPosition.z );
   gl_Position = projectionMatrix * mvPosition;
 
   // pass the varying data to the fragment shader
@@ -199,7 +199,7 @@ const createText = (text, x, y, z, scale) => {
   text = text ? text : '[undefined]'
   if (isNaN(text) && text.indexOf('|||') !== -1) text = text.split('|||')[1]
   const myText = new SpriteText(text)
-  myText.fontFace = 'Sackers Square Gothic'
+  myText.fontFace = 'Space Mono'
   myText.textHeight = TEXT_SIZE * scale
   myText.position.set(x, y, z)
   myText.center = new THREE.Vector2(0, 0)
@@ -720,7 +720,7 @@ export default {
         const numberStr = count
         textGroup.add(
           createText(
-            `${labelStr} (${new Intl.NumberFormat().format(numberStr)})`,
+            `${labelStr}: ${new Intl.NumberFormat().format(numberStr)}`,
             x - w / 2,
             textTop,
             textZ,
