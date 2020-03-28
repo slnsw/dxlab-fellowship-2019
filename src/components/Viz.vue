@@ -50,7 +50,7 @@ const API_CALL_DELAY = 500 // ms to wait before hitting api
 
 // camera stuff
 const CAMERA_NEAR = 0.001
-const CAMERA_FAR = 4
+const CAMERA_FAR = 10
 const CAMERA_FOV = 45
 const CAMERA_MAX_DIST = 4
 const CAMERA_MIN_DIST = 0
@@ -346,11 +346,10 @@ export default {
           .lineTo(-TILE_SIZE / 2, TILE_SIZE / 2)
           .lineTo(TILE_SIZE / 2, TILE_SIZE / 2)
       )
-      const material = new THREE.LineBasicMaterial({
-        color: COLOR_HOVERED,
-        linewidth: 1
+      const material = new THREE.MeshBasicMaterial({
+        color: COLOR_HOVERED
       })
-      const mesh = new THREE.Line(geometry, material)
+      const mesh = new THREE.Mesh(geometry, material)
       mesh.visible = false
       this.cursor = mesh
       this.scene.add(this.cursor)
@@ -880,6 +879,13 @@ export default {
       // )
     },
     onDocumentMouseMove(event) {
+      if (this.$refs.three) this.$refs.three.classList.remove('pointer')
+
+      if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
+
+      this.pickBucket()
+      this.pickFile()
+
       if (this.lastMouseMoveId) window.clearTimeout(this.lastMouseMoveId)
       this.lastMouseMoveId = window.setTimeout(this.loadFile, API_CALL_DELAY)
       event.preventDefault()
@@ -892,13 +898,6 @@ export default {
     },
     render() {
       // this.filesInView()
-      if (this.$refs.three) this.$refs.three.classList.remove('pointer')
-
-      if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
-
-      this.pickBucket()
-      this.pickFile()
-
       this.renderer.render(this.scene, this.camera)
     },
     pickFile() {
@@ -992,9 +991,17 @@ export default {
             this.PAST_INTERSECTED.instanceId = instanceId
             this.PAST_INTERSECTED.obj = obj
             const scale = obj.geometry.parameters.width / TILE_SIZE
-            const position = obj.position.clone()
+            const position = new THREE.Vector3(
+              obj.position.x,
+              obj.position.y + scale * 0.05,
+              obj.position.z - 0.001
+            )
             this.cursor.position.copy(position)
-            this.cursor.scale = new THREE.Vector3(scale, scale, scale)
+            this.cursor.scale = new THREE.Vector3(
+              scale * 1.02,
+              scale * 1.14,
+              scale
+            )
             this.cursor.visible = true
           }
         } else if (this.PAST_INTERSECTED.instanceId) {
