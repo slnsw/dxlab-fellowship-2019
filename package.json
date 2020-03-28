@@ -10,6 +10,7 @@
   "dependencies": {
     "axios": "^0.19.2",
     "bodybuilder": "^2.2.21",
+    "csvtojson": "^2.0.10",
     "dat.gui": "^0.7.6",
     "three": "^0.113.2",
     "three-spritetext": "^1.2.2",

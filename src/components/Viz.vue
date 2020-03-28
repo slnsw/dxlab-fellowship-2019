@@ -69,7 +69,7 @@ const MAX_VISIBLE_FILES = 1000
 const MOVE_DURATION = 300
 const SCENE_PADDING = 1.0
 const TEXT_SIZE = 0.1
-const TEXT_Z = 0.1 // relative
+const TEXT_Z = 0 // relative
 const TILE_PADDING = 0.3
 const TILE_SIZE = 0.9
 
@@ -363,16 +363,19 @@ export default {
       }
     },
     onClick() {
+      console.log('click', this.PAST_INTERSECTED)
       if (this.isMoving) return
       if (this.fileMode) {
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
+          console.log('outside')
           this.fileMode = false
           this.cleanFiles()
           this.moveCameraTo(this.selectedInstance.obj)
           this.$store.commit('setBucket', null)
         } else {
           // clicked a file
+          console.log('file')
           const p = new THREE.Object3D()
           p.position.set(this.PAST_INTERSECTED.obj)
           this.moveCameraTo(p)
@@ -384,11 +387,13 @@ export default {
         if (
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
+          console.log('bucket')
           this.hideCursor()
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
       } else {
+        console.log('main')
         this.moveCameraTo(this.bucketsGroup)
         this.hideCursor()
         this.selectedInstance = {}
@@ -672,17 +677,13 @@ export default {
         const x = (i % side) * (w + TILE_PADDING * scale) + w / 2
         const y = -(Math.floor(i / side) * (w + TILE_PADDING * scale) + -w / 2)
         const z = BUCKET_Z
-        console.log(x, y)
 
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
         color.toArray(colors, i * 3)
 
         // thumb
         const geometry = new THREE.PlaneBufferGeometry(w, w)
-        const url =
-          THUMBS_BASE_URL +
-          '/' +
-          b.images[Math.floor(Math.random() * b.images.length)]
+        const url = b.images[Math.floor(Math.random() * b.images.length)]
         const texture = new THREE.TextureLoader().load(url)
         texture.encoding = THREE.sRGBEncoding
         const material = new THREE.MeshBasicMaterial({
@@ -836,7 +837,7 @@ export default {
     },
     pickFile() {
       if (this.filesObject && this.fileMode) {
-        const intersects = this.raycaster.intersectObject(this.filesObject)
+        const intersects = [] //this.raycaster.intersectObject(this.filesObject)
 
         if (intersects.length > 0) {
           if (this.$refs.three) this.$refs.three.classList.add('pointer')

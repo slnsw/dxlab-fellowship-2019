@@ -8,7 +8,7 @@ import Vuex from 'vuex'
 Vue.use(Vuex)
 
 import bodybuilder from 'bodybuilder'
-
+import csv from 'csvtojson'
 import * as THREE from 'three'
 
 import AjaxTextureLoader from '@/utils/AjaxTextureLoader'
@@ -16,6 +16,7 @@ import AjaxTextureLoader from '@/utils/AjaxTextureLoader'
 const TILE_SIZE = 32
 const MAX_QUERY_LIMIT = 4096
 const MAX_WINDOW_SIZE = 20000
+const ELASTIC_BASE_URL = process.env.VUE_APP_ELASTIC_BASE_URL
 const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
 
@@ -209,6 +210,38 @@ const sortByHue = ({ hsls, width }) => {
   return huePositions
 }
 
+const getImagesForBucket = async ({ bucket }) => {
+  const url = ELASTIC_BASE_URL + '/_search'
+  const key = bucket.key
+  const id = bucket.id
+  const esQuery = bucket.esQuery
+  const params = { track_total_hits: true }
+  let query = baseQuery()
+    .size(10)
+    .rawOption('_source', 'props_file_name_title')
+  query = makeFilter({ key, id, query })
+  if (esQuery) query = makeFancyFilter({ query, esQuery })
+
+  const baseResponse = await instance.post(url, {
+    ...query.build(),
+    ...params
+  })
+  const hits = baseResponse.data.hits
+  const images = hits.hits.map(
+    (hit) =>
+      `${hit._source.props_file_name_title[0].substr(0, 4)}/${
+        hit._source.props_file_name_title[0]
+      }`
+  )
+  const bucketData = {
+    ...bucket,
+    count: hits.total.value,
+    key,
+    images
+  }
+  return bucketData
+}
+
 export default new Vuex.Store({
   state: {
     loaded: false,
@@ -318,46 +351,27 @@ export default new Vuex.Store({
       state.stuff = { ...newStuff }
     },
     async getBuckets(state) {
-      const url = process.env.VUE_APP_ELASTIC_BASE_URL + '/_search'
-      const params = { track_total_hits: true }
-      const stuffKeys = Object.keys(STUFF)
+      const url = '/counts.csv'
+      const response = await instance.get(url)
+      const data = await csv().fromString(response.data)
+      console.log(data)
       const buckets = {}
-      await asyncForEach(Object.values(STUFF), async (val, index) => {
-        const key = stuffKeys[index]
-        const id = val.id
-        let query = baseQuery()
-          .size(10)
-          .rawOption('_source', 'props_file_name_title')
-        query = makeFilter({ key, id, query })
-        const esQuery = val.esQuery
-        if (esQuery) query = makeFancyFilter({ query, esQuery })
-
-        const baseResponse = await instance.post(url, {
-          ...query.build(),
-          ...params
-        })
-        const hits = baseResponse.data.hits
-        const images = hits.hits.map(
-          (hit) =>
-            `${hit._source.props_file_name_title[0].substr(0, 4)}/${
-              hit._source.props_file_name_title[0]
-            }`
-        )
-        const bucketData = {
-          ...state.stuff[key],
-          count: hits.total.value,
-          key,
-          images
+      let total = 0
+      data.forEach((row) => {
+        const key = row.bucket
+        if (!STUFF[key]) return
+        const count = Number(row.count)
+        const bucket = { ...STUFF[key], count, key }
+        const imCount = count < 10 ? count : 10
+        bucket.images = []
+        for (let i = 0; i < imCount; i++) {
+          bucket.images.push('/images/' + key + '/' + i + '.jpg')
         }
-        buckets[key] = bucketData
+        buckets[key] = bucket
+        total += count
       })
       state.stuff = buckets
-      const baseResponse = await instance.post(url, {
-        ...baseQuery().build(),
-        ...params
-      })
-      const hits = baseResponse.data.hits
-      state.itemsTotal = hits.total.value
+      state.itemsTotal = total
       state.loaded = true
     }
   },
