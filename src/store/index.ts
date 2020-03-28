@@ -354,7 +354,6 @@ export default new Vuex.Store({
       const url = '/counts.csv'
       const response = await instance.get(url)
       const data = await csv().fromString(response.data)
-      console.log(data)
       const buckets = {}
       let total = 0
       data.forEach((row) => {

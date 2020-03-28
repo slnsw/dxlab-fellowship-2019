@@ -91,6 +91,7 @@ uniform vec3 cameraPosition;
 uniform float atlasPx;
 uniform float cellPx;
 uniform float pointScale;
+uniform float atlases;
 
 // these are the buffer attributes we specified when creating the geometry
 attribute vec3 position;
@@ -98,6 +99,7 @@ attribute vec2 uv;
 
 // these are attributes we will pass from the vertex to the fragment shader
 varying vec2 vUv;
+varying float vAtlases;
 
 attribute float size;
 attribute vec3 color;
@@ -105,8 +107,9 @@ varying vec3 vColor;
 
 void main() {
   vColor = color;
+  vAtlases = atlases;
   vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-  gl_PointSize = size * ( 1000.0 / -mvPosition.z );
+  gl_PointSize = size * ( 1400.0 / -mvPosition.z );
   gl_Position = projectionMatrix * mvPosition;
 
   // pass the varying data to the fragment shader
@@ -122,12 +125,17 @@ uniform float atlasPx;
 uniform float cellPx;
 
 varying vec2 vUv;
-
+varying float vAtlases;
 varying vec3 vColor;
+
 void main() {
   vec2 uv = (vUv * cellPx + gl_PointCoord.xy * cellPx) / atlasPx;
 
-  gl_FragColor = texture2D(texture, uv);
+  if (vAtlases > 0.5) {
+    gl_FragColor = texture2D(texture, uv);
+    } else {
+    gl_FragColor = vec4(vColor, 1.0);
+  }
 
   // this line mixes the actual texture color with some red
   //gl_FragColor = mix(gl_FragColor, vec4(1.0, 0.0, 0.0, 1.0), 0.5);
@@ -202,6 +210,7 @@ export default {
   components: {},
   data() {
     return {
+      showAtlases: false,
       scaled: false,
       fileData: {},
       isMoving: false,
@@ -334,9 +343,9 @@ export default {
       this.cursor = mesh
       this.scene.add(this.cursor)
 
-      // const gui = new GUI()
+      const gui = new GUI()
 
-      // gui.add(this, 'scaled')
+      gui.add(this, 'showAtlases')
     },
     onDoubleClick(e) {
       if (this.fileMode) {
@@ -546,6 +555,10 @@ export default {
         vertexShader: vShader,
         fragmentShader: fShader,
         uniforms: {
+          atlases: {
+            type: 'f',
+            value: this.showAtlases ? 1.0 : 0.0
+          },
           texture: {
             type: 't',
             value: texture
