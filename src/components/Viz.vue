@@ -24,6 +24,7 @@
     <canvas
       ref="three"
       class="three"
+      @mousemove="onCanvasMouseMove"
       @dblclick.prevent="onDoubleClick"
       @click.prevent="onClick"
     ></canvas>
@@ -109,7 +110,7 @@ void main() {
   vColor = color;
   vAtlases = atlases;
   vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-  gl_PointSize = size * ( 2400.0 / -mvPosition.z );
+  gl_PointSize = size * ( 1400.0 / -mvPosition.z );
   gl_Position = projectionMatrix * mvPosition;
 
   // pass the varying data to the fragment shader
@@ -231,6 +232,9 @@ export default {
       lastCamera: null,
       mouse: {},
       PAST_INTERSECTED: {},
+      pickingScene: null,
+      pickingTexture: null,
+      pixelBuffer: null,
       raycaster: null,
       renderer: null,
       scaled: false,
@@ -319,8 +323,17 @@ export default {
       this.scene.background = new THREE.Color('hsl(0, 0%, 15%)')
 
       this.raycaster = new THREE.Raycaster()
-      // this.raycaster.params.Points.threshold = TILE_SIZE * 0.5
-      this.mouse = new THREE.Vector2(-1e10, -1e10)
+      this.mouse = new THREE.Vector2(-1e10, -1e10) // init far outside the canvas
+
+      // file picking scene
+      this.pickingScene = new THREE.Scene()
+      this.pickingScene.background = new THREE.Color(0x000000)
+      // must be identical to the size of the drawn scene
+      this.pickingTexture = new THREE.WebGLRenderTarget(
+        window.innerWidth,
+        window.innerHeight
+      )
+      this.pixelBuffer = new Uint8Array(4)
 
       this.camera = createBaseCamera()
 
@@ -693,8 +706,6 @@ export default {
         const y = yini - Math.floor(i / side) * spacing
         const z = BUCKET_Z
 
-        console.log(x, y)
-
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
         color.toArray(colors, i * 3)
 
@@ -821,14 +832,50 @@ export default {
       this.render()
     },
     onResize() {
-      this.camera.aspect = window.innerWidth / window.innerHeight
+      const w = window.innerWidth
+      const h = window.innerHeight
+      this.camera.aspect = w / h
       this.camera.updateProjectionMatrix()
-      this.renderer.setSize(window.innerWidth, window.innerHeight)
+      this.renderer.setSize(w, h, false)
+      this.pickingTexture.setSize(w, h)
     },
     onDocumentMouseOut(event) {
       this.lastFileId = null
       this.fileData = {}
       if (this.$refs.file) this.$refs.file.classList.add('hidden')
+    },
+    onCanvasMouseMove(e) {
+      // render the picking scene
+      this.renderer.setRenderTarget(this.pickingTexture)
+      this.renderer.render(this.scene, this.camera)
+      this.renderer.setRenderTarget(null)
+
+      const x = e.clientX
+      const y = this.pickingTexture.height - e.clientY
+
+      // read the selected pixel
+      this.renderer.readRenderTargetPixels(
+        this.pickingTexture,
+        x,
+        y,
+        1,
+        1,
+        this.pixelBuffer
+      )
+
+      const id =
+        (this.pixelBuffer[0] << 16) |
+        (this.pixelBuffer[1] << 8) |
+        this.pixelBuffer[2]
+
+      console.log(
+        id - 1 >= 0
+          ? 'You are hovering point ' + (id - 1).toString()
+          : 'You are hovering point',
+        x,
+        y,
+        this.pixelBuffer
+      )
     },
     onDocumentMouseMove(event) {
       if (this.lastMouseMoveId) window.clearTimeout(this.lastMouseMoveId)
