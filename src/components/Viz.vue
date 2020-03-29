@@ -428,15 +428,13 @@ export default {
       this.controls = new TrackballControls(this.camera, this.$refs.three)
       this.controls.rotateSpeed = 1.0
       this.controls.zoomSpeed = 1
-      this.controls.panSpeed = 1
+      this.controls.panSpeed = 0.1
       this.controls.maxDistance = CAMERA_MAX_DIST
       this.controls.minDistance = CAMERA_MIN_DIST
       // this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
       // this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
       this.controls.noRotate = true
-      this.controls.screenSpacePanning = true
-      this.controls.enableDamping = true
-      this.controls.dampingFactor = 0.1
+      this.controls.dynamicDampingFactor = 0.1
     },
     filesInView() {
       if (!this.fileMode || !this.filesObject) return
