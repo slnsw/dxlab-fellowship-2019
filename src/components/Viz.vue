@@ -25,6 +25,7 @@
       ref="three"
       class="three"
       @mousemove="onCanvasMouseMove"
+      @mousedown="onDocumentMouseMove"
       @dblclick.prevent="onDoubleClick"
       @click.prevent="onClick"
     ></canvas>
