@@ -361,6 +361,7 @@ export default {
     onDoubleClick(e) {
       if (this.fileMode) {
         if (this.PAST_INTERSECTED.fileId !== undefined) {
+          // double-clicked a file
           const url = FILES_BASE_URL + '/' + this.PAST_INTERSECTED.fileId
           window.open(url, '_blank')
         }
@@ -379,6 +380,7 @@ export default {
         this.moveCameraTo(obj)
         this.fileMode = true
         this.cameraObj = obj
+        window.setTimeout(() => (this.PAST_INTERSECTED = {}), 100)
         this.$store.commit('setBucket', this.selectedBucket)
       }
     },
