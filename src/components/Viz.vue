@@ -32,6 +32,7 @@
 </template>
 
 <script>
+/* eslint-disable no-console */
 const axios = require('axios').default
 
 import { mapState, mapGetters, mapActions } from 'vuex'
