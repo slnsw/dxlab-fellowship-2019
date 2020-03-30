@@ -522,7 +522,6 @@ export default {
     cleanFiles() {
       this.filesLoaded = null
       if (!this.filesObject) return
-      console.log('cleanup')
       this.scene.remove(this.filesObject)
 
       // TODO: dispose of atlases
@@ -894,33 +893,40 @@ export default {
       const ymax = row * (tileSize + padding) + padding + tileSize
       // make sure it is above a square and not in the gutter
       const tileCount = this.selectedBucket.count
+      const index = col + row * side
+      // console.log(index, xx, yy, xmin, xmax, ymin, ymax)
       if (
-        col + row * side < tileCount &&
+        index < tileCount &&
         xx > xmin &&
         xx < xmax &&
         yy > ymin &&
         yy < ymax
-      )
-        return { col, row }
-      return false
+      ) {
+        return index
+      }
+      return -1
     },
     pickFile() {
       if (this.pickingMesh && this.fileMode) {
         const intersects = this.raycaster.intersectObject(this.pickingMesh)
 
         if (intersects.length > 0 && intersects[0].uv) {
-          const quadrant = this.getFileAt(intersects[0].uv)
-          if (quadrant) {
+          const instanceId = this.getFileAt(intersects[0].uv)
+          console.log(instanceId)
+          if (instanceId !== -1) {
             this.$refs.three.classList.add('pointer')
+            if (this.PAST_INTERSECTED.instanceId !== instanceId) {
+              // new thing so clear fileData
+              this.fileData = {}
+              const obj = intersects[0].point
+              this.PAST_INTERSECTED.instanceId = instanceId
+              this.PAST_INTERSECTED.obj = obj
+              this.PAST_INTERSECTED.fileId = this.currentBucket.ids[instanceId]
+            }
+          } else {
+            this.$refs.three.classList.remove('pointer')
+            this.PAST_INTERSECTED = {}
           }
-          // if (this.PAST_INTERSECTED.instanceId !== instanceId) {
-          //   // new thing so clear fileData
-          //   this.fileData = {}
-          //   const obj = intersects[0].point
-          //   this.PAST_INTERSECTED.instanceId = instanceId
-          //   this.PAST_INTERSECTED.obj = obj
-          //   this.PAST_INTERSECTED.fileId = this.currentBucket.ids[instanceId]
-          // }
         } else if (this.PAST_INTERSECTED.instanceId) {
           this.PAST_INTERSECTED = {}
         }
