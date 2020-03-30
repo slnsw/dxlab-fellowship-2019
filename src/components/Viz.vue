@@ -894,7 +894,6 @@ export default {
       // make sure it is above a square and not in the gutter
       const tileCount = this.selectedBucket.count
       const index = col + row * side
-      // console.log(index, xx, yy, xmin, xmax, ymin, ymax)
       if (
         index < tileCount &&
         xx > xmin &&
@@ -912,7 +911,6 @@ export default {
 
         if (intersects.length > 0 && intersects[0].uv) {
           const instanceId = this.getFileAt(intersects[0].uv)
-          console.log(instanceId)
           if (instanceId !== -1) {
             this.$refs.three.classList.add('pointer')
             if (this.PAST_INTERSECTED.instanceId !== instanceId) {
