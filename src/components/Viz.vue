@@ -24,7 +24,6 @@
     <canvas
       ref="three"
       class="three"
-      @mousemove="onCanvasMouseMove"
       @mousedown="onDocumentMouseMove"
       @dblclick.prevent="onDoubleClick"
       @click.prevent="onClick"
@@ -234,9 +233,7 @@ export default {
       lastCamera: null,
       mouse: {},
       PAST_INTERSECTED: {},
-      pickingScene: null,
-      pickingTexture: null,
-      pixelBuffer: null,
+      pickingMesh: null,
       raycaster: null,
       renderer: null,
       scaled: false,
@@ -326,16 +323,6 @@ export default {
 
       this.raycaster = new THREE.Raycaster()
       this.mouse = new THREE.Vector2(-1e10, -1e10) // init far outside the canvas
-
-      // file picking scene
-      this.pickingScene = new THREE.Scene()
-      this.pickingScene.background = new THREE.Color(0x000000)
-      // must be identical to the size of the drawn scene
-      this.pickingTexture = new THREE.WebGLRenderTarget(
-        window.innerWidth,
-        window.innerHeight
-      )
-      this.pixelBuffer = new Uint8Array(4)
 
       this.camera = createBaseCamera()
 
@@ -535,10 +522,22 @@ export default {
     cleanFiles() {
       this.filesLoaded = null
       if (!this.filesObject) return
+      console.log('cleanup')
       this.scene.remove(this.filesObject)
+
+      // TODO: dispose of atlases
+
+      // remove picking
+      this.scene.remove(this.pickingMesh)
+      this.pickingMesh.geometry.dispose()
+      this.pickingMesh.material.map.dispose()
+      this.pickingMesh.material.dispose()
+
+      // TODO: legacy. must delete (probably)
       if (!this.filesGroup) return
       this.filesGroup.children.forEach((t) => {
         t.geometry.dispose()
+        t.material.dispose()
         t.material.map.dispose()
       })
       this.scene.remove(this.filesGroup)
@@ -615,6 +614,20 @@ export default {
       )
 
       this.filesObject = new THREE.Points(geometry, material)
+
+      // picking texture
+      const emptyTexture = new THREE.Texture(undefined, THREE.UVMapping)
+      const planeMaterial = new THREE.MeshBasicMaterial({
+        opacity: 0,
+        transparent: true,
+        map: emptyTexture
+      })
+      const pickingGeometry = new THREE.PlaneBufferGeometry(realW, realW, 1, 1)
+      this.pickingMesh = new THREE.Mesh(pickingGeometry, planeMaterial)
+      this.pickingMesh.position.x = obj.position.x
+      this.pickingMesh.position.y = obj.position.y
+      this.pickingMesh.position.z = obj.position.z
+      this.scene.add(this.pickingMesh)
 
       // an mga object to hold the bucket file real world data
       this.filesObject.mga = {
@@ -840,54 +853,13 @@ export default {
       this.camera.aspect = w / h
       this.camera.updateProjectionMatrix()
       this.renderer.setSize(w, h)
-      this.pickingTexture.setSize(w, h)
     },
     onDocumentMouseOut(event) {
       this.lastFileId = null
       this.fileData = {}
       if (this.$refs.file) this.$refs.file.classList.add('hidden')
     },
-    onCanvasMouseMove(e) {
-      // render the picking scene
-      this.renderer.setRenderTarget(this.pickingTexture)
-      this.renderer.render(this.scene, this.camera)
-      this.renderer.setRenderTarget(null)
-
-      const x = e.clientX
-      const y = this.pickingTexture.height - e.clientY
-
-      // read the selected pixel
-      this.renderer.readRenderTargetPixels(
-        this.pickingTexture,
-        x,
-        y,
-        1,
-        1,
-        this.pixelBuffer
-      )
-
-      const id =
-        (this.pixelBuffer[0] << 16) |
-        (this.pixelBuffer[1] << 8) |
-        this.pixelBuffer[2]
-
-      // console.log(
-      //   id - 1 >= 0
-      //     ? 'You are hovering point ' + (id - 1).toString()
-      //     : 'You are hovering point',
-      //   x,
-      //   y,
-      //   this.pixelBuffer
-      // )
-    },
     onDocumentMouseMove(event) {
-      if (this.$refs.three) this.$refs.three.classList.remove('pointer')
-
-      if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
-
-      this.pickBucket()
-      this.pickFile()
-
       if (this.lastMouseMoveId) window.clearTimeout(this.lastMouseMoveId)
       this.lastMouseMoveId = window.setTimeout(this.loadFile, API_CALL_DELAY)
       event.preventDefault()
@@ -901,23 +873,54 @@ export default {
     render() {
       // this.filesInView()
       this.renderer.render(this.scene, this.camera)
+      if (this.$refs.three) this.$refs.three.classList.remove('pointer')
+
+      if (this.mouse) this.raycaster.setFromCamera(this.mouse, this.camera)
+
+      this.pickBucket()
+      this.pickFile()
+    },
+    getFileAt(uv) {
+      const { x, y } = uv
+      const { realW, tileSize, side } = this.filesObject.mga
+      const col = Math.floor(side * x)
+      const row = Math.floor(side * (1 - y))
+      const padding = tileSize * (TILE_PADDING / TILE_SIZE)
+      const xx = realW * x
+      const yy = realW - realW * y
+      const xmin = col * (tileSize + padding) + padding
+      const xmax = col * (tileSize + padding) + padding + tileSize
+      const ymin = row * (tileSize + padding) + padding
+      const ymax = row * (tileSize + padding) + padding + tileSize
+      // make sure it is above a square and not in the gutter
+      const tileCount = this.selectedBucket.count
+      if (
+        col + row * side < tileCount &&
+        xx > xmin &&
+        xx < xmax &&
+        yy > ymin &&
+        yy < ymax
+      )
+        return { col, row }
+      return false
     },
     pickFile() {
-      if (this.filesObject && this.fileMode) {
-        const intersects = [] // this.raycaster.intersectObject(this.filesObject)
+      if (this.pickingMesh && this.fileMode) {
+        const intersects = this.raycaster.intersectObject(this.pickingMesh)
 
-        if (intersects.length > 0) {
-          if (this.$refs.three) this.$refs.three.classList.add('pointer')
-          const instanceId = intersects[0].index
-          console.log(intersects[0])
-          if (this.PAST_INTERSECTED.instanceId !== instanceId) {
-            // new thing so clear fileData
-            this.fileData = {}
-            const obj = intersects[0].point
-            this.PAST_INTERSECTED.instanceId = instanceId
-            this.PAST_INTERSECTED.obj = obj
-            this.PAST_INTERSECTED.fileId = this.currentBucket.ids[instanceId]
+        if (intersects.length > 0 && intersects[0].uv) {
+          const quadrant = this.getFileAt(intersects[0].uv)
+          if (quadrant) {
+            this.$refs.three.classList.add('pointer')
           }
+          // if (this.PAST_INTERSECTED.instanceId !== instanceId) {
+          //   // new thing so clear fileData
+          //   this.fileData = {}
+          //   const obj = intersects[0].point
+          //   this.PAST_INTERSECTED.instanceId = instanceId
+          //   this.PAST_INTERSECTED.obj = obj
+          //   this.PAST_INTERSECTED.fileId = this.currentBucket.ids[instanceId]
+          // }
         } else if (this.PAST_INTERSECTED.instanceId) {
           this.PAST_INTERSECTED = {}
         }
