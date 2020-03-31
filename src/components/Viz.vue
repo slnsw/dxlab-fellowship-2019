@@ -64,7 +64,7 @@ const BLACK_TEXTURE = new THREE.TextureLoader().load('/black.gif')
 
 const BASE_SCALE = 0.49
 const BUCKET_Z = 1
-const FILE_Z = 0.003
+const FILE_Z = -1
 const CURSOR_COLOR = new THREE.Color('hsl(3.6, 100%, 29%)')
 const HOVER_PADDING = 10
 const HOVER_WIDTH = 300
@@ -149,7 +149,7 @@ varying vec3 vColor;
 
 void main() {
   vec2 uv = (vUv * cellPx + gl_PointCoord.xy * cellPx) / atlasPx;
-  int textureIndex = int(floor(vFIndex));
+  int textureIndex = int(vFIndex);
 
   if (vShowAtlases > 0.5 && vLoadedAtlases > 0.5) {
     ${buildTextureTree(atlasCount)}
@@ -527,6 +527,8 @@ export default {
       } else {
         atlases = createEmptyAtlases(atlasCount)
       }
+
+      console.log(fShader(atlasCount))
 
       const material = new THREE.RawShaderMaterial({
         vertexShader: vShader,
