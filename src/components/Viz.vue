@@ -254,6 +254,7 @@ export default {
       'defaultPositions',
       'defaultColors',
       'huePositions',
+      'hueIndexes',
       'atlases',
       'loadedAtlas',
       'currentBucket',
@@ -901,17 +902,23 @@ export default {
         yy > ymin &&
         yy < ymax
       ) {
-        return index
+        const fileId =
+          this.sort === 'default'
+            ? this.currentBucket.ids[index]
+            : this.currentBucket.ids[this.hueIndexes[index]]
+        const instanceId = index
+        return { instanceId, fileId }
       }
-      return -1
+      return null
     },
     pickFile() {
       if (this.pickingMesh && this.fileMode) {
         const intersects = this.raycaster.intersectObject(this.pickingMesh)
 
         if (intersects.length > 0 && intersects[0].uv) {
-          const instanceId = this.getFileAt(intersects[0].uv)
-          if (instanceId !== -1) {
+          const data = this.getFileAt(intersects[0].uv)
+          if (data) {
+            const { instanceId, fileId } = data
             this.$refs.three.classList.add('pointer')
             if (this.PAST_INTERSECTED.instanceId !== instanceId) {
               // new thing so clear fileData
@@ -919,7 +926,7 @@ export default {
               const obj = intersects[0].point
               this.PAST_INTERSECTED.instanceId = instanceId
               this.PAST_INTERSECTED.obj = obj
-              this.PAST_INTERSECTED.fileId = this.currentBucket.ids[instanceId]
+              this.PAST_INTERSECTED.fileId = fileId
             }
           } else {
             this.$refs.three.classList.remove('pointer')

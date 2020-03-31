@@ -198,6 +198,7 @@ const sortByHue = ({ hsls, width }) => {
   toSort.sort((a, b) => b.h - a.h) // TODO: implement better color sorting
   const sorted = toSort.map((i) => i.i)
   const huePositions = new Float32Array(hsls.length)
+  const hueIndexes = new Float32Array(l)
   sorted.forEach((i, idx) => {
     // the i-th color item needs to go to x,y based on idx
     const x = idx % width
@@ -206,8 +207,9 @@ const sortByHue = ({ hsls, width }) => {
     huePositions[i * 3] = x
     huePositions[i * 3 + 1] = y
     huePositions[i * 3 + 2] = z
+    hueIndexes[idx] = i
   })
-  return huePositions
+  return { huePositions, hueIndexes }
 }
 
 const getImagesForBucket = async ({ bucket }) => {
@@ -248,6 +250,7 @@ export default new Vuex.Store({
     sort: 'default',
     stuff: STUFF,
     huePositions: null,
+    hueIndexes: null,
     defaultPositions: null,
     defaultColors: null,
     currentBucket: null,
@@ -317,7 +320,9 @@ export default new Vuex.Store({
       )
       state.defaultColors = colors
       state.defaultPositions = positions
-      state.huePositions = sortByHue({ hsls, width })
+      const { huePositions, hueIndexes } = sortByHue({ hsls, width })
+      state.huePositions = huePositions
+      state.hueIndexes = hueIndexes
       state.currentBucket = currentBucket
     },
     async getIdsForBucket(state, bucket) {
