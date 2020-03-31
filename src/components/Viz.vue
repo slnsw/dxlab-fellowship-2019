@@ -50,7 +50,7 @@ const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const API_CALL_DELAY = 500 // ms to wait before hitting api
 
 // camera stuff
-const CAMERA_NEAR = 0.001
+const CAMERA_NEAR = 0.00005
 const CAMERA_FAR = 10
 const CAMERA_FOV = 45
 const CAMERA_MAX_DIST = 4
@@ -64,7 +64,7 @@ const BASE_SCALE = 0.49
 const BUCKET_Z = 1
 const FILE_Z = 0.003
 const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
-const COLOR_HOVERED = new THREE.Color('hsl(3.6, 100%, 29%)')
+const CURSOR_COLOR = new THREE.Color('hsl(3.6, 100%, 29%)')
 const HOVER_PADDING = 10
 const HOVER_WIDTH = 300
 const MAX_VISIBLE_FILES = 1000
@@ -135,7 +135,7 @@ void main() {
 
   if (vAtlases > 0.5) {
     gl_FragColor = texture2D(texture, uv);
-    } else {
+  } else {
     gl_FragColor = vec4(vColor, 1.0);
   }
 
@@ -337,7 +337,7 @@ export default {
           .lineTo(TILE_SIZE / 2, TILE_SIZE / 2)
       )
       const material = new THREE.MeshBasicMaterial({
-        color: COLOR_HOVERED
+        color: CURSOR_COLOR
       })
       const mesh = new THREE.Mesh(geometry, material)
       mesh.visible = false
@@ -380,7 +380,6 @@ export default {
       if (this.fileMode) {
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
-          console.log('outside')
           this.fileMode = false
           this.cleanFiles()
           this.moveCameraTo(this.selectedInstance.obj)
@@ -388,9 +387,7 @@ export default {
         } else {
           // clicked a file
           console.log('file')
-          const p = new THREE.Object3D()
-          p.position.set(this.PAST_INTERSECTED.obj)
-          this.moveCameraTo(p)
+          this.moveCameraTo(this.PAST_INTERSECTED.obj)
         }
         return
       }
@@ -660,8 +657,8 @@ export default {
       }
 
       const { realW, tileSize } = this.filesObject.mga
-      const x = this.filesObject.mga.x - realW / 2 + tileSize / 2
-      const y = this.filesObject.mga.y + realW / 2 - tileSize / 2
+      const x = this.filesObject.mga.x - realW * 0.5 + tileSize * 0.5
+      const y = this.filesObject.mga.y + realW * 0.5 - tileSize * 0.5
       const z = this.filesObject.mga.z
 
       const padding = tileSize * (TILE_PADDING / TILE_SIZE)
@@ -883,6 +880,8 @@ export default {
     getFileAt(uv) {
       const { x, y } = uv
       const { realW, tileSize, side } = this.filesObject.mga
+      const mx = this.filesObject.mga.x
+      const my = this.filesObject.mga.y
       const col = Math.floor(side * x)
       const row = Math.floor(side * (1 - y))
       const padding = tileSize * (TILE_PADDING / TILE_SIZE)
@@ -907,7 +906,9 @@ export default {
             ? this.currentBucket.ids[index]
             : this.currentBucket.ids[this.hueIndexes[index]]
         const instanceId = index
-        return { instanceId, fileId }
+        const tx = mx + xmin + tileSize * 0.5 - realW * 0.5
+        const ty = my - ymin - tileSize * 0.5 + realW * 0.5
+        return { instanceId, fileId, tx, ty }
       }
       return null
     },
@@ -918,12 +919,22 @@ export default {
         if (intersects.length > 0 && intersects[0].uv) {
           const data = this.getFileAt(intersects[0].uv)
           if (data) {
-            const { instanceId, fileId } = data
-            this.$refs.three.classList.add('pointer')
+            const { instanceId, fileId, tx, ty } = data
+            if (this.$refs.three) this.$refs.three.classList.add('pointer')
             if (this.PAST_INTERSECTED.instanceId !== instanceId) {
               // new thing so clear fileData
+              const size = this.filesObject.geometry.getAttribute('size')
+                .array[0]
+
               this.fileData = {}
-              const obj = intersects[0].point
+              const point = intersects[0].point
+              const geometry = new THREE.PlaneBufferGeometry(size, size)
+              const material = new THREE.MeshBasicMaterial()
+              const obj = new THREE.Mesh(geometry, material)
+              console.log(intersects[0])
+              obj.position.x = tx
+              obj.position.y = ty
+              obj.position.z = point.z
               this.PAST_INTERSECTED.instanceId = instanceId
               this.PAST_INTERSECTED.obj = obj
               this.PAST_INTERSECTED.fileId = fileId
@@ -1007,15 +1018,12 @@ export default {
             this.PAST_INTERSECTED.instanceId = instanceId
             this.PAST_INTERSECTED.obj = obj
             const scale = obj.geometry.parameters.width / TILE_SIZE
-            const position = new THREE.Vector3(
-              obj.position.x,
-              obj.position.y + scale * 0.045,
-              obj.position.z - 0.001
-            )
-            this.cursor.position.copy(position)
+            this.cursor.position.x = obj.position.x
+            this.cursor.position.y = obj.position.y + scale * 0.5
+            this.cursor.position.z = obj.position.z
             this.cursor.scale = new THREE.Vector3(
               scale * 1.02,
-              scale * 1.12,
+              scale * 0.1,
               scale
             )
             this.cursor.visible = true
