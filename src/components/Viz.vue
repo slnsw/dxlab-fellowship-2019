@@ -128,7 +128,10 @@ void main() {
 const buildTextureTree = (count) => {
   const tree = []
   for (let i = 0; i < count; i++) {
-    const str = `if (textureIndex == ${i}) gl_FragColor = texture2D(texture[${i}], uv);\n`
+    const str = `
+    if (textureIndex == ${i}) {
+      gl_FragColor = texture2D(texture[${i}], uv);
+    }`
     tree.push(str)
   }
   return tree.join('')
