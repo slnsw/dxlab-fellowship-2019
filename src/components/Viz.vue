@@ -125,6 +125,15 @@ void main() {
 }
 `
 
+const buildTextureTree = (count) => {
+  const tree = []
+  for (let i = 0; i < count; i++) {
+    const str = `if (textureIndex == ${i}) gl_FragColor = texture2D(texture[${i}], uv);\n`
+    tree.push(str)
+  }
+  return tree.join('')
+}
+
 const fShader = (atlasCount) => `
 precision mediump float;
 
@@ -143,15 +152,10 @@ void main() {
   int textureIndex = int(floor(vFIndex));
 
   if (vShowAtlases > 0.5 && vLoadedAtlases > 0.5) {
-    for (int i=0; i<${atlasCount}; i++) {
-      if (i == textureIndex) gl_FragColor = texture2D(texture[i], uv);
-    }
+    ${buildTextureTree(atlasCount)}
   } else {
     gl_FragColor = vec4(vColor, 1.0);
   }
-
-  // this line mixes the actual texture color with some red
-  //gl_FragColor = mix(gl_FragColor, vec4(1.0, 0.0, 0.0, 1.0), 0.5);
 }
 `
 
