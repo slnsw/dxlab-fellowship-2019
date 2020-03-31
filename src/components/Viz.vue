@@ -218,6 +218,7 @@ export default {
       cameraObj: null,
       controls: null,
       cursor: null,
+      detailMode: false,
       isMoving: false,
       lastMouseMoveId: null,
       lastChange: 0,
@@ -286,7 +287,7 @@ export default {
           this.initFiles(this.cameraObj)
           this.paintSort()
         }
-        this.getcurrentAtlases()
+        // this.getcurrentAtlases()
       }
     },
     loadedAtlas(newCount) {
@@ -375,18 +376,24 @@ export default {
       }
     },
     onClick() {
-      console.log('click', this.PAST_INTERSECTED)
       if (this.isMoving) return
       if (this.fileMode) {
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
-          this.fileMode = false
-          this.cleanFiles()
-          this.moveCameraTo(this.selectedInstance.obj)
-          this.$store.commit('setBucket', null)
+          if (this.detailMode) {
+            // go back to files
+            this.detailMode = false
+            this.moveCameraTo(this.cameraObj)
+          } else {
+            // go back to bucket
+            this.fileMode = false
+            this.cleanFiles()
+            this.moveCameraTo(this.selectedInstance.obj)
+            this.$store.commit('setBucket', null)
+          }
         } else {
           // clicked a file
-          console.log('file')
+          this.detailMode = true
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
         }
         return
