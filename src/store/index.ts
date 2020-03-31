@@ -166,7 +166,6 @@ const getColorsPositions = (pixels) => {
       imgData.data[i4 + 1] / 255,
       imgData.data[i4 + 2] / 255
     )
-    color.convertSRGBToLinear()
     const hsl = { h: 0, s: 0, l: 0 }
     color.getHSL(hsl)
 
