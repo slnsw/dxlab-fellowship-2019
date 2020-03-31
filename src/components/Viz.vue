@@ -50,24 +50,24 @@ const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const API_CALL_DELAY = 500 // ms to wait before hitting api
 
 // camera stuff
-const CAMERA_NEAR = 0.00005
+const CAMERA_NEAR = 0.0001
 const CAMERA_FAR = 10
 const CAMERA_FOV = 45
 const CAMERA_MAX_DIST = 4
 const CAMERA_MIN_DIST = 0
 
 // tile stuff
-const ATLAS_SIZE = 2048
-const ATLAS_PER_SIDE = 64
+const SMALL_ATLAS_SIZE = 2048
+const BIG_ATLAS_SIZE = 8192
 const ATLAS_TILE_SIZE = 32
+const BLACK_TEXTURE = new THREE.TextureLoader().load('/black.gif')
+
 const BASE_SCALE = 0.49
 const BUCKET_Z = 1
 const FILE_Z = 0.003
-const CHANGE_DELAY = 1000 // how often to load images on pan/zoom (ms)
 const CURSOR_COLOR = new THREE.Color('hsl(3.6, 100%, 29%)')
 const HOVER_PADDING = 10
 const HOVER_WIDTH = 300
-const MAX_VISIBLE_FILES = 1000
 const MOVE_DURATION = 300
 const SCENE_PADDING = 1.0
 const TEXT_SIZE = 0.06
@@ -93,7 +93,8 @@ uniform vec3 cameraPosition;
 uniform float atlasPx;
 uniform float cellPx;
 uniform float pointScale;
-uniform float atlases;
+uniform float showAtlases;
+uniform float loadedAtlases;
 
 // these are the buffer attributes we specified when creating the geometry
 attribute vec3 position;
@@ -101,40 +102,50 @@ attribute vec2 uv;
 
 // these are attributes we will pass from the vertex to the fragment shader
 varying vec2 vUv;
-varying float vAtlases;
+varying float vShowAtlases;
+varying float vLoadedAtlases;
 
 attribute float size;
+attribute float fIndex;
+varying float vFIndex;
 attribute vec3 color;
 varying vec3 vColor;
 
 void main() {
   vColor = color;
-  vAtlases = atlases;
+  vShowAtlases = showAtlases;
+  vLoadedAtlases = loadedAtlases;
   vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
   gl_PointSize = size * ( 1400.0 / -mvPosition.z );
   gl_Position = projectionMatrix * mvPosition;
 
   // pass the varying data to the fragment shader
   vUv = uv;
+  vFIndex = fIndex;
 }
 `
 
-const fShader = `
+const fShader = (atlasCount) => `
 precision mediump float;
 
-uniform sampler2D texture;
+uniform sampler2D texture[${atlasCount}];
 uniform float atlasPx;
 uniform float cellPx;
 
 varying vec2 vUv;
-varying float vAtlases;
+varying float vFIndex;
+varying float vShowAtlases;
+varying float vLoadedAtlases;
 varying vec3 vColor;
 
 void main() {
   vec2 uv = (vUv * cellPx + gl_PointCoord.xy * cellPx) / atlasPx;
+  int textureIndex = int(floor(vFIndex));
 
-  if (vAtlases > 0.5) {
-    gl_FragColor = texture2D(texture, uv);
+  if (vShowAtlases > 0.5 && vLoadedAtlases > 0.5) {
+    for (int i=0; i<${atlasCount}; i++) {
+      if (i == textureIndex) gl_FragColor = texture2D(texture[i], uv);
+    }
   } else {
     gl_FragColor = vec4(vColor, 1.0);
   }
@@ -197,6 +208,14 @@ const createBaseCamera = () => {
   return camera
 }
 
+const createEmptyAtlases = (count) => {
+  const atlases = []
+  for (let i = 0; i < count; i++) {
+    atlases.push(BLACK_TEXTURE)
+  }
+  return atlases
+}
+
 const createText = (text, x, y, z, scale) => {
   text = text ? text : '[undefined]'
   if (isNaN(text) && text.indexOf('|||') !== -1) text = text.split('|||')[1]
@@ -225,8 +244,6 @@ export default {
       lastFileId: null,
       fileData: {},
       fileMode: false,
-      filesGroup: null,
-      filesLoaded: null,
       filesMoveFrom: null,
       filesMoveStart: null,
       filesMoveTo: null,
@@ -287,7 +304,6 @@ export default {
           this.initFiles(this.cameraObj)
           this.paintSort()
         }
-        // this.getcurrentAtlases()
       }
     },
     loadedAtlas(newCount) {
@@ -429,132 +445,58 @@ export default {
       this.controls.noRotate = true
       this.controls.dynamicDampingFactor = 0.1
     },
-    filesInView() {
-      if (!this.fileMode || !this.filesObject) return
-      const now = Date.now()
-      if (now - this.lastChange < CHANGE_DELAY) return
-      this.lastChange = now
-      const cx = this.camera.position.x
-      const cy = this.camera.position.y
-      const dz = this.camera.position.z - FILE_Z
-      const aspect = this.camera.aspect
-      const h = 2 * dz * Math.tan(CAMERA_FOV * 0.5 * (Math.PI / 180))
-      const w = h * aspect
-      const { side, realW, x, y } = this.filesObject.mga
-      const tileSize = realW / side
-      let minx = cx - w * 0.5
-      let miny = cy - h * 0.5
-      let maxx = cx + w * 0.5
-      let maxy = cy + h * 0.5
-      const fminx = x - realW * 0.5
-      const fminy = y - realW * 0.5
-      const fmaxx = x + realW * 0.5
-      const fmaxy = y + realW * 0.5
-      const results = []
-      this.visibleFilesCount = 0
-      if (minx < fminx && miny < fminy && maxx > fmaxx && maxy > fmaxy) {
-        // all the things
-        const l = this.selectedBucket.count
-        if (l > MAX_VISIBLE_FILES) return
-        for (let i = 0; i < l; i++) {
-          results.push(i)
-        }
-      } else {
-        // a subset of things
-        if (miny < fminy) miny = fminy
-        if (minx < fminx) minx = fminx
-        if (maxy > fmaxy) maxy = fmaxy
-        if (maxx > fmaxx) maxx = fmaxx
-        const dx = maxx - minx
-        const dy = maxy - miny
-        const row = Math.abs(Math.floor((maxy - fmaxy) / tileSize))
-        const col = Math.abs(Math.floor((minx - fminx) / tileSize))
-        const cc = Math.floor(dx / tileSize)
-        const rr = Math.floor(dy / tileSize)
-        if (cc * rr > MAX_VISIBLE_FILES) return
-        for (let i = 0; i < cc; i++) {
-          for (let j = 0; j < rr; j++) {
-            results.push(((col + i) % side) + (row + j) * side)
-          }
-        }
-      }
-      this.visibleFiles = results.sort((a, b) => a - b)
-      this.visibleFilesCount = results.length
-      this.loadFiles()
-    },
-    loadFiles() {
-      if (!this.currentBucket) return
-      const ids = this.currentBucket.ids
-      this.visibleFiles.forEach((idx) => {
-        const id = ids[idx]
-        const url = THUMBS_BASE_URL + '/' + id
-        this.putFileInIndex(url, idx)
-      })
-    },
-    putFileInIndex(url, idx) {
-      if (this.filesLoaded.has(idx)) return
-      const tileSize = this.filesObject.mga.tileSize
-
-      const matrix = new THREE.Matrix4()
-      this.filesObject.getMatrixAt(idx, matrix)
-
-      const p = new THREE.Vector3()
-      matrix.decompose(p, new THREE.Quaternion(), new THREE.Vector3())
-      const x = p.x
-      const y = p.y
-      const z = p.z
-
-      const transform = new THREE.Object3D()
-      transform.position.set(x, y, z)
-      transform.scale.set(0, 0, 0)
-      transform.updateMatrix()
-      this.filesObject.setMatrixAt(idx, transform.matrix)
-      this.filesObject.instanceMatrix.needsUpdate = true
-
-      const texture = new THREE.TextureLoader().load(url)
-      texture.encoding = THREE.sRGBEncoding
-
-      const material = new THREE.MeshBasicMaterial({ map: texture })
-
-      const fileMesh = new THREE.Mesh(
-        new THREE.PlaneBufferGeometry(tileSize, tileSize),
-        material
-      )
-      fileMesh.position.set(x, y, z)
-      this.filesGroup.add(fileMesh)
-      this.filesLoaded.add(idx)
-    },
     cleanFiles() {
-      this.filesLoaded = null
-      if (!this.filesObject) return
-      this.scene.remove(this.filesObject)
+      if (this.filesObject) {
+        this.scene.remove(this.filesObject)
+        this.filesObject.geometry.dispose()
+        if (this.filesObject.material.map)
+          this.filesObject.material.map.dispose()
+        this.filesObject.material.dispose()
+      }
 
       // TODO: dispose of atlases
 
       // remove picking
-      this.scene.remove(this.pickingMesh)
-      this.pickingMesh.geometry.dispose()
-      this.pickingMesh.material.map.dispose()
-      this.pickingMesh.material.dispose()
-
-      // TODO: legacy. must delete (probably)
-      if (!this.filesGroup) return
-      this.filesGroup.children.forEach((t) => {
-        t.geometry.dispose()
-        t.material.dispose()
-        t.material.map.dispose()
-      })
-      this.scene.remove(this.filesGroup)
+      if (this.pickingMesh) {
+        this.scene.remove(this.pickingMesh)
+        this.pickingMesh.geometry.dispose()
+        this.pickingMesh.material.map.dispose()
+        this.pickingMesh.material.dispose()
+      }
     },
     paintAtlas() {
-      console.log('painting atlases')
+      console.log('painting atlas')
+      if (!this.showAtlases) return
+      if (this.filesObject) {
+        this.filesObject.material.uniforms.texture.value = this.atlases[
+          this.currentBucket.key
+        ]
+        this.filesObject.material.uniforms.loadedAtlases.value = 1.0
+        this.filesObject.material.uniformsNeedUpdate = true
+      }
     },
     initFiles(obj) {
       this.cleanFiles()
 
-      this.filesLoaded = new Set()
-
       const tileCount = this.selectedBucket.count
+
+      const smallAtlasCount = Math.pow(SMALL_ATLAS_SIZE / ATLAS_TILE_SIZE, 2)
+
+      const bigAtlasCount = Math.pow(BIG_ATLAS_SIZE / ATLAS_TILE_SIZE, 2)
+
+      let countPerAtlas, atlasSize
+
+      if (tileCount > smallAtlasCount) {
+        atlasSize = BIG_ATLAS_SIZE
+        countPerAtlas = bigAtlasCount
+      } else {
+        atlasSize = SMALL_ATLAS_SIZE
+        countPerAtlas = smallAtlasCount
+      }
+
+      const atlasPerSide = atlasSize / ATLAS_TILE_SIZE
+
+      const atlasCount = Math.ceil(tileCount / countPerAtlas)
       const side = Math.ceil(Math.sqrt(tileCount))
       const w = obj.geometry.parameters.width
       const tileSize = w / side
@@ -563,25 +505,44 @@ export default {
 
       const geometry = new THREE.BufferGeometry()
 
-      const url = '/atlas/' + this.currentBucket.key + '_0.jpg'
-      const texture = new THREE.TextureLoader().load(url)
-      texture.flipY = false
+      let atlases = [],
+        loadedAtlases = false
+
+      if (this.showAtlases) {
+        // check to see if atlases are in memory
+        const _atlases = this.atlases[this.currentBucket.key]
+        if (_atlases && _atlases.length === atlasCount) {
+          atlases = _atlases
+          loadedAtlases = true
+        } else {
+          atlases = createEmptyAtlases(atlasCount)
+          // load the atlases asynchronously
+          const bucket = this.currentBucket
+          this.getCurrentAtlases({ bucket, atlasCount })
+        }
+      } else {
+        atlases = createEmptyAtlases(atlasCount)
+      }
 
       const material = new THREE.RawShaderMaterial({
         vertexShader: vShader,
-        fragmentShader: fShader,
+        fragmentShader: fShader(atlasCount),
         uniforms: {
-          atlases: {
+          loadedAtlases: {
+            type: 'f',
+            value: loadedAtlases ? 1.0 : 0.0
+          },
+          showAtlases: {
             type: 'f',
             value: this.showAtlases ? 1.0 : 0.0
           },
           texture: {
             type: 't',
-            value: texture
+            value: atlases
           },
           atlasPx: {
             type: 'f',
-            value: ATLAS_SIZE
+            value: atlasSize
           },
           cellPx: {
             type: 'f',
@@ -594,15 +555,24 @@ export default {
       })
 
       const uvs = new Float32Array(tileCount * 2)
+      const fIndices = new Float32Array(tileCount)
 
       for (let i = 0; i < tileCount; i++) {
-        const x = i % ATLAS_PER_SIDE
-        const y = Math.floor(i / ATLAS_PER_SIDE)
+        const fIndex = Math.floor(i / countPerAtlas)
+        const j = i % countPerAtlas // index in atlas
+        const x = j % atlasPerSide // position in atlas
+        const y = Math.floor(j / atlasPerSide)
         uvs[i * 2] = x
         uvs[i * 2 + 1] = y
+        fIndices[i] = fIndex
       }
 
       geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2, true))
+
+      geometry.setAttribute(
+        'fIndex',
+        new THREE.BufferAttribute(fIndices, 1, true)
+      )
 
       geometry.setAttribute(
         'color',
@@ -620,7 +590,7 @@ export default {
       this.filesObject = new THREE.Points(geometry, material)
 
       // picking texture
-      const emptyTexture = new THREE.Texture(undefined, THREE.UVMapping)
+      const emptyTexture = createEmptyAtlases(1)[0]
       const planeMaterial = new THREE.MeshBasicMaterial({
         opacity: 0,
         transparent: true,
@@ -644,8 +614,6 @@ export default {
       }
 
       this.scene.add(this.filesObject)
-      this.filesGroup = new THREE.Group()
-      this.scene.add(this.filesGroup)
     },
     interpolateFiles() {
       if (!this.filesMoveStart) return
@@ -875,7 +843,6 @@ export default {
       this.cursor.visible = false
     },
     render() {
-      // this.filesInView()
       this.renderer.render(this.scene, this.camera)
       if (this.$refs.three) this.$refs.three.classList.remove('pointer')
 
@@ -938,7 +905,6 @@ export default {
               const geometry = new THREE.PlaneBufferGeometry(size, size)
               const material = new THREE.MeshBasicMaterial()
               const obj = new THREE.Mesh(geometry, material)
-              console.log(intersects[0])
               obj.position.x = tx
               obj.position.y = ty
               obj.position.z = point.z
@@ -1041,7 +1007,7 @@ export default {
         }
       }
     },
-    ...mapActions(['getcurrentAtlases'])
+    ...mapActions(['getCurrentAtlases'])
   }
 }
 </script>

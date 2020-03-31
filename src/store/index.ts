@@ -264,10 +264,7 @@ export default new Vuex.Store({
         .reduce((a, b) => a + b, 0)
   },
   actions: {
-    getcurrentAtlases({ dispatch, commit, state }) {
-      const bucket = state.currentBucket
-      const ids = state.currentBucket.ids
-      const atlasCount = Math.ceil(ids.length / MAX_QUERY_LIMIT)
+    getCurrentAtlases({ dispatch, commit, state }, { bucket, atlasCount }) {
       commit('setLoadedAtlas', atlasCount)
       for (let index = 0; index < atlasCount; index++) {
         dispatch('getAtlasForBucketIndex', { bucket, index })
@@ -279,6 +276,7 @@ export default new Vuex.Store({
       texture.load(url, (atlas) => {
         commit('decreaseLoadedAtlas')
         atlas.encoding = THREE.sRGBEncoding
+        atlas.flipY = false
         commit('setAtlasForBucketIndex', { bucket, index, atlas })
       })
     }
@@ -296,7 +294,12 @@ export default new Vuex.Store({
     },
     setAtlasForBucketIndex: (state, { bucket, index, atlas }) => {
       const atlases = { ...state.atlases }
-      const newBucket = { ...atlases[bucket.key] }
+      let newBucket
+      if (atlases[bucket.key]) {
+        newBucket = { ...atlases[bucket.key] }
+      } else {
+        newBucket = []
+      }
       newBucket[index] = atlas
       atlases[bucket.key] = newBucket
       state.atlases = atlases
