@@ -69,7 +69,7 @@ const CURSOR_COLOR = new THREE.Color('hsl(3.6, 100%, 29%)')
 const HOVER_PADDING = 10
 const HOVER_WIDTH = 300
 const MOVE_DURATION = 300
-const SCENE_PADDING = 1.0
+const SCENE_PADDING = 2.0
 const TEXT_SIZE = 0.06
 const TEXT_Z = 0 // relative
 const TILE_PADDING = 0.03125
@@ -758,10 +758,7 @@ export default {
 
       const sphere = new THREE.Sphere()
       o.getBoundingSphere(sphere)
-      const side =
-        obj instanceof THREE.InstancedMesh
-          ? sphere.radius * 0.9 * SCENE_PADDING
-          : sphere.radius * SCENE_PADDING
+      const side = sphere.radius * SCENE_PADDING
 
       const center = new THREE.Vector3()
       o.getCenter(center)
