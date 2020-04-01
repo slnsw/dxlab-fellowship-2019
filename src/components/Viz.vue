@@ -475,10 +475,10 @@ export default {
       if (!this.showAtlases) return
       if (this.filesObject) {
         const arr = [],
-            observable = this.atlases[this.currentBucket.key];
-        for (let i=0; i<Number.POSITIVE_INFINITY; i++) {
+          observable = this.atlases[this.currentBucket.key]
+        for (let i = 0; i < Number.POSITIVE_INFINITY; i++) {
           if (observable[i]) arr.push(observable[i])
-          else break;
+          else break
         }
         this.filesObject.material.uniforms.texture.value = arr
         this.filesObject.material.uniforms.loadedAtlases.value = 1.0
@@ -966,11 +966,13 @@ export default {
       instance.get(url).then((colorResponse) => {
         const paletteStr = colorResponse.data.palette_colors
         const palette = paletteStr
-          .split(',')
-          .map((i) => i.split(':'))
-          .map((p) => {
-            return { color: p[0], percent: Number(p[1]) }
-          })
+          ? paletteStr
+              .split(',')
+              .map((i) => i.split(':'))
+              .map((p) => {
+                return { color: p[0], percent: Number(p[1]) }
+              })
+          : []
         this.fileData = { ...this.fileData, palette }
       })
     },
