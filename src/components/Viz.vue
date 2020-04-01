@@ -530,8 +530,6 @@ export default {
         atlases = createEmptyAtlases(atlasCount)
       }
 
-      console.log(fShader(atlasCount))
-
       const material = new THREE.RawShaderMaterial({
         vertexShader: vShader,
         fragmentShader: fShader(atlasCount),
@@ -577,10 +575,7 @@ export default {
 
       geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2, true))
 
-      geometry.setAttribute(
-        'fileIndex',
-        new THREE.BufferAttribute(fIndices, 1, true)
-      )
+      geometry.setAttribute('fileIndex', new THREE.BufferAttribute(fIndices, 1))
 
       geometry.setAttribute(
         'color',
