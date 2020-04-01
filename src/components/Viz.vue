@@ -881,9 +881,9 @@ export default {
       const xx = realW * x
       const yy = realW - realW * y
       const xmin = col * (tileSize + padding) + padding
-      const xmax = col * (tileSize + padding) + padding + tileSize
+      const xmax = col * tileSize + tileSize
       const ymin = row * (tileSize + padding) + padding
-      const ymax = row * (tileSize + padding) + padding + tileSize
+      const ymax = row * tileSize + tileSize
       // make sure it is above a square and not in the gutter
       const tileCount = this.selectedBucket.count
       const index = col + row * side
