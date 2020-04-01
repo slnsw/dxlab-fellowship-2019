@@ -82,7 +82,6 @@ export default {
   grid-column: 1/2;
   grid-row: 1/2;
   z-index: 2;
-  pointer-events: none;
 }
 .total {
   display: inline-block;

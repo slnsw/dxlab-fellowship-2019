@@ -24,6 +24,7 @@
     <canvas
       ref="three"
       class="three"
+      @mousemove="onDocumentMouseMove"
       @mousedown="onDocumentMouseMove"
       @dblclick.prevent="onDoubleClick"
       @click.prevent="onClick"
@@ -106,8 +107,8 @@ varying float vShowAtlases;
 varying float vLoadedAtlases;
 
 attribute float size;
-attribute float fIndex;
-varying float vFIndex;
+attribute float fileIndex;
+varying float vFileIndex;
 attribute vec3 color;
 varying vec3 vColor;
 
@@ -121,7 +122,7 @@ void main() {
 
   // pass the varying data to the fragment shader
   vUv = uv;
-  vFIndex = fIndex;
+  vFileIndex = fileIndex;
 }
 `
 
@@ -145,14 +146,14 @@ uniform float atlasPx;
 uniform float cellPx;
 
 varying vec2 vUv;
-varying float vFIndex;
+varying float vFileIndex;
 varying float vShowAtlases;
 varying float vLoadedAtlases;
 varying vec3 vColor;
 
 void main() {
   vec2 uv = (vUv * cellPx + gl_PointCoord.xy * cellPx) / atlasPx;
-  int textureIndex = int(vFIndex);
+  int textureIndex = int(vFileIndex);
 
   if (vShowAtlases > 0.5 && vLoadedAtlases > 0.5) {
     ${buildTextureTree(atlasCount)}
@@ -295,13 +296,11 @@ export default {
     this.moveCameraTo(this.bucketsGroup)
     this.animate()
     window.addEventListener('resize', this.onResize)
-    document.addEventListener('mousemove', this.onDocumentMouseMove)
     document.addEventListener('mouseout', this.onDocumentMouseOut)
   },
   beforeDestroy() {
     // Unregister resize before destroying this Vue instance
     window.removeEventListener('resize', this.onResize)
-    document.removeEventListener('mousemove', this.onDocumentMouseMove)
     document.removeEventListener('mouseout', this.onDocumentMouseOut)
   },
   watch: {
@@ -567,19 +566,19 @@ export default {
       const fIndices = new Float32Array(tileCount)
 
       for (let i = 0; i < tileCount; i++) {
-        const fIndex = Math.floor(i / countPerAtlas)
+        const fileIndex = Math.floor(i / countPerAtlas)
         const j = i % countPerAtlas // index in atlas
         const x = j % atlasPerSide // position in atlas
         const y = Math.floor(j / atlasPerSide)
         uvs[i * 2] = x
         uvs[i * 2 + 1] = y
-        fIndices[i] = fIndex
+        fIndices[i] = fileIndex
       }
 
       geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2, true))
 
       geometry.setAttribute(
-        'fIndex',
+        'fileIndex',
         new THREE.BufferAttribute(fIndices, 1, true)
       )
 
