@@ -474,11 +474,16 @@ export default {
       console.log('painting atlas')
       if (!this.showAtlases) return
       if (this.filesObject) {
-        this.filesObject.material.uniforms.texture.value = this.atlases[
-          this.currentBucket.key
-        ]
+        const arr = [],
+            observable = this.atlases[this.currentBucket.key];
+        for (let i=0; i<Number.POSITIVE_INFINITY; i++) {
+          if (observable[i]) arr.push(observable[i])
+          else break;
+        }
+        this.filesObject.material.uniforms.texture.value = arr
         this.filesObject.material.uniforms.loadedAtlases.value = 1.0
-        this.filesObject.material.uniformsNeedUpdate = true
+        this.filesObject.material.uniforms.texture.needsUpdate = true
+        this.filesObject.material.uniforms.loadedAtlases.needsUpdate = true
       }
     },
     initFiles(obj) {
