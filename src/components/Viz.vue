@@ -54,8 +54,8 @@ const API_CALL_DELAY = 500 // ms to wait before hitting api
 const CAMERA_NEAR = 0.0001
 const CAMERA_FAR = 10
 const CAMERA_FOV = 45
-const CAMERA_MAX_DIST = 4
 const CAMERA_MIN_DIST = 0
+const CAMERA_MAX_DIST = 4
 
 // tile stuff
 const SMALL_ATLAS_SIZE = 2048
@@ -117,7 +117,7 @@ void main() {
   vShowAtlases = showAtlases;
   vLoadedAtlases = loadedAtlases;
   vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-  gl_PointSize = size * ( 1400.0 / -mvPosition.z );
+  gl_PointSize = pointScale * size * ( 1.0 / -mvPosition.z );
   gl_Position = projectionMatrix * mvPosition;
 
   // pass the varying data to the fragment shader
@@ -125,6 +125,8 @@ void main() {
   vFileIndex = fileIndex;
 }
 `
+
+const getPointSize = (side) => Math.min(window.innerHeight) * 2.25 // magic number ¯\_(ツ)_/¯
 
 const buildTextureTree = (count) => {
   const tree = []
@@ -481,8 +483,8 @@ export default {
           else break
         }
         this.filesObject.material.uniforms.texture.value = arr
-        this.filesObject.material.uniforms.loadedAtlases.value = 1.0
         this.filesObject.material.uniforms.texture.needsUpdate = true
+        this.filesObject.material.uniforms.loadedAtlases.value = 1.0
         this.filesObject.material.uniforms.loadedAtlases.needsUpdate = true
       }
     },
@@ -558,6 +560,10 @@ export default {
           cellPx: {
             type: 'f',
             value: ATLAS_TILE_SIZE
+          },
+          pointScale: {
+            type: 'f',
+            value: getPointSize(side)
           }
         },
         depthTest: true,
@@ -596,6 +602,7 @@ export default {
       )
 
       this.filesObject = new THREE.Points(geometry, material)
+      this.filesObject.frustumCulled = false
 
       // picking texture
       const emptyTexture = createEmptyAtlases(1)[0]
@@ -827,9 +834,16 @@ export default {
     onResize() {
       const w = window.innerWidth
       const h = window.innerHeight
+      this.renderer.setSize(w, h)
       this.camera.aspect = w / h
       this.camera.updateProjectionMatrix()
-      this.renderer.setSize(w, h)
+      if (this.filesObject) {
+        console.log('pointsize')
+        const tileCount = this.selectedBucket.count
+        const side = Math.ceil(Math.sqrt(tileCount))
+        this.filesObject.material.uniforms.pointScale.value = getPointSize(side)
+        this.filesObject.material.uniforms.pointScale.needsUpdate = true
+      }
     },
     onDocumentMouseOut(event) {
       this.lastFileId = null
