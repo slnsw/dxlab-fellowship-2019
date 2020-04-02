@@ -61,7 +61,7 @@ const CAMERA_MAX_DIST = 4
 const SMALL_ATLAS_SIZE = 2048
 const BIG_ATLAS_SIZE = 8192
 const ATLAS_TILE_SIZE = 32
-const BLACK_TEXTURE = new THREE.TextureLoader().load('/black.gif')
+const BLACK_TEXTURE = new THREE.Texture(undefined) //.load('/black.gif')
 
 const BASE_SCALE = 1.0
 const BUCKET_Z = 1
@@ -132,6 +132,7 @@ const buildTextureTree = (count) => {
     const str = `
     if (textureIndex == ${i}) {
       gl_FragColor = texture2D(texture[${i}], uv);
+      if (gl_FragColor == vec4(0.0, 0.0, 0.0, 0.0)) gl_FragColor = vec4(vColor, 1.0);
     }`
     tree.push(str)
   }
@@ -314,11 +315,8 @@ export default {
         }
       }
     },
-    loadedAtlas(newCount) {
-      if (newCount === 0) this.paintAtlas()
-    },
-    scaled(newScale) {
-      // console.log(newScale)
+    atlases(newAtlases, oldAtlases) {
+      this.paintAtlas()
     },
     sort(to, from) {
       this.filesMoveStart = Date.now()
@@ -424,13 +422,11 @@ export default {
         if (
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
-          console.log('bucket')
           this.hideCursor()
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
       } else {
-        console.log('main')
         this.moveCameraTo(this.bucketsGroup)
         this.hideCursor()
         this.selectedInstance = {}
@@ -470,9 +466,8 @@ export default {
       }
     },
     paintAtlas() {
-      console.log('painting atlas')
       if (!this.showAtlases) return
-      if (this.filesObject) {
+      if (this.filesObject && this.currentBucket) {
         const arr = [],
           observable = this.atlases[this.currentBucket.key]
         for (let i = 0; i < Number.POSITIVE_INFINITY; i++) {
@@ -862,8 +857,9 @@ export default {
       this.pickFile()
     },
     getFileAt(uv) {
+      if (!this.currentBucket) return
       const { x, y } = uv
-      const { realW, tileSize, side, tileCount } = this.filesObject.mga
+      const { realW, side, tileCount } = this.filesObject.mga
       const mx = this.filesObject.mga.x
       const my = this.filesObject.mga.y
       const col = Math.floor(side * x)

@@ -14,10 +14,7 @@ import * as THREE from 'three'
 import AjaxTextureLoader from '@/utils/AjaxTextureLoader'
 import STUFF from '@/utils/data'
 
-const TILE_SIZE = 32
-const MAX_QUERY_LIMIT = 4096
 const MAX_WINDOW_SIZE = 20000
-const ELASTIC_BASE_URL = process.env.VUE_APP_ELASTIC_BASE_URL
 const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
 
@@ -75,20 +72,6 @@ const loadImage = (url): any => {
     img.addEventListener('load', () => resolve(img))
     img.addEventListener('error', reject)
     img.src = url
-  })
-}
-
-const asyncLoadTexture = (url): any => {
-  return new Promise((resolve, reject) => {
-    const texture = new AjaxTextureLoader()
-    texture.load(
-      url,
-      (img) => {
-        resolve(img)
-      },
-      () => {},
-      reject
-    )
   })
 }
 
@@ -164,38 +147,6 @@ const sortByHue = ({ hsls, width }) => {
     hueIndexes[idx] = i
   })
   return { huePositions, hueIndexes }
-}
-
-const getImagesForBucket = async ({ bucket }) => {
-  const url = ELASTIC_BASE_URL + '/_search'
-  const key = bucket.key
-  const id = bucket.id
-  const esQuery = bucket.esQuery
-  const params = { track_total_hits: true }
-  let query = baseQuery()
-    .size(10)
-    .rawOption('_source', 'props_file_name_title')
-  query = makeFilter({ key, id, query })
-  if (esQuery) query = makeFancyFilter({ query, esQuery })
-
-  const baseResponse = await instance.post(url, {
-    ...query.build(),
-    ...params
-  })
-  const hits = baseResponse.data.hits
-  const images = hits.hits.map(
-    (hit) =>
-      `${hit._source.props_file_name_title[0].substr(0, 4)}/${
-        hit._source.props_file_name_title[0]
-      }`
-  )
-  const bucketData = {
-    ...bucket,
-    count: hits.total.value,
-    key,
-    images
-  }
-  return bucketData
 }
 
 export default new Vuex.Store({
