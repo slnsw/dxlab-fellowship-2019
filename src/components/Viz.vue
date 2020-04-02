@@ -61,7 +61,7 @@ const CAMERA_MAX_DIST = 4
 const SMALL_ATLAS_SIZE = 2048
 const BIG_ATLAS_SIZE = 8192
 const ATLAS_TILE_SIZE = 32
-const BLACK_TEXTURE = new THREE.Texture(undefined) //.load('/black.gif')
+const EMPTY_TEXTURE = new THREE.Texture(undefined)
 
 const BASE_SCALE = 1.0
 const BUCKET_Z = 1
@@ -222,7 +222,7 @@ const createBaseCamera = () => {
 const createEmptyAtlases = (count) => {
   const atlases = []
   for (let i = 0; i < count; i++) {
-    atlases.push(BLACK_TEXTURE)
+    atlases.push(EMPTY_TEXTURE)
   }
   return atlases
 }
@@ -372,7 +372,9 @@ export default {
       gui.add(this, 'showAtlases')
     },
     onDoubleClick(e) {
+      this.camera.layers.disableAll()
       if (this.fileMode) {
+        this.camera.layers.enable(1)
         if (this.PAST_INTERSECTED.fileId !== undefined) {
           // double-clicked a file
           const url = FILES_BASE_URL + '/' + this.PAST_INTERSECTED.fileId
@@ -381,6 +383,7 @@ export default {
         return
       }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
+        this.camera.layers.enable(1)
         this.selectedBucket = this.stuff[this.PAST_INTERSECTED.obj.bucketIndex]
         const x = this.PAST_INTERSECTED.obj.position.x
         const y = this.PAST_INTERSECTED.obj.position.y
@@ -392,19 +395,24 @@ export default {
         this.cameraObj = obj
         window.setTimeout(() => (this.PAST_INTERSECTED = {}), 100)
         this.$store.commit('setBucket', this.selectedBucket)
+      } else {
+        this.camera.layers.enable(0)
       }
     },
     onClick() {
+      this.camera.layers.disableAll()
       if (this.isMoving) return
       if (this.fileMode) {
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
           if (this.detailMode) {
             // go back to files
+            this.camera.layers.enable(1)
             this.detailMode = false
             this.moveCameraTo(this.cameraObj)
           } else {
             // go back to bucket
+            this.camera.layers.enable(0)
             this.fileMode = false
             this.cleanFiles()
             this.moveCameraTo(this.selectedInstance.obj)
@@ -412,6 +420,7 @@ export default {
           }
         } else {
           // clicked a file
+          this.camera.layers.enable(1)
           this.detailMode = true
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
         }
@@ -419,6 +428,7 @@ export default {
       }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         // there is a selected bucket
+        this.camera.layers.enable(0)
         if (
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
@@ -427,6 +437,7 @@ export default {
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
       } else {
+        this.camera.layers.enable(0)
         this.moveCameraTo(this.bucketsGroup)
         this.hideCursor()
         this.selectedInstance = {}
@@ -589,6 +600,7 @@ export default {
 
       this.filesObject = new THREE.Points(geometry, material)
       this.filesObject.frustumCulled = false
+      this.filesObject.layers.set(1)
 
       // picking texture
       const emptyTexture = createEmptyAtlases(1)[0]
@@ -599,6 +611,7 @@ export default {
       })
       const pickingGeometry = new THREE.PlaneBufferGeometry(realW, realW, 1, 1)
       this.pickingMesh = new THREE.Mesh(pickingGeometry, planeMaterial)
+      this.pickingMesh.layers.set(1)
       this.pickingMesh.position.x = obj.position.x
       this.pickingMesh.position.y = obj.position.y
       this.pickingMesh.position.z = obj.position.z
