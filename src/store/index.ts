@@ -12,6 +12,7 @@ import csv from 'csvtojson'
 import * as THREE from 'three'
 
 import AjaxTextureLoader from '@/utils/AjaxTextureLoader'
+import STUFF from '@/utils/data'
 
 const TILE_SIZE = 32
 const MAX_QUERY_LIMIT = 4096
@@ -23,52 +24,6 @@ const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
 const instance = axios.create({
   timeout: 600000
 })
-
-const STUFF: any = {
-  pictures: { id: 'J19GWyDjZ8Ny7', name: 'pictures' },
-  prints: { id: 'vpkdDA18BDOdR', name: 'prints' },
-  drawings: { id: 'GP85pXKPWzzB', name: 'drawings' },
-  paintings: { id: '0GB866Xe6mz1q', name: 'paintings' },
-  posters: { id: 'b10aqZK7gRzJy', name: 'posters' },
-  medals: { id: 'X8gBJlg9E1WqK', name: 'medals' },
-  photographs: {
-    id: 'wKK2B5BO3aEYa',
-    name: 'photographs',
-    esQuery: {
-      type: 'must_not',
-      matchType: 'match_phrase_prefix',
-      field: 'item_id_callnumber_key',
-      values: ['SLIDES', 'ON']
-    }
-  },
-  negatives: {
-    id: 'wKK2B5BO3aEYa',
-    name: 'negatives',
-    esQuery: {
-      type: 'should',
-      matchType: 'match_phrase_prefix',
-      field: 'item_id_callnumber_key',
-      values: ['SLIDES', 'ON']
-    }
-  },
-  archTechDrawings: {
-    id: 'm6zK940qx9v7K',
-    name: 'architectural drawings'
-  },
-  maps: { id: '40XObXd7aA4a', name: 'published maps' },
-  manuscriptMaps: { id: 'Xp1qba0O2k32v', name: 'unpublished maps' },
-  objects: { id: '7MZAw5gxmyyaW', name: 'objects' },
-  stamps: { id: 'BRg6jXK4mz4wG', name: 'stamps' },
-  ephemera: { id: 'vz2D0Am8wvrlb', name: 'ephemera' },
-  coin: { id: '76pM49Z2jxBzR', name: 'coins' },
-  journals: { name: 'journals', id: 'Z5AB0OkPYjPb9' },
-  manuscripts: { name: 'manuscripts', id: '330MWgKgY5adZ' },
-  manuscriptNotatedMusic: {
-    name: 'notated music',
-    id: 'oWWJDK5PO44me'
-  },
-  video: { name: 'video', id: 'NWOD2N4edDPzO' }
-}
 
 const baseQuery = () => {
   let bb = bodybuilder()

@@ -2,7 +2,7 @@
   <div v-if="loaded" class="grid">
     <div class="header">
       <h1 class="total">
-        <strong>{{ formattedItemsTotal }}</strong> {{ thing }}.
+        <strong>{{ formattedItemsTotal }}</strong> {{ thing }}
       </h1>
     </div>
     <div class="sort">
@@ -43,11 +43,11 @@ export default {
     thing() {
       const l = Object.values(this.stuff).length
       return this.currentBucket
-        ? this.currentBucket.name.trim()
+        ? `${this.currentBucket.name.trim()}: ${this.currentBucket.description.trim()}`
         : Object.values(this.stuff)
             .filter((b) => b.count > 0)
             .map((s, index) => (index === l - 1 ? 'and ' + s.name : s.name))
-            .join(', ')
+            .join(', ') + '.'
     },
     total() {
       return this.itemsTotal

@@ -106,7 +106,6 @@ varying vec2 vUv;
 varying float vShowAtlases;
 varying float vLoadedAtlases;
 
-attribute float size;
 attribute float fileIndex;
 varying float vFileIndex;
 attribute vec3 color;
@@ -117,7 +116,7 @@ void main() {
   vShowAtlases = showAtlases;
   vLoadedAtlases = loadedAtlases;
   vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-  gl_PointSize = pointScale * size * ( 1.0 / -mvPosition.z );
+  gl_PointSize = pointScale * (1.0 / -mvPosition.z);
   gl_Position = projectionMatrix * mvPosition;
 
   // pass the varying data to the fragment shader
@@ -162,8 +161,6 @@ void main() {
   }
 }
 `
-
-const getPointSize = () => Math.min(window.innerHeight) * 2.25 // magic number ¯\_(ツ)_/¯
 
 const getBoundsFromMesh = (obj) => {
   const o = new THREE.Box3()
@@ -562,7 +559,7 @@ export default {
           },
           pointScale: {
             type: 'f',
-            value: getPointSize(side)
+            value: this.getPointSize(tileSize)
           }
         },
         depthTest: true,
@@ -590,14 +587,6 @@ export default {
       geometry.setAttribute(
         'color',
         new THREE.Float32BufferAttribute(this.defaultColors, 3)
-      )
-
-      geometry.setAttribute(
-        'size',
-        new THREE.Float32BufferAttribute(
-          new Float32Array(tileCount).fill(tileSize, 0, tileCount),
-          1
-        )
       )
 
       this.filesObject = new THREE.Points(geometry, material)
@@ -837,10 +826,10 @@ export default {
       this.camera.aspect = w / h
       this.camera.updateProjectionMatrix()
       if (this.filesObject) {
-        console.log('pointsize')
-        const tileCount = this.selectedBucket.count
-        const side = Math.ceil(Math.sqrt(tileCount))
-        this.filesObject.material.uniforms.pointScale.value = getPointSize(side)
+        const { tileSize } = this.filesObject.mga
+        this.filesObject.material.uniforms.pointScale.value = this.getPointSize(
+          tileSize
+        )
         this.filesObject.material.uniforms.pointScale.needsUpdate = true
       }
     },
@@ -868,6 +857,11 @@ export default {
 
       this.pickBucket()
       this.pickFile()
+    },
+    getPointSize(tileSize) {
+      const magic = Math.min(window.innerHeight) * 2.25 // magic number ¯\_(ツ)_/¯
+      const size = magic * tileSize
+      return size
     },
     getFileAt(uv) {
       const { x, y } = uv
@@ -914,12 +908,11 @@ export default {
             if (this.$refs.three) this.$refs.three.classList.add('pointer')
             if (this.PAST_INTERSECTED.instanceId !== instanceId) {
               // new thing so clear fileData
-              const size = this.filesObject.geometry.getAttribute('size')
-                .array[0]
+              const { tileSize } = this.filesObject.mga
 
               this.fileData = {}
               const point = intersects[0].point
-              const geometry = new THREE.PlaneBufferGeometry(size, size)
+              const geometry = new THREE.PlaneBufferGeometry(tileSize, tileSize)
               const material = new THREE.MeshBasicMaterial()
               const obj = new THREE.Mesh(geometry, material)
               obj.position.x = tx
@@ -930,11 +923,14 @@ export default {
               this.PAST_INTERSECTED.fileId = fileId
             }
           } else {
-            this.$refs.three.classList.remove('pointer')
+            if (this.$refs.three) this.$refs.three.classList.remove('pointer')
             this.PAST_INTERSECTED = {}
+            this.positionFile(false)
           }
         } else if (this.PAST_INTERSECTED.instanceId) {
+          if (this.$refs.three) this.$refs.three.classList.remove('pointer')
           this.PAST_INTERSECTED = {}
+          this.positionFile(false)
         }
       }
     },
