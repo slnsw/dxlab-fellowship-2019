@@ -126,8 +126,6 @@ void main() {
 }
 `
 
-const getPointSize = (side) => Math.min(window.innerHeight) * 2.25 // magic number ¯\_(ツ)_/¯
-
 const buildTextureTree = (count) => {
   const tree = []
   for (let i = 0; i < count; i++) {
@@ -164,6 +162,8 @@ void main() {
   }
 }
 `
+
+const getPointSize = () => Math.min(window.innerHeight) * 2.25 // magic number ¯\_(ツ)_/¯
 
 const getBoundsFromMesh = (obj) => {
   const o = new THREE.Box3()
@@ -512,9 +512,8 @@ export default {
       const atlasCount = Math.ceil(tileCount / countPerAtlas)
       const side = Math.ceil(Math.sqrt(tileCount))
       const w = obj.geometry.parameters.width
-      const tileSize = w / side
-      const padding = tileSize * (TILE_PADDING / TILE_SIZE)
-      const realW = side * tileSize + (side - 1) * padding
+      const tileSize = (w / side) * (1 - TILE_PADDING)
+      const realW = w
 
       const geometry = new THREE.BufferGeometry()
 
@@ -877,13 +876,12 @@ export default {
       const my = this.filesObject.mga.y
       const col = Math.floor(side * x)
       const row = Math.floor(side * (1 - y))
-      const padding = tileSize * (TILE_PADDING / TILE_SIZE)
       const xx = realW * x
       const yy = realW - realW * y
-      const xmin = col * (tileSize + padding) + padding
-      const xmax = col * tileSize + tileSize
-      const ymin = row * (tileSize + padding) + padding
-      const ymax = row * tileSize + tileSize
+      const xmin = col * (realW / side)
+      const xmax = col * (realW / side) + tileSize
+      const ymin = row * (realW / side)
+      const ymax = row * (realW / side) + tileSize
       // make sure it is above a square and not in the gutter
       const tileCount = this.selectedBucket.count
       const index = col + row * side
