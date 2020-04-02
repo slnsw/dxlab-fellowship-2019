@@ -63,18 +63,18 @@ const BIG_ATLAS_SIZE = 8192
 const ATLAS_TILE_SIZE = 32
 const BLACK_TEXTURE = new THREE.TextureLoader().load('/black.gif')
 
-const BASE_SCALE = 0.49
+const BASE_SCALE = 1.0
 const BUCKET_Z = 1
+const BUCKET_PADDING = 0.1
 const FILE_Z = -1
 const CURSOR_COLOR = new THREE.Color('hsl(3.6, 100%, 29%)')
 const HOVER_PADDING = 10
 const HOVER_WIDTH = 300
 const MOVE_DURATION = 300
 const SCENE_PADDING = 2.0
-const TEXT_SIZE = 0.06
+const TEXT_SIZE = 0.025
 const TEXT_Z = 0 // relative
-const TILE_PADDING = 0.03125
-const TILE_SIZE = 0.9
+const TILE_PADDING = 0.5
 
 const instance = axios.create({
   baseURL: API_BASE_URL,
@@ -107,6 +107,7 @@ varying float vShowAtlases;
 varying float vLoadedAtlases;
 
 attribute float fileIndex;
+attribute float size;
 varying float vFileIndex;
 attribute vec3 color;
 varying vec3 vColor;
@@ -116,7 +117,7 @@ void main() {
   vShowAtlases = showAtlases;
   vLoadedAtlases = loadedAtlases;
   vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
-  gl_PointSize = pointScale * (1.0 / -mvPosition.z);
+  gl_PointSize = size * pointScale / -mvPosition.z;
   gl_Position = projectionMatrix * mvPosition;
 
   // pass the varying data to the fragment shader
@@ -162,6 +163,10 @@ void main() {
 }
 `
 
+const getPointScale = (side) => {
+  return window.innerHeight / (side * TILE_PADDING)
+}
+
 const getBoundsFromMesh = (obj) => {
   const o = new THREE.Box3()
   const count = obj.instanceMatrix.count
@@ -175,9 +180,7 @@ const getBoundsFromMesh = (obj) => {
     const x = p.x
     const y = p.y
     const z = p.z
-    const objBucket = new THREE.Mesh(
-      new THREE.PlaneBufferGeometry(TILE_SIZE * s.x, TILE_SIZE * s.x)
-    )
+    const objBucket = new THREE.Mesh(new THREE.PlaneBufferGeometry(s.x, s.x))
     objBucket.position.set(x, y, z * s.x)
     o.expandByObject(objBucket)
   }
@@ -352,11 +355,11 @@ export default {
       // cursor
       const geometry = new THREE.ShapeBufferGeometry(
         new THREE.Shape()
-          .moveTo(TILE_SIZE / 2, TILE_SIZE / 2)
-          .lineTo(TILE_SIZE / 2, -TILE_SIZE / 2)
-          .lineTo(-TILE_SIZE / 2, -TILE_SIZE / 2)
-          .lineTo(-TILE_SIZE / 2, TILE_SIZE / 2)
-          .lineTo(TILE_SIZE / 2, TILE_SIZE / 2)
+          .moveTo(0.5, 0.5)
+          .lineTo(0.5, -0.5)
+          .lineTo(-0.5, -0.5)
+          .lineTo(-0.5, 0.5)
+          .lineTo(0.5, 0.5)
       )
       const material = new THREE.MeshBasicMaterial({
         color: CURSOR_COLOR
@@ -381,12 +384,9 @@ export default {
       }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.selectedBucket = this.stuff[this.PAST_INTERSECTED.obj.bucketIndex]
-        const tileCount = this.selectedBucket.count
-        const pct = tileCount / this.itemsTotal
-        const scale = this.scaled ? BASE_SCALE : Math.sqrt(pct)
         const x = this.PAST_INTERSECTED.obj.position.x
         const y = this.PAST_INTERSECTED.obj.position.y
-        const w = this.PAST_INTERSECTED.obj.geometry.parameters.width * scale
+        const w = this.PAST_INTERSECTED.obj.geometry.parameters.width
         const obj = new THREE.Mesh(new THREE.PlaneBufferGeometry(w, w))
         obj.position.set(x, y, FILE_Z)
         this.moveCameraTo(obj)
@@ -509,7 +509,7 @@ export default {
       const atlasCount = Math.ceil(tileCount / countPerAtlas)
       const side = Math.ceil(Math.sqrt(tileCount))
       const w = obj.geometry.parameters.width
-      const tileSize = (w / side) * (1 - TILE_PADDING)
+      const tileSize = w / side
       const realW = w
 
       const geometry = new THREE.BufferGeometry()
@@ -559,7 +559,7 @@ export default {
           },
           pointScale: {
             type: 'f',
-            value: this.getPointSize(tileSize)
+            value: getPointScale(side)
           }
         },
         depthTest: true,
@@ -581,6 +581,9 @@ export default {
       }
 
       geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2, true))
+
+      const sizes = new Float32Array(tileCount).fill(w) // for some reason the size of the point is the size of the full square ¯\_(ツ)_/¯
+      geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
 
       geometry.setAttribute('fileIndex', new THREE.BufferAttribute(fIndices, 1))
 
@@ -611,6 +614,7 @@ export default {
         realW,
         side,
         tileSize,
+        tileCount,
         x: obj.position.x,
         y: obj.position.y,
         z: obj.position.z
@@ -634,14 +638,12 @@ export default {
         this.filesMoveStart = null
       }
 
-      const { realW, tileSize } = this.filesObject.mga
+      const { realW, tileCount, tileSize, side } = this.filesObject.mga
       const x = this.filesObject.mga.x - realW * 0.5 + tileSize * 0.5
       const y = this.filesObject.mga.y + realW * 0.5 - tileSize * 0.5
       const z = this.filesObject.mga.z
 
-      const padding = tileSize * (TILE_PADDING / TILE_SIZE)
-
-      const tileCount = this.selectedBucket.count
+      const spacing = realW / side
 
       const positions = new Float32Array(tileCount * 3)
       const position = new THREE.Vector3()
@@ -657,8 +659,8 @@ export default {
         let yy = easeInOutQuad(t, yF, yT - yF, MOVE_DURATION)
         let zz = easeInOutQuad(t, zF, zT - zF, MOVE_DURATION)
 
-        xx = x + xx * (tileSize + padding)
-        yy = y + yy * -(tileSize + padding)
+        xx = x + xx * spacing
+        yy = y + yy * -spacing
         zz = z + zz
         position.set(xx, yy, zz)
         position.toArray(positions, i3)
@@ -682,7 +684,8 @@ export default {
       const side = Math.ceil(Math.sqrt(bucketCount))
       const xini = -1
       const yini = 1
-      const spacing = 2 / (side - 1)
+      const fullW = 2
+      const spacing = fullW / side
 
       for (let i = 0, i3 = 0, l = bucketCount; i < l; i++, i3 += 3) {
         const b = buckets[i]
@@ -690,7 +693,7 @@ export default {
         const text = b.name
         const pct = count / this.itemsTotal
         const scale = this.scaled ? Math.sqrt(pct) : BASE_SCALE
-        const w = TILE_SIZE * scale
+        const w = (spacing - spacing * BUCKET_PADDING) * scale
         const x = xini + (i % side) * spacing
         const y = yini - Math.floor(i / side) * spacing
         const z = BUCKET_Z
@@ -826,9 +829,9 @@ export default {
       this.camera.aspect = w / h
       this.camera.updateProjectionMatrix()
       if (this.filesObject) {
-        const { tileSize } = this.filesObject.mga
-        this.filesObject.material.uniforms.pointScale.value = this.getPointSize(
-          tileSize
+        const { side } = this.filesObject.mga
+        this.filesObject.material.uniforms.pointScale.value = getPointScale(
+          side
         )
         this.filesObject.material.uniforms.pointScale.needsUpdate = true
       }
@@ -858,41 +861,33 @@ export default {
       this.pickBucket()
       this.pickFile()
     },
-    getPointSize(tileSize) {
-      const magic = Math.min(window.innerHeight) * 2.25 // magic number ¯\_(ツ)_/¯
-      const size = magic * tileSize
-      return size
-    },
     getFileAt(uv) {
       const { x, y } = uv
-      const { realW, tileSize, side } = this.filesObject.mga
+      const { realW, tileSize, side, tileCount } = this.filesObject.mga
       const mx = this.filesObject.mga.x
       const my = this.filesObject.mga.y
       const col = Math.floor(side * x)
       const row = Math.floor(side * (1 - y))
-      const xx = realW * x
-      const yy = realW - realW * y
-      const xmin = col * (realW / side)
-      const xmax = col * (realW / side) + tileSize
-      const ymin = row * (realW / side)
-      const ymax = row * (realW / side) + tileSize
+      const size = 1 / side
+      const yy = 1 - y
+      const xmin = col * size + (size * TILE_PADDING) / 8
+      const xmax = col * size + size - (size * TILE_PADDING) / 8
+      const ymin = row * size + (size * TILE_PADDING) / 8
+      const ymax = row * size + size - (size * TILE_PADDING) / 8
       // make sure it is above a square and not in the gutter
-      const tileCount = this.selectedBucket.count
       const index = col + row * side
-      if (
-        index < tileCount &&
-        xx > xmin &&
-        xx < xmax &&
-        yy > ymin &&
-        yy < ymax
-      ) {
+      if (index < tileCount && x > xmin && x < xmax && yy > ymin && yy < ymax) {
         const fileId =
           this.sort === 'default'
             ? this.currentBucket.ids[index]
             : this.currentBucket.ids[this.hueIndexes[index]]
         const instanceId = index
-        const tx = mx + xmin + tileSize * 0.5 - realW * 0.5
-        const ty = my - ymin - tileSize * 0.5 + realW * 0.5
+        const normalizedX = col * size * realW
+        const normalizedY = row * size * realW
+        const halfWidth = realW * 0.5 // parent obj is x,y centered
+        const normalizedHalfTile = size * 0.5 * realW
+        const tx = mx + normalizedX - halfWidth + normalizedHalfTile
+        const ty = my - normalizedY + halfWidth - normalizedHalfTile
         return { instanceId, fileId, tx, ty }
       }
       return null
@@ -1005,15 +1000,11 @@ export default {
 
             this.PAST_INTERSECTED.instanceId = instanceId
             this.PAST_INTERSECTED.obj = obj
-            const scale = obj.geometry.parameters.width / TILE_SIZE
+            const w = obj.geometry.parameters.width
             this.cursor.position.x = obj.position.x
-            this.cursor.position.y = obj.position.y + scale * 0.5
+            this.cursor.position.y = obj.position.y + w * 0.5 + w * 0.05
             this.cursor.position.z = obj.position.z
-            this.cursor.scale = new THREE.Vector3(
-              scale * 1.02,
-              scale * 0.1,
-              scale
-            )
+            this.cursor.scale = new THREE.Vector3(w * 1.02, w * 0.1, w)
             this.cursor.visible = true
           }
         } else if (this.PAST_INTERSECTED.instanceId) {
