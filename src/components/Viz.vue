@@ -317,7 +317,14 @@ export default {
         }
       }
     },
-    atlases(newAtlases, oldAtlases) {
+    atlases() {
+      this.paintAtlas()
+    },
+    showAtlases(shown) {
+      if (shown && this.selectedBucket) {
+        const { atlasCount } = this.calculateAtlases()
+        this.fetchAtlases(atlasCount)
+      }
       this.paintAtlas()
     },
     sort(to, from) {
@@ -478,24 +485,8 @@ export default {
         this.pickingMesh.material.dispose()
       }
     },
-    paintAtlas() {
-      if (!this.showAtlases) return
-      if (this.filesObject && this.currentBucket) {
-        const arr = [],
-          observable = this.atlases[this.currentBucket.key]
-        for (let i = 0; i < Number.POSITIVE_INFINITY; i++) {
-          if (observable[i]) arr.push(observable[i])
-          else break
-        }
-        this.filesObject.material.uniforms.texture.value = arr
-        this.filesObject.material.uniforms.texture.needsUpdate = true
-        this.filesObject.material.uniforms.loadedAtlases.value = 1.0
-        this.filesObject.material.uniforms.loadedAtlases.needsUpdate = true
-      }
-    },
-    initFiles(obj) {
-      this.cleanFiles()
-
+    calculateAtlases() {
+      if (!this.selectedBucket) return
       const tileCount = this.selectedBucket.count
 
       const smallAtlasCount = Math.pow(SMALL_ATLAS_SIZE / ATLAS_TILE_SIZE, 2)
@@ -515,6 +506,60 @@ export default {
       const atlasPerSide = atlasSize / ATLAS_TILE_SIZE
 
       const atlasCount = Math.ceil(tileCount / countPerAtlas)
+
+      return {
+        atlasPerSide,
+        countPerAtlas,
+        atlasSize,
+        atlasCount
+      }
+    },
+    fetchAtlases(atlasCount) {
+      let loadedAtlases = false
+      // check to see if atlases are in memory
+      let atlases = this.atlases[this.currentBucket.key]
+      if (atlases && atlases.length === atlasCount) {
+        loadedAtlases = true
+      } else {
+        atlases = createEmptyAtlases(atlasCount)
+        // load the atlases asynchronously
+        const bucket = this.currentBucket
+        this.getCurrentAtlases({ bucket, atlasCount })
+      }
+      return { atlases, loadedAtlases }
+    },
+    paintAtlas() {
+      if (!(this.filesObject || this.currentBucket)) return
+      if (!this.showAtlases) {
+        // remove atlases
+        const { atlasCount } = this.calculateAtlases()
+        const atlases = createEmptyAtlases(atlasCount)
+        this.filesObject.material.uniforms.texture.value = atlases
+        this.filesObject.material.uniforms.texture.needsUpdate = true
+        this.filesObject.material.uniforms.loadedAtlases.value = 0.0
+        this.filesObject.material.uniforms.loadedAtlases.needsUpdate = true
+        this.filesObject.material.uniforms.showAtlases.value = 0.0
+        this.filesObject.material.uniforms.showAtlases.needsUpdate = true
+      } else if (this.atlases[this.currentBucket.key]) {
+        const arr = [],
+          observable = this.atlases[this.currentBucket.key]
+        for (let i = 0; i < Number.POSITIVE_INFINITY; i++) {
+          if (observable[i]) arr.push(observable[i])
+          else break
+        }
+        this.filesObject.material.uniforms.texture.value = arr
+        this.filesObject.material.uniforms.texture.needsUpdate = true
+        this.filesObject.material.uniforms.loadedAtlases.value = 1.0
+        this.filesObject.material.uniforms.loadedAtlases.needsUpdate = true
+        this.filesObject.material.uniforms.showAtlases.value = 1.0
+        this.filesObject.material.uniforms.showAtlases.needsUpdate = true
+      }
+    },
+    initFiles(obj) {
+      this.cleanFiles()
+
+      const tileCount = this.selectedBucket.count
+
       const side = Math.ceil(Math.sqrt(tileCount))
       const w = obj.geometry.parameters.width
       const tileSize = w / side
@@ -522,21 +567,19 @@ export default {
 
       const geometry = new THREE.BufferGeometry()
 
+      const {
+        atlasPerSide,
+        countPerAtlas,
+        atlasSize,
+        atlasCount
+      } = this.calculateAtlases()
+
       let atlases = [],
         loadedAtlases = false
-
       if (this.showAtlases) {
-        // check to see if atlases are in memory
-        const _atlases = this.atlases[this.currentBucket.key]
-        if (_atlases && _atlases.length === atlasCount) {
-          atlases = _atlases
-          loadedAtlases = true
-        } else {
-          atlases = createEmptyAtlases(atlasCount)
-          // load the atlases asynchronously
-          const bucket = this.currentBucket
-          this.getCurrentAtlases({ bucket, atlasCount })
-        }
+        const fetched = this.fetchAtlases(atlasCount)
+        atlases = fetched.atlases
+        loadedAtlases = fetched.loadedAtlases
       } else {
         atlases = createEmptyAtlases(atlasCount)
       }
