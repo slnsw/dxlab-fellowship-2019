@@ -54,7 +54,7 @@ const API_CALL_DELAY = 500 // ms to wait before hitting api
 const CAMERA_NEAR = 0.0001
 const CAMERA_FAR = 10
 const CAMERA_FOV = 45
-const CAMERA_MIN_DIST = 0.005
+const CAMERA_MIN_DIST = 0.001
 const CAMERA_MAX_DIST = 4
 
 // tile stuff
@@ -334,6 +334,15 @@ export default {
     }
   },
   methods: {
+    backToEverything() {
+      this.camera.layers.enable(0)
+      this.cleanFiles()
+      this.moveCameraTo(this.bucketsGroup)
+      this.hideCursor()
+      this.selectedInstance = {}
+      this.fileMode = false
+      this.$store.commit('setBucket', null)
+    },
     paintSort() {
       if (!this.filesObject) return
       this.filesMoveStart = Date.now() - MOVE_DURATION
@@ -393,7 +402,8 @@ export default {
       }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         this.camera.layers.enable(1)
-        this.selectedBucket = this.stuff[this.PAST_INTERSECTED.obj.bucketIndex]
+        const key = this.PAST_INTERSECTED.obj.bucketIndex
+        this.selectedBucket = this.stuff[key]
         const x = this.PAST_INTERSECTED.obj.position.x
         const y = this.PAST_INTERSECTED.obj.position.y
         const w = this.PAST_INTERSECTED.obj.geometry.parameters.width
@@ -415,19 +425,19 @@ export default {
         this.camera.layers.enable(1)
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
-          // if (this.detailMode) {
-          //   go back to files
-          //   this.camera.layers.enable(1)
-          //   this.detailMode = false
-          //   this.moveCameraTo(this.cameraObj)
-          //   } else {
-          //     // go back to bucket
-          //     this.camera.layers.enable(0)
-          //     this.fileMode = false
-          //     this.cleanFiles()
-          //     this.moveCameraTo(this.selectedInstance.obj)
-          //     this.$store.commit('setBucket', null)
-          // }
+          if (this.detailMode) {
+            // go back to files
+            this.camera.layers.enable(1)
+            this.detailMode = false
+            this.moveCameraTo(this.cameraObj)
+            // } else {
+            //   // go back to bucket
+            //   this.camera.layers.enable(0)
+            //   this.fileMode = false
+            //   this.cleanFiles()
+            //   this.moveCameraTo(this.selectedInstance.obj)
+            //   this.$store.commit('setBucket', null)
+          }
         } else {
           // clicked a file
           this.detailMode = true
@@ -445,14 +455,10 @@ export default {
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
+        this.$store.commit('setBucket', null)
       } else {
-        this.camera.layers.enable(0)
-        this.moveCameraTo(this.bucketsGroup)
-        this.hideCursor()
-        this.selectedInstance = {}
-        this.fileMode = false
+        this.backToEverything()
       }
-      this.$store.commit('setBucket', null)
     },
     createControls() {
       this.controls = new TrackballControls(this.camera, this.$refs.three)

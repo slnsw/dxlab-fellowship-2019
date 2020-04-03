@@ -3,9 +3,7 @@
     <div class="header">
       <h1 class="total">
         <p v-if="currentBucket">
-          <router-link class="back" :to="{ path: '/', query: { sort } }"
-            >&lt; back to everything</router-link
-          >
+          <button class="back" @click="back">&lt; back to everything</button>
         </p>
         <strong>{{ formattedItemsTotal }}</strong> {{ description }}
       </h1>
@@ -38,7 +36,7 @@
         </label>
       </div>
     </div>
-    <viz class="viz" />
+    <viz class="viz" ref="viz" />
   </div>
 </template>
 
@@ -56,6 +54,11 @@ export default {
     $route(to) {
       const sort = to.query.sort ? to.query.sort : 'default'
       if (sort !== this.sort) this.$store.commit('setSort', sort)
+    }
+  },
+  methods: {
+    back() {
+      this.$refs.viz.backToEverything()
     }
   },
   computed: {
@@ -121,6 +124,8 @@ export default {
   grid-template-rows: auto 1fr auto;
 }
 .back {
+  border: none;
+  cursor: pointer;
   font-size: 0.9rem;
   background-color: $main-color;
   color: $bg-color;
