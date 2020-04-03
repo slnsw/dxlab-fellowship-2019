@@ -15,10 +15,13 @@ import AjaxTextureLoader from '@/utils/AjaxTextureLoader'
 import STUFF from '@/utils/data'
 
 const MAX_WINDOW_SIZE = 20000
+const API_KEY = process.env.VUE_APP_API_KEY
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
 const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
 
 const instance = axios.create({
+  headers: { 'x-api-key': API_KEY },
   timeout: 600000
 })
 
@@ -172,6 +175,7 @@ const parseTsne = (data) => {
 export default new Vuex.Store({
   state: {
     loaded: false,
+    fileData: {},
     showAtlases: false,
     sort: 'default',
     stuff: STUFF,
@@ -193,7 +197,7 @@ export default new Vuex.Store({
         .reduce((a, b) => a + b, 0)
   },
   actions: {
-    getCurrentAtlases({ dispatch, commit, state }, { bucket, atlasCount }) {
+    getCurrentAtlases({ dispatch, commit }, { bucket, atlasCount }) {
       commit('setLoadedAtlas', atlasCount)
       for (let index = 0; index < atlasCount; index++) {
         dispatch('getAtlasForBucketIndex', { bucket, index })
@@ -207,6 +211,39 @@ export default new Vuex.Store({
         atlas.encoding = THREE.sRGBEncoding
         atlas.flipY = false
         commit('setAtlasForBucketIndex', { bucket, index, atlas })
+      })
+    },
+    loadFile: ({ state, commit }, fileId) => {
+      commit('setFileData', {})
+      const id = fileId
+      let url = API_BASE_URL + '/files/' + fileId
+      instance.get(url).then((response) => {
+        const image = response.data.file.image.variants['300_300'].url
+        const title = response.data.file.title
+        const img = new Image()
+        img.onload = () => {
+          const fileData = { ...state.fileData, id, image, title }
+          commit('setFileData', fileData)
+        }
+        img.src = image
+      })
+      url = THUMBS_BASE_URL + '/data/' + fileId
+      instance.get(url).then((response) => {
+        const paletteStr = response.data.palette_colors
+        const palette = paletteStr
+          ? paletteStr
+              .split(',')
+              .map((i) => i.split(':'))
+              .map((p) => {
+                return { color: p[0], percent: Number(p[1]) }
+              })
+          : []
+        const paletteTxt = response.data.palette_text
+        const colorNames = paletteTxt
+          ? paletteTxt.split(',').map((i) => i.split(':'))
+          : []
+        const fileData = { ...state.fileData, id, palette, colorNames }
+        commit('setFileData', fileData)
       })
     }
   },
@@ -234,6 +271,7 @@ export default new Vuex.Store({
       atlases[bucket.key] = newBucket
       state.atlases = atlases
     },
+    setFileData: (state, data) => (state.fileData = data),
     setStuff: (state, stuff) => (state.stuff = stuff),
     async setBucket(state, bucket) {
       if (!bucket) {

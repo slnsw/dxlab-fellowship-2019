@@ -1,33 +1,12 @@
 <template>
   <div class="three">
-    <div class="file hidden" ref="file">
-      <div v-if="fileData.palette" class="palette">
-        <span
-          class="color"
-          v-for="(color, index) in fileData.palette"
-          :key="index"
-          :style="{
-            backgroundColor: color.color,
-            width: color.percent * 100 + '%'
-          }"
-        ></span>
-      </div>
-      <div class="loading" v-if="!fileData.title">Loading...</div>
-      <img
-        v-if="fileData.image"
-        :src="fileData.image"
-        alt=""
-        class="thumbnail"
-      />
-      <p v-if="fileData.title">{{ fileData.title }}</p>
-    </div>
     <canvas
       ref="three"
       class="three"
-      @mousemove="onDocumentMouseMove"
-      @mousedown="onDocumentMouseMove"
+      @mousemove.prevent="onDocumentMouseMove"
+      @mousedown.prevent="onDocumentMouseDown"
+      @mouseup.prevent="onDocumentMouseUp"
       @dblclick.prevent="onDoubleClick"
-      @click.prevent="onClick"
     ></canvas>
   </div>
 </template>
@@ -42,13 +21,6 @@ import * as THREE from 'three'
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 import SpriteText from 'three-spritetext'
-
-// api stuff
-const API_KEY = process.env.VUE_APP_API_KEY
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
-const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
-const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
-const API_CALL_DELAY = 500 // ms to wait before hitting api
 
 // camera stuff
 const CAMERA_NEAR = 0.0001
@@ -68,19 +40,11 @@ const BUCKET_Z = 1
 const BUCKET_PADDING = 0.1
 const FILE_Z = -1
 const CURSOR_COLOR = new THREE.Color('hsl(3.6, 100%, 29%)')
-const HOVER_PADDING = 10
-const HOVER_WIDTH = 300
 const MOVE_DURATION = 300
 const SCENE_PADDING = 2.0
 const TEXT_SIZE = 0.025
 const TEXT_Z = 0 // relative
 const TILE_PADDING = 0.5
-
-const instance = axios.create({
-  baseURL: API_BASE_URL,
-  headers: { 'x-api-key': API_KEY },
-  timeout: 10000
-})
 
 const vShader = `
 precision mediump float;
@@ -242,6 +206,8 @@ export default {
   components: {},
   data() {
     return {
+      isDragging: false,
+      lastMouse: null,
       bucketsGroup: null,
       camera: null,
       cameraMoveStart: null,
@@ -253,7 +219,6 @@ export default {
       lastMouseMoveId: null,
       lastChange: 0,
       lastFileId: null,
-      fileData: {},
       fileMode: false,
       filesMoveFrom: null,
       filesMoveStart: null,
@@ -279,6 +244,7 @@ export default {
   computed: {
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
+      'fileData',
       'defaultPositions',
       'defaultColors',
       'huePositions',
@@ -393,11 +359,6 @@ export default {
       this.camera.layers.disableAll()
       if (this.fileMode) {
         this.camera.layers.enable(1)
-        if (this.PAST_INTERSECTED.fileId !== undefined) {
-          // double-clicked a file
-          const url = FILES_BASE_URL + '/' + this.PAST_INTERSECTED.fileId
-          window.open(url, '_blank')
-        }
         return
       }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
@@ -416,48 +377,6 @@ export default {
         this.$store.commit('setBucket', this.selectedBucket)
       } else {
         this.camera.layers.enable(0)
-      }
-    },
-    onClick() {
-      this.camera.layers.disableAll()
-      if (this.isMoving) return
-      if (this.fileMode) {
-        this.camera.layers.enable(1)
-        if (this.PAST_INTERSECTED.instanceId === undefined) {
-          // clicked outside
-          if (this.detailMode) {
-            // go back to files
-            this.camera.layers.enable(1)
-            this.detailMode = false
-            this.moveCameraTo(this.cameraObj)
-            // } else {
-            //   // go back to bucket
-            //   this.camera.layers.enable(0)
-            //   this.fileMode = false
-            //   this.cleanFiles()
-            //   this.moveCameraTo(this.selectedInstance.obj)
-            //   this.$store.commit('setBucket', null)
-          }
-        } else {
-          // clicked a file
-          this.detailMode = true
-          this.moveCameraTo(this.PAST_INTERSECTED.obj)
-        }
-        return
-      }
-      if (this.PAST_INTERSECTED.instanceId !== undefined) {
-        // there is a selected bucket
-        this.camera.layers.enable(0)
-        if (
-          this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
-        ) {
-          this.hideCursor()
-          this.moveCameraTo(this.PAST_INTERSECTED.obj)
-          this.selectedInstance = { ...this.PAST_INTERSECTED }
-        }
-        this.$store.commit('setBucket', null)
-      } else {
-        this.backToEverything()
       }
     },
     createControls() {
@@ -911,16 +830,69 @@ export default {
     },
     onDocumentMouseOut(event) {
       this.lastFileId = null
-      this.fileData = {}
-      if (this.$refs.file) this.$refs.file.classList.add('hidden')
+    },
+    onDocumentMouseUp(event) {
+      this.isDragging = false
+      const lastX = this.lastMouse.clientX
+      const lastY = this.lastMouse.clientY
+
+      const newX = event.clientX
+      const newY = event.clientY
+
+      const isClick = newX === lastX && newY === lastY
+
+      if (!isClick) return
+
+      this.camera.layers.disableAll()
+      if (this.isMoving) return
+      if (this.fileMode) {
+        this.camera.layers.enable(1)
+        if (this.PAST_INTERSECTED.instanceId === undefined) {
+          // clicked outside
+          if (this.detailMode) {
+            // go back to files
+            this.camera.layers.enable(1)
+            this.detailMode = false
+            this.moveCameraTo(this.cameraObj)
+          } else {
+            // go back to bucket
+            this.camera.layers.enable(0)
+            this.fileMode = false
+            this.cleanFiles()
+            this.moveCameraTo(this.selectedInstance.obj)
+            this.$store.commit('setBucket', null)
+          }
+        } else {
+          // clicked a file
+          this.detailMode = true
+          this.moveCameraTo(this.PAST_INTERSECTED.obj)
+          this.loadFile()
+        }
+        return
+      }
+      if (this.PAST_INTERSECTED.instanceId !== undefined) {
+        // there is a selected bucket
+        this.camera.layers.enable(0)
+        if (
+          this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
+        ) {
+          this.hideCursor()
+          this.moveCameraTo(this.PAST_INTERSECTED.obj)
+          this.selectedInstance = { ...this.PAST_INTERSECTED }
+        }
+        this.$store.commit('setBucket', null)
+      } else {
+        this.backToEverything()
+      }
+    },
+    onDocumentMouseDown(event) {
+      this.onDocumentMouseMove(event)
+      this.isDragging = true
+      this.lastMouse = event
     },
     onDocumentMouseMove(event) {
-      if (this.lastMouseMoveId) window.clearTimeout(this.lastMouseMoveId)
-      this.lastMouseMoveId = window.setTimeout(this.loadFile, API_CALL_DELAY)
-      event.preventDefault()
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
-      this.positionFile(this.PAST_INTERSECTED.fileId)
     },
     hideCursor() {
       this.cursor.visible = false
@@ -985,10 +957,9 @@ export default {
             const { instanceId, fileId, tx, ty } = data
             if (this.$refs.three) this.$refs.three.classList.add('pointer')
             if (this.PAST_INTERSECTED.instanceId !== instanceId) {
-              // new thing so clear fileData
+              // new thing
               const { tileSize } = this.filesObject.mga
 
-              this.fileData = {}
               const point = intersects[0].point
               const geometry = new THREE.PlaneBufferGeometry(tileSize, tileSize)
               const material = new THREE.MeshBasicMaterial()
@@ -1003,64 +974,24 @@ export default {
           } else {
             if (this.$refs.three) this.$refs.three.classList.remove('pointer')
             this.PAST_INTERSECTED = {}
-            this.positionFile(false)
           }
         } else if (this.PAST_INTERSECTED.instanceId) {
           if (this.$refs.three) this.$refs.three.classList.remove('pointer')
           this.PAST_INTERSECTED = {}
-          this.positionFile(false)
         }
       }
     },
-    positionFile(visible) {
-      if (!this.$refs.file) return
-      const elem = this.$refs.file
-      if (!visible) {
-        this.lastFileId = null
-        elem.classList.add('hidden')
-        return
-      }
-      // position hover
-      elem.classList.remove('hidden')
-      let left = (window.innerWidth * (this.mouse.x + 1)) / 2
-      if (left + HOVER_WIDTH > window.innerWidth)
-        left = left - HOVER_WIDTH - HOVER_PADDING * 4
-      let top = (window.innerHeight * (this.mouse.y - 1)) / -2 - HOVER_WIDTH / 2
-      if (top + HOVER_WIDTH > window.innerHeight) top = top - HOVER_WIDTH / 2
-      if (top < 0) top = HOVER_PADDING
-      elem.style.left = left + HOVER_PADDING + 'px'
-      elem.style.top = top + HOVER_PADDING + 'px'
-    },
     loadFile() {
       // get data from API
-      if (!this.$refs.file) return
       if (!this.PAST_INTERSECTED.fileId) {
         this.lastFileId = null
         return
       }
       const fileId = this.PAST_INTERSECTED.fileId
       if (fileId === this.lastFileId) return
-      this.fileData = {}
       this.lastFileId = fileId
-      let url = '/files/' + fileId
-      instance.get(url).then((response) => {
-        const image = response.data.file.image.variants['300_300'].url
-        const title = response.data.file.title
-        this.fileData = { ...this.fileData, image, title }
-      })
-      url = THUMBS_BASE_URL + '/data/' + fileId
-      instance.get(url).then((colorResponse) => {
-        const paletteStr = colorResponse.data.palette_colors
-        const palette = paletteStr
-          ? paletteStr
-              .split(',')
-              .map((i) => i.split(':'))
-              .map((p) => {
-                return { color: p[0], percent: Number(p[1]) }
-              })
-          : []
-        this.fileData = { ...this.fileData, palette }
-      })
+      this.$store.commit('setFileData', {})
+      this.$store.dispatch('loadFile', fileId)
     },
     pickBucket() {
       if (this.bucketsGroup && !this.fileMode) {
@@ -1111,40 +1042,5 @@ export default {
 }
 .pointer {
   cursor: pointer;
-}
-.file {
-  background-color: transparentize($color: $bg-color, $amount: 0.25);
-  display: flex;
-  flex-direction: column;
-  padding: 0.5rem;
-  position: absolute;
-  min-height: calc(300px + 1rem);
-  min-width: calc(300px + 1rem);
-  max-width: calc(300px + 1rem);
-  z-index: 1;
-
-  &.hidden {
-    display: none;
-  }
-}
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 300px;
-  height: 300px;
-}
-.palette {
-  display: flex;
-}
-.color {
-  font-size: 0.75rem;
-  height: 2rem;
-  padding: 0.5rem;
-}
-.thumbnail {
-  background-color: lighten($color: $bg-color, $amount: 10%);
-  width: 300px;
-  height: 300px;
 }
 </style>

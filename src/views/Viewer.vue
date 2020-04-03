@@ -3,27 +3,61 @@
     <div class="header">
       <h1 class="total">
         <p v-if="currentBucket">
-          <button class="back" @click="back">&lt; back to everything</button>
+          <button type="button" class="button-back" @click="back">
+            &lt; back to everything
+          </button>
         </p>
         <strong>{{ formattedItemsTotal }}</strong> {{ description }}
       </h1>
     </div>
+    <div :class="{ file: true, hidden: !fileData.id || fileHidden }" ref="file">
+      <button class="button-hide" type="button" @click="fileHidden = true">
+        hide
+      </button>
+      <div v-if="fileData.palette" class="palette">
+        <span
+          class="color"
+          v-for="(color, index) in fileData.palette"
+          :title="fileData.colorNames[index].join(', ')"
+          :key="index"
+          :style="{
+            backgroundColor: color.color,
+            width: color.percent * 100 + '%'
+          }"
+        ></span>
+      </div>
+      <div class="loading" v-if="!fileData.title">Loading...</div>
+      <a
+        :href="filesBaseUrl + '/' + fileData.id"
+        rel="noopener"
+        target="_blank"
+      >
+        <img
+          v-if="fileData.image"
+          :src="fileData.image"
+          :alt="fileData.title"
+          :title="fileData.title"
+          class="thumbnail"
+        />
+      </a>
+      <p v-if="fileData.title" class="file-description">{{ fileData.title }}</p>
+    </div>
     <div class="controls">
       <div class="sort">
         <router-link
-          :class="['sort-button', sort === 'default' ? 'active' : '']"
+          :class="['button-sort', sort === 'default' ? 'active' : '']"
           :to="{ path: '/' }"
         >
           default
         </router-link>
         <router-link
-          :class="['sort-button', sort === 'hue' ? 'active' : '']"
+          :class="['button-sort', sort === 'hue' ? 'active' : '']"
           :to="{ path: '/', query: { sort: 'hue' } }"
         >
           color
         </router-link>
         <router-link
-          :class="['sort-button', sort === 'similar' ? 'active' : '']"
+          :class="['button-sort', sort === 'similar' ? 'active' : '']"
           :to="{ path: '/', query: { sort: 'similar' } }"
         >
           similarity
@@ -36,6 +70,7 @@
         </label>
       </div>
     </div>
+
     <viz class="viz" ref="viz" />
   </div>
 </template>
@@ -45,15 +80,20 @@ import { mapState, mapGetters } from 'vuex'
 
 import Viz from '@/components/Viz.vue'
 
+const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
+
 export default {
   components: { Viz },
   data() {
-    return {}
+    return { filesBaseUrl: FILES_BASE_URL, fileHidden: false }
   },
   watch: {
     $route(to) {
       const sort = to.query.sort ? to.query.sort : 'default'
       if (sort !== this.sort) this.$store.commit('setSort', sort)
+    },
+    fileData(newData) {
+      if (newData.id) this.fileHidden = false
     }
   },
   methods: {
@@ -97,6 +137,7 @@ export default {
     },
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
+      'fileData',
       'selectedBucket',
       'loaded',
       'itemsTotal',
@@ -121,9 +162,9 @@ export default {
   color: $main-color;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr 5rem;
 }
-.back {
+.button-back {
   border: none;
   cursor: pointer;
   font-size: 0.9rem;
@@ -136,7 +177,7 @@ export default {
   padding: 0.125rem 0.5rem;
 }
 .header {
-  background-color: transparentize($color: $bg-color, $amount: 0.5);
+  background-color: transparentize($color: $bg-color, $amount: 0.25);
   grid-column: 1/4;
   grid-row: 1/2;
   z-index: 1;
@@ -150,23 +191,25 @@ export default {
   padding: 0.5rem;
 }
 .controls {
+  grid-column: 1/4;
+  grid-row: 3/4;
+  z-index: 1;
   align-items: center;
-  background-color: transparentize($color: $bg-color, $amount: 0.5);
   display: flex;
   flex-direction: column;
-  grid-column: 2/3;
-  grid-row: 3/4;
-  padding: 0.5rem 0;
-  z-index: 1;
+  margin: 0 auto;
+  background-color: transparentize($color: $bg-color, $amount: 0.5);
+  width: 50%;
+  min-width: 20rem;
 }
 .sort {
   display: flex;
-
-  li {
-    margin: 0 0 0 0.5rem;
-  }
+  padding-top: 0.5rem;
 }
-.sort-button {
+.atlas {
+  padding-bottom: 0.5rem;
+}
+.button-sort {
   background-color: $main-color;
   color: $bg-color;
   text-decoration: none;
@@ -175,6 +218,10 @@ export default {
   margin: 0 0 0.5rem 0.5rem;
   padding: 0.25rem 1rem;
 
+  &:first-child {
+    margin-left: 0;
+  }
+
   &.active {
     background-color: $bg-active;
   }
@@ -182,6 +229,66 @@ export default {
 .viz {
   grid-column: 1/4;
   grid-row: 1/4;
+}
+.file {
+  align-self: center;
+  justify-self: end;
+  background-color: transparentize($color: $bg-color, $amount: 0.1);
+  grid-row: 2/3;
+  grid-column: 3/4;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+  width: 300px;
+  max-width: 30vw;
+  z-index: 1;
+  transition: transform 0.2s ease-out;
+  transform: translateX(0%);
+  margin: -1rem 0 -1rem -1rem;
+
+  &.hidden {
+    transform: translateX(100%);
+  }
+}
+.button-hide {
+  align-self: flex-start;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  background-color: $main-color;
+  color: $bg-color;
+  display: inline-block;
+  text-decoration: none;
+  border-radius: 0.2rem;
+  margin: 0 0 0.5rem 0.5rem;
+  padding: 0.125rem 0.5rem;
+}
+.loading {
+  background-color: transparentize($color: $bg-color, $amount: 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 50% 0;
+}
+.palette {
+  display: flex;
+}
+.color {
+  font-size: 0.75rem;
+  height: 2rem;
+  padding: 0.5rem;
+}
+.thumbnail {
+  object-fit: cover;
+  width: 100%;
+  height: auto;
+}
+.file-description {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0.5rem 0.5rem 0 0.5rem;
 }
 </style>
 
