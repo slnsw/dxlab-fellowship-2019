@@ -40,7 +40,15 @@
           class="thumbnail"
         />
       </a>
-      <p v-if="fileData.title" class="file-description">{{ fileData.title }}</p>
+      <p v-if="fileData.title" class="file-description">
+        <a
+          :href="filesBaseUrl + '/' + fileData.id"
+          rel="noopener"
+          target="_blank"
+        >
+          {{ fileData.title }}
+        </a>
+      </p>
     </div>
     <div class="controls">
       <div class="sort">
@@ -289,6 +297,10 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0.5rem 0.5rem 0 0.5rem;
+
+  a {
+    color: $main-color;
+  }
 }
 </style>
 

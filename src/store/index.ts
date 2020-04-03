@@ -225,6 +225,11 @@ export default new Vuex.Store({
           const fileData = { ...state.fileData, id, image, title }
           commit('setFileData', fileData)
         }
+        img.onerror = () => {
+          const image = '/not_found.svg'
+          const fileData = { ...state.fileData, id, image, title }
+          commit('setFileData', fileData)
+        }
         img.src = image
       })
       url = THUMBS_BASE_URL + '/data/' + fileId
