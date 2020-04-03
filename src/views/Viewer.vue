@@ -207,8 +207,9 @@ export default {
   flex-direction: column;
   margin: 0 auto;
   background-color: transparentize($color: $bg-color, $amount: 0.5);
-  width: 50%;
-  min-width: 20rem;
+  width: 30%;
+  min-width: 18rem;
+  border-radius: 0.5rem 0.5rem 0 0;
 }
 .sort {
   display: flex;
@@ -253,6 +254,7 @@ export default {
   transition: transform 0.2s ease-out;
   transform: translateX(0%);
   margin: -1rem 0 -1rem -1rem;
+  border-radius: 0.5rem 0 0 0.5rem;
 
   &.hidden {
     transform: translateX(100%);
@@ -281,11 +283,17 @@ export default {
 }
 .palette {
   display: flex;
+  margin-bottom: 1px;
 }
 .color {
   font-size: 0.75rem;
-  height: 2rem;
+  height: 3rem;
   padding: 0.5rem;
+  margin-right: 1px;
+
+  &:last-child {
+    margin: 0;
+  }
 }
 .thumbnail {
   object-fit: cover;

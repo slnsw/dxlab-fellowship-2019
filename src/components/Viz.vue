@@ -839,7 +839,7 @@ export default {
       const newX = event.clientX
       const newY = event.clientY
 
-      const isClick = newX === lastX && newY === lastY
+      const isClick = Math.abs(newX - lastX) < 2 && Math.abs(newY - lastY) < 2
 
       if (!isClick) return
 
