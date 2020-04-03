@@ -2,7 +2,7 @@
   <div v-if="loaded" class="grid">
     <div class="header">
       <h1 class="total">
-        <strong>{{ formattedItemsTotal }}</strong> {{ description }}.
+        <strong>{{ formattedItemsTotal }}</strong> {{ description }}
       </h1>
     </div>
     <div class="controls">
@@ -65,7 +65,9 @@ export default {
     description() {
       const l = Object.values(this.stuff).length
       return this.currentBucket
-        ? this.currentBucket.description.trim()
+        ? this.currentBucket.description !== ''
+          ? this.currentBucket.description.trim()
+          : ''
         : Object.values(this.stuff)
             .filter((b) => b.count > 0)
             .map((s, index) => (index === l - 1 ? 'and ' + s.name : s.name))
@@ -78,7 +80,11 @@ export default {
       return `${new Intl.NumberFormat().format(
         this.currentBucket ? this.currentBucket.count : this.totalFromBuckets
       )}${
-        this.currentBucket ? ' ' + this.currentBucket.name.trim() + ':' : ' '
+        this.currentBucket
+          ? ' ' +
+            this.currentBucket.name.trim() +
+            (this.currentBucket.description !== '' ? ':' : '')
+          : ' '
       }`
     },
     ...mapGetters(['totalFromBuckets']),
