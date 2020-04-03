@@ -1,5 +1,5 @@
 <template>
-  <div v-if="loaded" class="grid">
+  <div v-if="loaded" class="grid" id="viewer">
     <div class="header">
       <h1 class="total">
         <p v-if="currentBucket">
@@ -73,12 +73,50 @@
       </div>
       <div class="atlas">
         <label for="atlas">
-          <input type="checkbox" id="atlas" v-model="toggleAtlases" />
+          <input
+            type="checkbox"
+            id="atlas"
+            v-model="atlasShown"
+            @change="confirmAtlas"
+          />
           show thumbnails
         </label>
       </div>
     </div>
-
+    <a11y-dialog
+      id="app-dialog"
+      app-root="#viewer"
+      dialog-root="#dialog-root"
+      @dialog-ref="assignDialogRef"
+      :class-names="{
+        base: 'dialog',
+        overlay: 'dialog-overlay',
+        element: 'dialog-content',
+        title: 'dialog-title',
+        document: 'dialog-document',
+        closeButton: 'dialog-close'
+      }"
+    >
+      <template v-slot:title>
+        <span>Big files alert!</span>
+      </template>
+      <div>
+        <p>
+          Some categories (manuscripts, photographs, negatives) have
+          <em>a lot</em> of images. If you are in a mobile device, these will
+          take up a lot of data (a hundred megabytes or more) or might not even
+          load at all.
+        </p>
+        <div class="dialog-buttons">
+          <button type="button" class="button-confirm" @click="acceptAtlas">
+            Gimme those thumbnails!
+          </button>
+          <button type="button" class="button-cancel" @click="cancelAtlas">
+            Don't show thumbnails
+          </button>
+        </div>
+      </div>
+    </a11y-dialog>
     <viz class="viz" ref="viz" />
   </div>
 </template>
@@ -93,7 +131,11 @@ const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 export default {
   components: { Viz },
   data() {
-    return { filesBaseUrl: FILES_BASE_URL, fileHidden: false }
+    return {
+      atlasShown: this.showAtlases,
+      filesBaseUrl: FILES_BASE_URL,
+      fileHidden: false
+    }
   },
   watch: {
     $route(to) {
@@ -107,17 +149,31 @@ export default {
   methods: {
     back() {
       this.$refs.viz.backToEverything()
+    },
+    acceptAtlas() {
+      this.atlasShown = true
+      this.$store.commit('setConfirmedAtlas', true)
+      this.$store.commit('setShowAtlases', true)
+      if (this.dialog) this.dialog.hide()
+    },
+    cancelAtlas() {
+      this.atlasShown = false
+      this.$store.commit('setConfirmedAtlas', true)
+      this.$store.commit('setShowAtlases', false)
+      if (this.dialog) this.dialog.hide()
+    },
+    confirmAtlas() {
+      if (this.atlasShown && !this.confirmedAtlas) {
+        if (this.dialog) this.dialog.show()
+      } else {
+        this.$store.commit('setShowAtlases', this.atlasShown)
+      }
+    },
+    assignDialogRef(dialog) {
+      this.dialog = dialog
     }
   },
   computed: {
-    toggleAtlases: {
-      get() {
-        return this.showAtlases
-      },
-      set(value) {
-        this.$store.commit('setShowAtlases', value)
-      }
-    },
     description() {
       const l = Object.values(this.stuff).length
       return this.currentBucket
@@ -146,6 +202,7 @@ export default {
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
       'fileData',
+      'confirmedAtlas',
       'selectedBucket',
       'loaded',
       'itemsTotal',
@@ -170,7 +227,7 @@ export default {
   color: $main-color;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto 1fr 5rem;
+  grid-template-rows: auto auto 5rem;
 }
 .button-back {
   border: none;
@@ -235,6 +292,30 @@ export default {
     background-color: $bg-active;
   }
 }
+.dialog-buttons {
+  display: flex;
+  margin-top: 2rem;
+}
+.button-confirm {
+  cursor: pointer;
+  color: $main-color;
+  background-color: $bg-color;
+  display: inline-block;
+  border: none;
+  border-radius: 0.2rem;
+  padding: 0.25rem 1rem;
+}
+.button-cancel {
+  cursor: pointer;
+  background-color: $main-color;
+  color: $bg-color;
+  text-decoration: underline;
+  display: inline-block;
+  border: none;
+  border-radius: 0.2rem;
+  margin-left: auto;
+  padding: 0.25rem 1rem;
+}
 .viz {
   grid-column: 1/4;
   grid-row: 1/4;
@@ -243,7 +324,7 @@ export default {
   align-self: center;
   justify-self: end;
   background-color: transparentize($color: $bg-color, $amount: 0.1);
-  grid-row: 2/3;
+  grid-row: 1/4;
   grid-column: 3/4;
   display: flex;
   flex-direction: column;
@@ -253,7 +334,6 @@ export default {
   z-index: 1;
   transition: transform 0.2s ease-out;
   transform: translateX(0%);
-  margin: -1rem 0 -1rem -1rem;
   border-radius: 0.5rem 0 0 0.5rem;
 
   &.hidden {

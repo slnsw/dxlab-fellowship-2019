@@ -175,6 +175,7 @@ const parseTsne = (data) => {
 export default new Vuex.Store({
   state: {
     loaded: false,
+    confirmedAtlas: false,
     fileData: {},
     showAtlases: false,
     sort: 'default',
@@ -253,6 +254,7 @@ export default new Vuex.Store({
     }
   },
   mutations: {
+    setConfirmedAtlas: (state) => (state.confirmedAtlas = true),
     setShowAtlases: (state, value) => (state.showAtlases = value),
     setSort: (state, value) => {
       if (!value) value = 'default'

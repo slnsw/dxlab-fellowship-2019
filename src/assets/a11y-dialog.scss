@@ -1,0 +1,177 @@
+@import 'variables';
+
+// based on http://edenspiekermann.github.io/a11y-dialog/example/
+
+/* -------------------------------------------------------------------------- *\
+* Necessary styling for the dialog to work
+* -------------------------------------------------------------------------- */
+
+/**
+* When `<dialog>` is properly supported, the overlay is implied and can be
+* styled with `::backdrop`, which means the DOM one should be removed.
+*/
+[data-a11y-dialog-native] > :first-child {
+  display: none;
+}
+
+/**
+* When `<dialog>` is not supported, its default display is `inline` which can
+* cause layout issues.
+*/
+dialog[open] {
+  display: block;
+}
+
+.dialog[aria-hidden='true'] {
+  display: none;
+}
+
+/* -------------------------------------------------------------------------- *\
+* Styling to make the dialog look like a dialog
+* -------------------------------------------------------------------------- */
+
+.dialog-overlay {
+  z-index: 2;
+  background-color: rgba(0, 0, 0, 0.66);
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+
+dialog::backdrop {
+  background-color: $modal-backdrop;
+}
+
+.dialog-content {
+  background-color: $main-color;
+  z-index: 3;
+  position: fixed;
+  top: 10vh;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 1rem;
+  min-width: 30rem;
+}
+
+.dialog-content {
+  top: 10vh;
+}
+
+.dialog-document {
+}
+
+.dialog-document_scrolling {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.dialog-close {
+  background-color: $bg-color;
+  border: 0;
+  color: $main-color;
+  cursor: pointer;
+  font-weight: bold;
+  width: 2em;
+  height: 2em;
+  padding: 0;
+  position: absolute;
+  top: 1em;
+  right: 1em;
+  text-align: center;
+}
+
+.wrapper {
+  margin: 0 0 0.5rem 0;
+}
+
+.form {
+  margin: 0 0 0.5rem 0;
+}
+
+.dialog-title {
+  margin-bottom: 0;
+}
+
+// for generic labels
+.label {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.5rem;
+}
+
+// for selecting the type of thing being created
+ul.type-list {
+  align-content: space-between;
+  display: flex;
+  margin: 0.5rem 0;
+}
+
+.type-item {
+  border-right: 0.1rem solid $bg-color;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: 0;
+
+  &:last-child {
+    border-right: none;
+  }
+
+  .label {
+    cursor: pointer;
+    flex-grow: 1;
+    margin-bottom: 0;
+    position: relative;
+    text-align: center;
+    transition: background-color 0.1s;
+
+    &:hover {
+      background-color: $bg-color;
+    }
+
+    input[type='radio'] {
+      position: absolute;
+      opacity: 0;
+      height: 0;
+      width: 0;
+
+      &:focus + span {
+        outline-offset: -0.2rem;
+        outline-color: $main-color;
+        outline-style: auto;
+        outline-width: 0.3rem;
+      }
+
+      &:checked + span {
+        background-color: $main-color;
+        color: $bg-color;
+      }
+    }
+
+    span {
+      flex-grow: 1;
+      line-height: 1.1;
+      padding: 1rem 0.5rem;
+    }
+  }
+}
+// end for selecting the type of thing being created
+
+.actions {
+  display: flex;
+
+  button {
+    &:nth-child(1) {
+      margin-right: 1rem;
+    }
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+}

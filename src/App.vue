@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <router-view />
+    <div id="dialog-root"></div>
   </div>
 </template>
 
@@ -8,6 +9,8 @@
 @import '@/assets/reset';
 
 @import '@/assets/widgets';
+
+@import '@/assets/a11y-dialog';
 
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;

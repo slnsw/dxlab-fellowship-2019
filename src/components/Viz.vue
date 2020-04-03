@@ -454,7 +454,8 @@ export default {
       return { atlases, loadedAtlases }
     },
     paintAtlas() {
-      if (!(this.filesObject || this.currentBucket)) return
+      if (!this.filesObject) return
+      if (!this.currentBucket) return
       if (!this.showAtlases) {
         // remove atlases
         const { atlasCount } = this.calculateAtlases()
@@ -854,13 +855,13 @@ export default {
             this.camera.layers.enable(1)
             this.detailMode = false
             this.moveCameraTo(this.cameraObj)
-          } else {
-            // go back to bucket
-            this.camera.layers.enable(0)
-            this.fileMode = false
-            this.cleanFiles()
-            this.moveCameraTo(this.selectedInstance.obj)
-            this.$store.commit('setBucket', null)
+            // } else {
+            //   // go back to bucket
+            //   this.camera.layers.enable(0)
+            //   this.fileMode = false
+            //   this.cleanFiles()
+            //   this.moveCameraTo(this.selectedInstance.obj)
+            //   this.$store.commit('setBucket', null)
           }
         } else {
           // clicked a file
