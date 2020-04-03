@@ -962,7 +962,11 @@ export default {
               const { tileSize } = this.filesObject.mga
 
               const point = intersects[0].point
-              const geometry = new THREE.PlaneBufferGeometry(tileSize, tileSize)
+              // make area bigger so it doesnt zoom so close
+              const geometry = new THREE.PlaneBufferGeometry(
+                tileSize * 2,
+                tileSize * 2
+              )
               const material = new THREE.MeshBasicMaterial()
               const obj = new THREE.Mesh(geometry, material)
               obj.position.x = tx
