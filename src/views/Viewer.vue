@@ -106,7 +106,7 @@ export default {
   color: $main-color;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 5rem 1fr auto;
+  grid-template-rows: auto 1fr auto;
 }
 .header {
   background-color: transparentize($color: $bg-color, $amount: 0.5);
@@ -115,10 +115,11 @@ export default {
   z-index: 1;
 }
 .total {
-  display: inline-block;
   color: $main-color;
   font-size: 1.25rem;
   font-weight: normal;
+  max-width: 60ch;
+  margin: 0 auto;
   padding: 0.5rem;
 }
 .controls {
@@ -128,6 +129,7 @@ export default {
   flex-direction: column;
   grid-column: 2/3;
   grid-row: 3/4;
+  padding: 0.5rem 0;
   z-index: 1;
 }
 .sort {
