@@ -2,6 +2,11 @@
   <div v-if="loaded" class="grid">
     <div class="header">
       <h1 class="total">
+        <p v-if="currentBucket">
+          <router-link class="back" :to="{ path: '/', query: { sort } }"
+            >&lt; back to everything</router-link
+          >
+        </p>
         <strong>{{ formattedItemsTotal }}</strong> {{ description }}
       </h1>
     </div>
@@ -89,6 +94,7 @@ export default {
     },
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
+      'selectedBucket',
       'loaded',
       'itemsTotal',
       'stuff',
@@ -113,6 +119,16 @@ export default {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: auto 1fr auto;
+}
+.back {
+  font-size: 0.9rem;
+  background-color: $main-color;
+  color: $bg-color;
+  display: inline-block;
+  text-decoration: none;
+  border-radius: 0.2rem;
+  margin: 0 0 0.25rem 0.25rem;
+  padding: 0.125rem 0.5rem;
 }
 .header {
   background-color: transparentize($color: $bg-color, $amount: 0.5);

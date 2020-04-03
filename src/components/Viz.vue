@@ -54,7 +54,7 @@ const API_CALL_DELAY = 500 // ms to wait before hitting api
 const CAMERA_NEAR = 0.0001
 const CAMERA_FAR = 10
 const CAMERA_FOV = 45
-const CAMERA_MIN_DIST = 0
+const CAMERA_MIN_DIST = 0.005
 const CAMERA_MAX_DIST = 4
 
 // tile stuff
@@ -412,24 +412,24 @@ export default {
       this.camera.layers.disableAll()
       if (this.isMoving) return
       if (this.fileMode) {
+        this.camera.layers.enable(1)
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
-          if (this.detailMode) {
-            // go back to files
-            this.camera.layers.enable(1)
-            this.detailMode = false
-            this.moveCameraTo(this.cameraObj)
-          } else {
-            // go back to bucket
-            this.camera.layers.enable(0)
-            this.fileMode = false
-            this.cleanFiles()
-            this.moveCameraTo(this.selectedInstance.obj)
-            this.$store.commit('setBucket', null)
-          }
+          // if (this.detailMode) {
+          //   go back to files
+          //   this.camera.layers.enable(1)
+          //   this.detailMode = false
+          //   this.moveCameraTo(this.cameraObj)
+          //   } else {
+          //     // go back to bucket
+          //     this.camera.layers.enable(0)
+          //     this.fileMode = false
+          //     this.cleanFiles()
+          //     this.moveCameraTo(this.selectedInstance.obj)
+          //     this.$store.commit('setBucket', null)
+          // }
         } else {
           // clicked a file
-          this.camera.layers.enable(1)
           this.detailMode = true
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
         }
@@ -461,8 +461,8 @@ export default {
       this.controls.panSpeed = 0.1
       this.controls.maxDistance = CAMERA_MAX_DIST
       this.controls.minDistance = CAMERA_MIN_DIST
-      // this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
-      // this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
+      this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
+      this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
       this.controls.noRotate = true
       this.controls.dynamicDampingFactor = 0.1
     },

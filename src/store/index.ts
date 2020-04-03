@@ -257,9 +257,18 @@ export default new Vuex.Store({
       const { huePositions, hueIndexes } = sortByHue({ hsls, width })
 
       // tsne data
+      let tsneIndexes, tsnePositions
       const tsneUrl = '/similarities/' + bucket.key + '.txt'
-      const tsneResponse = await instance.get(tsneUrl)
-      const { tsneIndexes, tsnePositions } = parseTsne(tsneResponse.data)
+      try {
+        const tsneResponse = await instance.get(tsneUrl)
+        const parsedTsne = parseTsne(tsneResponse.data)
+        tsneIndexes = parsedTsne.tsneIndexes
+        tsnePositions = parsedTsne.tsnePositions
+      } catch (err) {
+        // in case no similarity
+        tsnePositions = positions
+        tsneIndexes = new Float32Array(currentBucket.ids.length)
+      }
 
       state.tsnePositions = tsnePositions
       state.tsneIndexes = tsneIndexes
