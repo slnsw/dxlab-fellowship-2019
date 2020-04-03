@@ -149,11 +149,34 @@ const sortByHue = ({ hsls, width }) => {
   return { huePositions, hueIndexes }
 }
 
+const parseTsne = (data) => {
+  const rows = data.split('\n')
+  const header = rows.splice(0, 1)[0]
+  const wh = header.split(' ')
+  const w = wh[0]
+  const tsnePositions = new Float32Array(rows.length * 3)
+  const tsneIndexes = new Float32Array(rows.length)
+  rows.forEach((row, i) => {
+    if (row == '') return
+    const xy = row.split(' ')
+    const x = Number(xy[0])
+    const y = Number(xy[1])
+    tsnePositions[i * 3] = x
+    tsnePositions[i * 3 + 1] = y
+    tsnePositions[i * 3 + 2] = 0
+    tsneIndexes[y * w + x] = i
+  })
+  return { tsneIndexes, tsnePositions }
+}
+
 export default new Vuex.Store({
   state: {
     loaded: false,
+    showAtlases: false,
     sort: 'default',
     stuff: STUFF,
+    tsnePositions: null,
+    tsneIndexes: null,
     huePositions: null,
     hueIndexes: null,
     defaultPositions: null,
@@ -188,6 +211,7 @@ export default new Vuex.Store({
     }
   },
   mutations: {
+    setShowAtlases: (state, value) => (state.showAtlases = value),
     setSort: (state, value) => {
       if (!value) value = 'default'
       state.sort = value
@@ -221,6 +245,8 @@ export default new Vuex.Store({
       const ids = response.data
       const currentBucket = { ...state.stuff[bucket.id], ...bucket }
       currentBucket.ids = ids.split(',')
+
+      // color data
       const { pixels, width } = await getPixelsForBucket(currentBucket)
       currentBucket.pixels = pixels
       const { colors, positions, hsls } = getColorsPositions(
@@ -229,6 +255,14 @@ export default new Vuex.Store({
       state.defaultColors = colors
       state.defaultPositions = positions
       const { huePositions, hueIndexes } = sortByHue({ hsls, width })
+
+      // tsne data
+      const tsneUrl = '/similarities/' + bucket.key + '.txt'
+      const tsneResponse = await instance.get(tsneUrl)
+      const { tsneIndexes, tsnePositions } = parseTsne(tsneResponse.data)
+
+      state.tsnePositions = tsnePositions
+      state.tsneIndexes = tsneIndexes
       state.huePositions = huePositions
       state.hueIndexes = hueIndexes
       state.currentBucket = currentBucket

@@ -2,22 +2,36 @@
   <div v-if="loaded" class="grid">
     <div class="header">
       <h1 class="total">
-        <strong>{{ formattedItemsTotal }}</strong> {{ thing }}
+        <strong>{{ formattedItemsTotal }}</strong> {{ description }}.
       </h1>
     </div>
-    <div class="sort">
-      <router-link
-        :class="['sort-button', sort === 'default' ? 'active' : '']"
-        :to="{ path: '/' }"
-      >
-        default
-      </router-link>
-      <router-link
-        :class="['sort-button', sort === 'hue' ? 'active' : '']"
-        :to="{ path: '/', query: { sort: 'hue' } }"
-      >
-        color
-      </router-link>
+    <div class="controls">
+      <div class="sort">
+        <router-link
+          :class="['sort-button', sort === 'default' ? 'active' : '']"
+          :to="{ path: '/' }"
+        >
+          default
+        </router-link>
+        <router-link
+          :class="['sort-button', sort === 'hue' ? 'active' : '']"
+          :to="{ path: '/', query: { sort: 'hue' } }"
+        >
+          color
+        </router-link>
+        <router-link
+          :class="['sort-button', sort === 'similar' ? 'active' : '']"
+          :to="{ path: '/', query: { sort: 'similar' } }"
+        >
+          similarity
+        </router-link>
+      </div>
+      <div class="atlas">
+        <label for="atlas">
+          <input type="checkbox" id="atlas" v-model="toggleAtlases" />
+          show thumbnails
+        </label>
+      </div>
     </div>
     <viz class="viz" />
   </div>
@@ -40,25 +54,42 @@ export default {
     }
   },
   computed: {
-    thing() {
+    toggleAtlases: {
+      get() {
+        return this.showAtlases
+      },
+      set(value) {
+        this.$store.commit('setShowAtlases', value)
+      }
+    },
+    description() {
       const l = Object.values(this.stuff).length
       return this.currentBucket
-        ? `${this.currentBucket.name.trim()}: ${this.currentBucket.description.trim()}`
+        ? this.currentBucket.description.trim()
         : Object.values(this.stuff)
             .filter((b) => b.count > 0)
             .map((s, index) => (index === l - 1 ? 'and ' + s.name : s.name))
-            .join(', ') + '.'
+            .join(', ')
     },
     total() {
       return this.itemsTotal
     },
     formattedItemsTotal() {
-      return new Intl.NumberFormat().format(
+      return `${new Intl.NumberFormat().format(
         this.currentBucket ? this.currentBucket.count : this.totalFromBuckets
-      )
+      )}${
+        this.currentBucket ? ' ' + this.currentBucket.name.trim() + ':' : ' '
+      }`
     },
     ...mapGetters(['totalFromBuckets']),
-    ...mapState(['loaded', 'itemsTotal', 'stuff', 'currentBucket', 'sort'])
+    ...mapState([
+      'loaded',
+      'itemsTotal',
+      'stuff',
+      'currentBucket',
+      'sort',
+      'showAtlases'
+    ])
   },
   created() {
     this.$store.commit('setSort', this.$route.query.sort)
@@ -74,14 +105,14 @@ export default {
   background-color: $bg-color;
   color: $main-color;
   display: grid;
-  grid-template-columns: 12rem 1fr 12rem;
-  grid-template-rows: 1fr 2.5rem;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 5rem 1fr auto;
 }
 .header {
   background-color: transparentize($color: $bg-color, $amount: 0.5);
-  grid-column: 1/2;
+  grid-column: 1/4;
   grid-row: 1/2;
-  z-index: 2;
+  z-index: 1;
 }
 .total {
   display: inline-block;
@@ -90,12 +121,17 @@ export default {
   font-weight: normal;
   padding: 0.5rem;
 }
-.sort {
+.controls {
+  align-items: center;
   background-color: transparentize($color: $bg-color, $amount: 0.5);
   display: flex;
-  grid-column: 1/2;
-  grid-row: 2/3;
+  flex-direction: column;
+  grid-column: 2/3;
+  grid-row: 3/4;
   z-index: 1;
+}
+.sort {
+  display: flex;
 
   li {
     margin: 0 0 0 0.5rem;
@@ -116,7 +152,7 @@ export default {
 }
 .viz {
   grid-column: 1/4;
-  grid-row: 1/3;
+  grid-row: 1/4;
 }
 </style>
 

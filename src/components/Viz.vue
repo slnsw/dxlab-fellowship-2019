@@ -267,7 +267,6 @@ export default {
       renderer: null,
       scaled: false,
       scene: null,
-      showAtlases: false,
       selectedInstance: {},
       selectedBucket: null,
       textGroup: null,
@@ -284,12 +283,15 @@ export default {
       'defaultColors',
       'huePositions',
       'hueIndexes',
+      'tsnePositions',
+      'tsneIndexes',
       'atlases',
       'loadedAtlas',
       'currentBucket',
       'itemsTotal',
       'sort',
-      'stuff'
+      'stuff',
+      'showAtlases'
     ])
   },
   mounted() {
@@ -367,9 +369,9 @@ export default {
       this.cursor = mesh
       this.scene.add(this.cursor)
 
-      const gui = new GUI()
+      // const gui = new GUI()
 
-      gui.add(this, 'showAtlases')
+      // gui.add(this, 'showAtlases')
     },
     onDoubleClick(e) {
       this.camera.layers.disableAll()
@@ -631,15 +633,30 @@ export default {
       this.scene.add(this.filesObject)
     },
     interpolateFiles() {
-      if (!this.filesMoveStart) return
+      if (!this.filesObject || !this.filesMoveStart) return
       const t = Date.now() - this.filesMoveStart
       let from, to
-      if (this.filesMoveTo === 'hue') {
-        from = this.defaultPositions
-        to = this.huePositions
-      } else {
-        from = this.huePositions
-        to = this.defaultPositions
+      switch (this.filesMoveFrom) {
+        case 'default':
+          from = this.defaultPositions
+          break
+        case 'hue':
+          from = this.huePositions
+          break
+        case 'similar':
+          from = this.tsnePositions
+          break
+      }
+      switch (this.filesMoveTo) {
+        case 'default':
+          to = this.defaultPositions
+          break
+        case 'hue':
+          to = this.huePositions
+          break
+        case 'similar':
+          to = this.tsnePositions
+          break
       }
       if (t >= MOVE_DURATION) {
         from = to
@@ -652,7 +669,6 @@ export default {
       const z = this.filesObject.mga.z
 
       const spacing = realW / side
-
       const positions = new Float32Array(tileCount * 3)
       const position = new THREE.Vector3()
 
@@ -886,10 +902,19 @@ export default {
       // make sure it is above a square and not in the gutter
       const index = col + row * side
       if (index < tileCount && x > xmin && x < xmax && yy > ymin && yy < ymax) {
-        const fileId =
-          this.sort === 'default'
-            ? this.currentBucket.ids[index]
-            : this.currentBucket.ids[this.hueIndexes[index]]
+        let fileId
+        switch (this.sort) {
+          case 'default':
+            fileId = this.currentBucket.ids[index]
+            break
+          case 'hue':
+            fileId = this.currentBucket.ids[this.hueIndexes[index]]
+            break
+          case 'similar':
+            // uses same indexing as default
+            fileId = this.currentBucket.ids[this.tsneIndexes[index]]
+            break
+        }
         const instanceId = index
         const normalizedX = col * size * realW
         const normalizedY = row * size * realW
