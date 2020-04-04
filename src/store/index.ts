@@ -234,21 +234,15 @@ export default new Vuex.Store({
         }
         img.src = image
       })
-      url = THUMBS_BASE_URL + '/data/' + fileId
+      url = THUMBS_BASE_URL + '/colors_minimal/' + fileId + '.json'
       instance.get(url).then((response) => {
-        const paletteStr = response.data.palette_colors
-        const palette = paletteStr
-          ? paletteStr
-              .split(',')
-              .map((i) => i.split(':'))
-              .map((p) => {
-                return { color: p[0], percent: Number(p[1]) }
-              })
+        const palettes = response.data
+        const palette = palettes
+          ? palettes.map((p) => {
+              return { color: p.h, percent: Number(p.f) }
+            })
           : []
-        const paletteTxt = response.data.palette_text
-        const colorNames = paletteTxt
-          ? paletteTxt.split(',').map((i) => i.split(':'))
-          : []
+        const colorNames = palettes ? palettes.map((p) => p.t.split(':')) : []
         const fileData = { ...state.fileData, id, palette, colorNames }
         commit('setFileData', fileData)
       })
