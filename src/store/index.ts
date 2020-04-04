@@ -16,6 +16,7 @@ import STUFF from '@/utils/data'
 
 const MAX_WINDOW_SIZE = 20000
 const API_KEY = process.env.VUE_APP_API_KEY
+const BASE_URL = process.env.BASE_URL
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
 const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const S3_BASE_URL = process.env.VUE_APP_S3_BASE_URL
@@ -218,7 +219,7 @@ export default new Vuex.Store({
     loadFile: ({ state, commit }, fileId) => {
       commit('setFileData', {})
       const id = fileId
-      let url = API_BASE_URL + '/files/' + fileId
+      let url = API_BASE_URL + 'files/' + fileId
       instance.get(url).then((response) => {
         const image = response.data.file.image.variants['300_300'].url
         const title = response.data.file.title
@@ -234,7 +235,7 @@ export default new Vuex.Store({
         }
         img.src = image
       })
-      url = S3_BASE_URL + '/colors_minimal/' + fileId + '.json'
+      url = S3_BASE_URL + 'colors_minimal/' + fileId + '.json'
       instance.get(url).then((response) => {
         const palettes = response.data
         const palette = palettes
@@ -280,7 +281,7 @@ export default new Vuex.Store({
         state.currentBucket = null
         return
       }
-      const url = '/buckets/' + bucket.key + '.txt'
+      const url = BASE_URL + 'buckets/' + bucket.key + '.txt'
       const response = await instance.get(url)
       const ids = response.data
       const currentBucket = { ...state.stuff[bucket.id], ...bucket }
@@ -298,7 +299,7 @@ export default new Vuex.Store({
 
       // tsne data
       let tsneIndexes, tsnePositions
-      const tsneUrl = '/similarities/' + bucket.key + '.txt'
+      const tsneUrl = BASE_URL + 'similarities/' + bucket.key + '.txt'
       try {
         const tsneResponse = await instance.get(tsneUrl)
         const parsedTsne = parseTsne(tsneResponse.data)
@@ -317,7 +318,7 @@ export default new Vuex.Store({
       state.currentBucket = currentBucket
     },
     async getIdsForBucket(state, bucket) {
-      const url = process.env.VUE_APP_ELASTIC_BASE_URL + '/_search'
+      const url = process.env.VUE_APP_ELASTIC_BASE_URL + '_search'
       const key = bucket.key
       const id = bucket.id
       const count = bucket.count
@@ -347,7 +348,7 @@ export default new Vuex.Store({
       state.stuff = { ...newStuff }
     },
     async getBuckets(state) {
-      const url = '/counts.csv'
+      const url = BASE_URL + 'counts.csv'
       const response = await instance.get(url)
       const data = await csv().fromString(response.data)
       const buckets = {}
