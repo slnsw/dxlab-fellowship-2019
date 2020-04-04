@@ -15,7 +15,7 @@ module.exports = {
       staticErrorPage: 'index.html',
       assetPath: 'dist',
       assetMatch: '**',
-      deployPath: '/viewer',
+      deployPath: 'viewer',
       acl: 'public-read',
       pwa: false,
       enableCloudfront: false,
