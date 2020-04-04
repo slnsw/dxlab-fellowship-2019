@@ -4,9 +4,11 @@
       ref="three"
       class="three"
       @mousemove.prevent="onDocumentMouseMove"
+      @touchmove.prevent="onDocumentMouseMove"
       @mousedown.prevent="onDocumentMouseDown"
+      @touchstart.prevent="onDocumentMouseDown"
       @mouseup.prevent="onDocumentMouseUp"
-      @dblclick.prevent="onDoubleClick"
+      @touchend.prevent="onDocumentMouseUp"
     ></canvas>
   </div>
 </template>
@@ -26,6 +28,8 @@ const CAMERA_FAR = 10
 const CAMERA_FOV = 45
 const CAMERA_MIN_DIST = 0.001
 const CAMERA_MAX_DIST = 4
+
+const DOUBLE_CLICK_DELAY = 200
 
 // tile stuff
 const SMALL_ATLAS_SIZE = 2048
@@ -205,7 +209,6 @@ export default {
   data() {
     return {
       isDragging: false,
-      lastMouse: null,
       bucketsGroup: null,
       camera: null,
       cameraMoveStart: null,
@@ -214,6 +217,9 @@ export default {
       cursor: null,
       detailMode: false,
       isMoving: false,
+      clickTimeout: null,
+      lastTap: 0,
+      lastMouse: null,
       lastMouseMoveId: null,
       lastChange: 0,
       lastFileId: null,
@@ -841,6 +847,27 @@ export default {
       const isClick = Math.abs(newX - lastX) < 2 && Math.abs(newY - lastY) < 2
 
       if (!isClick) return
+
+      const now = Date.now()
+      const tapLength = now - this.lastTap
+      clearTimeout(this.clickTimeout)
+      let isDoubleClick = false
+
+      if (tapLength < DOUBLE_CLICK_DELAY && tapLength > 0) {
+        isDoubleClick = true
+      } else {
+        this.clickTimeout = window.setTimeout(
+          () => clearTimeout(this.clickTimeout),
+          DOUBLE_CLICK_DELAY
+        )
+      }
+
+      this.lastTap = now
+
+      if (isDoubleClick) {
+        this.onDoubleClick(event)
+        return
+      }
 
       this.camera.layers.disableAll()
       if (this.isMoving) return

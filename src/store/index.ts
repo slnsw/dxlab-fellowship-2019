@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable no-console */
 const axios = require('axios').default
 
 import Vue from 'vue'
@@ -82,7 +83,7 @@ const loadImage = (url): any => {
 const getPixelsForBucket = async (bucket) => {
   // gets image as canvas that can be queried like:
   // pixelData = canvas.getContext('2d').getImageData(x, y, 1, 1).data
-  const url = '/pixels/' + bucket.key + '.png'
+  const url = BASE_URL + 'pixels/' + bucket.key + '.png'
   const img = await loadImage(url)
   const canvas = document.createElement('canvas')
   canvas.width = img.width
@@ -207,7 +208,7 @@ export default new Vuex.Store({
       }
     },
     getAtlasForBucketIndex({ commit }, { bucket, index }) {
-      const url = '/atlas/' + bucket.key + '_' + index + '.jpg'
+      const url = BASE_URL + '/atlas/' + bucket.key + '_' + index + '.jpg'
       const texture = new AjaxTextureLoader()
       texture.load(url, (atlas) => {
         commit('decreaseLoadedAtlas')
@@ -348,6 +349,7 @@ export default new Vuex.Store({
       state.stuff = { ...newStuff }
     },
     async getBuckets(state) {
+      console.log('base', BASE_URL)
       const url = BASE_URL + 'counts.csv'
       const response = await instance.get(url)
       const data = await csv().fromString(response.data)
@@ -361,7 +363,7 @@ export default new Vuex.Store({
         const imCount = count < 10 ? count : 10
         bucket.images = []
         for (let i = 0; i < imCount; i++) {
-          bucket.images.push('/images/' + key + '/' + i + '.jpg')
+          bucket.images.push(BASE_URL + 'images/' + key + '/' + i + '.jpg')
         }
         buckets[key] = bucket
         total += count
