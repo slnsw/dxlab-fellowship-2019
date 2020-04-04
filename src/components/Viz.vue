@@ -850,19 +850,19 @@ export default {
         this.camera.layers.enable(1)
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
-          if (this.detailMode) {
-            // go back to files
-            this.camera.layers.enable(1)
-            this.detailMode = false
-            this.moveCameraTo(this.cameraObj)
-            // } else {
-            //   // go back to bucket
-            //   this.camera.layers.enable(0)
-            //   this.fileMode = false
-            //   this.cleanFiles()
-            //   this.moveCameraTo(this.selectedInstance.obj)
-            //   this.$store.commit('setBucket', null)
-          }
+          // if (this.detailMode) {
+          //   // go back to files
+          //   // this.camera.layers.enable(1)
+          //   // this.detailMode = false
+          //   // this.moveCameraTo(this.cameraObj)
+          //   // } else {
+          //   //   // go back to bucket
+          //   //   this.camera.layers.enable(0)
+          //   //   this.fileMode = false
+          //   //   this.cleanFiles()
+          //   //   this.moveCameraTo(this.selectedInstance.obj)
+          //   //   this.$store.commit('setBucket', null)
+          // }
         } else {
           // clicked a file
           this.detailMode = true
@@ -923,7 +923,7 @@ export default {
       const ymax = row * size + size - (size * TILE_PADDING) / 8
       // make sure it is above a square and not in the gutter
       const index = col + row * side
-      if (index < tileCount && x > xmin && x < xmax && yy > ymin && yy < ymax) {
+      if (x > xmin && x < xmax && yy > ymin && yy < ymax) {
         let fileId
         switch (this.sort) {
           case 'default':
@@ -937,6 +937,7 @@ export default {
             fileId = this.currentBucket.ids[this.tsneIndexes[index]]
             break
         }
+        if (!fileId) return null
         const instanceId = index
         const normalizedX = col * size * realW
         const normalizedY = row * size * realW

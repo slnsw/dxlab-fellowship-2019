@@ -156,9 +156,10 @@ const parseTsne = (data) => {
   const rows = data.split('\n')
   const header = rows.splice(0, 1)[0]
   const wh = header.split(' ')
-  const w = wh[0]
+  const w = Number(wh[0])
+  const h = Number(wh[1])
   const tsnePositions = new Float32Array(rows.length * 3)
-  const tsneIndexes = new Float32Array(rows.length)
+  const tsneIndexes = new Float32Array(w * h).fill(-1)
   rows.forEach((row, i) => {
     if (row == '') return
     const xy = row.split(' ')

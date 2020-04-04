@@ -102,10 +102,11 @@
       </template>
       <div>
         <p>
-          Some categories (manuscripts, photographs, negatives) have
-          <em>a lot</em> of images. If you are in a mobile device, these will
-          take up a lot of data (a hundred megabytes or more) or might not even
-          load at all.
+          Some categories (especially manuscripts, photographs, and negatives)
+          have <em>a lot</em> of images (updwards of 100 megabytes) and their
+          thumbnails will take a while to download. If you are in a mobile
+          device you might want to wait until you are on Wi-Fi to view them or
+          they might not load at all.
         </p>
         <div class="dialog-buttons">
           <button type="button" class="button-confirm" @click="acceptAtlas">
@@ -171,6 +172,11 @@ export default {
     },
     assignDialogRef(dialog) {
       this.dialog = dialog
+      this.dialog.on('hide', () => {
+        if (!this.confirmedAtlas) {
+          this.atlasShown = !this.atlasShown
+        }
+      })
     }
   },
   computed: {
