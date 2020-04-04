@@ -27,7 +27,7 @@ const routes = [
       metaTags: [
         {
           name: 'description',
-          content: 'The about page of our example app.'
+          content: 'Bird’s Eye.'
         },
         {
           property: 'viewport',
