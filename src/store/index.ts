@@ -18,7 +18,7 @@ const MAX_WINDOW_SIZE = 20000
 const API_KEY = process.env.VUE_APP_API_KEY
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
 const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
-const THUMBS_BASE_URL = process.env.VUE_APP_THUMBS_BASE_URL
+const S3_BASE_URL = process.env.VUE_APP_S3_BASE_URL
 
 const instance = axios.create({
   headers: { 'x-api-key': API_KEY },
@@ -234,7 +234,7 @@ export default new Vuex.Store({
         }
         img.src = image
       })
-      url = THUMBS_BASE_URL + '/colors_minimal/' + fileId + '.json'
+      url = S3_BASE_URL + '/colors_minimal/' + fileId + '.json'
       instance.get(url).then((response) => {
         const palettes = response.data
         const palette = palettes
