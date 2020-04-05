@@ -232,7 +232,7 @@ export default new Vuex.Store({
           commit('setFileData', fileData)
         }
         img.onerror = () => {
-          const image = '/not_found.svg'
+          const image = BASE_URL + '/not_found.svg'
           const fileData = { ...state.fileData, id, image, title }
           commit('setFileData', fileData)
         }
