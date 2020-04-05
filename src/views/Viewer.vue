@@ -41,11 +41,7 @@
           ></span>
         </div>
         <div class="file-loading" v-if="!fileData.title">Loading...</div>
-        <a
-          :href="filesBaseUrl + '/' + fileData.id"
-          rel="noopener"
-          target="_blank"
-        >
+        <a :href="fileUrl" rel="noopener" target="_blank">
           <img
             v-if="fileData.image"
             :src="fileData.image"
@@ -55,7 +51,7 @@
           />
         </a>
         <p v-if="fileData.title" class="file-description">
-          <a :href="filesBaseUrl + fileData.id" rel="noopener" target="_blank">
+          <a :href="fileUrl" rel="noopener" target="_blank">
             {{ fileData.title }}
           </a>
         </p>
@@ -192,6 +188,9 @@ export default {
     }
   },
   computed: {
+    fileUrl() {
+      return this.filesBaseUrl + this.fileData.id
+    },
     description() {
       const l = Object.values(this.stuff).length
       return this.currentBucket
