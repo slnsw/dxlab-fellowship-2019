@@ -248,7 +248,7 @@ export default {
   padding: 0.125rem 0.5rem;
 }
 .header {
-  background-color: transparentize($color: $bg-color, $amount: 0.25);
+  background-color: transparentize($color: $bg-color, $amount: 0.15);
   grid-column: 1/4;
   grid-row: 1/2;
   z-index: 1;
@@ -260,6 +260,10 @@ export default {
   max-width: 60ch;
   margin: 0 auto;
   padding: 0.5rem;
+
+  @media screen and (max-width: 768px) {
+    font-size: 0.9rem;
+  }
 }
 .controls {
   grid-column: 1/4;
