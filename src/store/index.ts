@@ -370,7 +370,6 @@ export default new Vuex.Store({
         buckets[key] = bucket
         // get the pixels ahead of time
         const pixelData = await getPixelsForBucket(bucket)
-        console.log()
         pixels[key] = pixelData
         total += count
       })

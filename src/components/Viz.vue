@@ -286,6 +286,8 @@ export default {
         if (this.cameraObj) {
           this.initFiles(this.cameraObj)
           this.paintSort()
+          this.camera.layers.disableAll()
+          this.camera.layers.enable(1)
         }
       }
     },
@@ -366,13 +368,7 @@ export default {
       // gui.add(this, 'showAtlases')
     },
     onDoubleClick(e) {
-      this.camera.layers.disableAll()
-      if (this.fileMode) {
-        this.camera.layers.enable(1)
-        return
-      }
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
-        this.camera.layers.enable(1)
         const key = this.PAST_INTERSECTED.obj.bucketIndex
         this.selectedBucket = this.stuff[key]
         const x = this.PAST_INTERSECTED.obj.position.x
@@ -385,8 +381,6 @@ export default {
         this.cameraObj = obj
         window.setTimeout(() => (this.PAST_INTERSECTED = {}), 100)
         this.$store.commit('setBucket', this.selectedBucket)
-      } else {
-        this.camera.layers.enable(0)
       }
     },
     createControls() {
