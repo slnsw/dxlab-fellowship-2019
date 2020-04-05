@@ -241,7 +241,8 @@ export default {
       selectedBucket: null,
       textGroup: null,
       toCamera: null,
-      toLook: null,
+      toLookFrom: null,
+      toLookTo: null,
       visibleFiles: [],
       visibleFilesCount: 0
     }
@@ -302,6 +303,10 @@ export default {
       this.filesMoveStart = Date.now()
       this.filesMoveFrom = from
       this.filesMoveTo = to
+      if (this.lastImage && this.currentBucket) {
+        const obj = this.findLastImageFinalPosition()
+        if (obj) this.moveCameraTo(obj)
+      }
     }
   },
   methods: {
@@ -645,10 +650,6 @@ export default {
     },
     interpolateFiles() {
       if (!this.filesObject || !this.filesMoveStart) return
-      if (this.lastImage && this.currentBucket) {
-        const obj = this.findLastImageFinalPosition()
-        if (obj) this.moveCameraTo(obj)
-      }
       const t = Date.now() - this.filesMoveStart
       let from, to
       switch (this.filesMoveFrom) {
@@ -817,7 +818,8 @@ export default {
       this.lastCamera = this.camera.clone()
       this.toCamera = this.camera.clone()
       this.toCamera.position.copy(newPos)
-      this.toLook = center
+      this.toLookFrom = this.controls.target.clone()
+      this.toLookTo = center
 
       this.cameraMoveStart = Date.now()
       this.isMoving = true
@@ -838,8 +840,8 @@ export default {
       newPos.z = easeInOutQuad(t, zF, zT - zF, MOVE_DURATION)
       this.camera.position.copy(newPos)
 
-      const cF = this.controls.target.clone()
-      const cT = this.toLook.clone()
+      const cF = this.toLookFrom
+      const cT = this.toLookTo
       const center = new THREE.Vector3()
       center.x = easeInOutQuad(t, cF.x, cT.x - cF.x, MOVE_DURATION)
       center.y = easeInOutQuad(t, cF.y, cT.y - cF.y, MOVE_DURATION)
@@ -848,7 +850,7 @@ export default {
 
       if (t > MOVE_DURATION) {
         this.camera.position.copy(this.toCamera.position)
-        this.controls.target.copy(this.toLook)
+        this.controls.target.copy(this.toLookTo)
         this.lastCamera = null
         this.toCamera = null
         this.isMoving = false
