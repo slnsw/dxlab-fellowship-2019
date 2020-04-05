@@ -3,12 +3,12 @@
     <canvas
       ref="three"
       class="three"
-      @mousemove.prevent="onDocumentMouseMove"
-      @touchmove.prevent="onDocumentMouseMove"
-      @mousedown.prevent="onDocumentMouseDown"
-      @touchstart.prevent="onDocumentMouseDown"
-      @mouseup.prevent="onDocumentMouseUp"
-      @touchend.prevent="onDocumentMouseUp"
+      @mousemove.prevent="onCanvasMouseMove"
+      @touchmove.prevent="onCanvasMouseMove"
+      @mousedown.prevent="onCanvasMouseDown"
+      @touchstart.prevent="onCanvasMouseDown"
+      @mouseup.prevent="onCanvasMouseUp"
+      @touchend.prevent="onCanvasMouseUp"
     ></canvas>
   </div>
 </template>
@@ -218,6 +218,7 @@ export default {
       detailMode: false,
       isMoving: false,
       clickTimeout: null,
+      lastImage: null,
       lastTap: 0,
       lastMouse: null,
       lastMouseMoveId: null,
@@ -271,12 +272,12 @@ export default {
     this.moveCameraTo(this.bucketsGroup)
     this.animate()
     window.addEventListener('resize', this.onResize)
-    document.addEventListener('mouseout', this.onDocumentMouseOut)
+    document.addEventListener('mouseout', this.onCanvasMouseOut)
   },
   beforeDestroy() {
     // Unregister resize before destroying this Vue instance
     window.removeEventListener('resize', this.onResize)
-    document.removeEventListener('mouseout', this.onDocumentMouseOut)
+    document.removeEventListener('mouseout', this.onCanvasMouseOut)
   },
   watch: {
     currentBucket(newB) {
@@ -605,8 +606,49 @@ export default {
 
       this.scene.add(this.filesObject)
     },
+    findLastImageFinalPosition() {
+      if (!this.lastImage) return
+      const { fileId, obj } = this.lastImage
+      let positions
+      switch (this.sort) {
+        case 'default':
+          positions = this.defaultPositions
+          break
+        case 'hue':
+          positions = this.huePositions
+          break
+        case 'similar':
+          positions = this.tsnePositions
+          break
+      }
+      const index = this.currentBucket.ids.indexOf(fileId)
+      if (index === -1) return
+      const col = positions[index * 3]
+      const row = positions[index * 3 + 1]
+      const z = FILE_Z
+
+      const { x, y, realW, side } = this.filesObject.mga
+
+      const size = 1 / side
+      const normalizedX = col * size * realW
+      const normalizedY = row * size * realW
+      const halfWidth = realW * 0.5 // parent obj is x,y centered
+      const normalizedHalfTile = size * 0.5 * realW
+
+      const tx = x + normalizedX - halfWidth + normalizedHalfTile
+      const ty = y - normalizedY + halfWidth - normalizedHalfTile
+
+      obj.position.x = tx
+      obj.position.y = ty
+      obj.position.z = z
+      return obj
+    },
     interpolateFiles() {
       if (!this.filesObject || !this.filesMoveStart) return
+      if (this.lastImage && this.currentBucket) {
+        const obj = this.findLastImageFinalPosition()
+        if (obj) this.moveCameraTo(obj)
+      }
       const t = Date.now() - this.filesMoveStart
       let from, to
       switch (this.filesMoveFrom) {
@@ -833,10 +875,10 @@ export default {
         this.filesObject.material.uniforms.pointScale.needsUpdate = true
       }
     },
-    onDocumentMouseOut(event) {
+    onCanvasMouseOut(event) {
       this.lastFileId = null
     },
-    onDocumentMouseUp(event) {
+    onCanvasMouseUp(event) {
       this.isDragging = false
       const lastX = this.lastMouse.clientX
       const lastY = this.lastMouse.clientY
@@ -846,7 +888,10 @@ export default {
 
       const isClick = Math.abs(newX - lastX) < 2 && Math.abs(newY - lastY) < 2
 
-      if (!isClick) return
+      if (!isClick) {
+        this.lastImage = null // user interacted. we should “forget” the image
+        return
+      }
 
       const now = Date.now()
       const tapLength = now - this.lastTap
@@ -891,6 +936,7 @@ export default {
         } else {
           // clicked a file
           this.detailMode = true
+          this.lastImage = { ...this.PAST_INTERSECTED }
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
           this.loadFile()
         }
@@ -902,21 +948,23 @@ export default {
         if (
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
+          this.lastImage = null
           this.hideCursor()
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
         this.$store.commit('setBucket', null)
       } else {
+        this.lastImage = null
         this.backToEverything()
       }
     },
-    onDocumentMouseDown(event) {
-      this.onDocumentMouseMove(event)
+    onCanvasMouseDown(event) {
+      this.onCanvasMouseMove(event)
       this.isDragging = true
       this.lastMouse = event
     },
-    onDocumentMouseMove(event) {
+    onCanvasMouseMove(event) {
       this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1
       this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
     },
@@ -935,7 +983,7 @@ export default {
     getFileAt(uv) {
       if (!this.currentBucket) return
       const { x, y } = uv
-      const { realW, side, tileCount } = this.filesObject.mga
+      const { realW, side } = this.filesObject.mga
       const mx = this.filesObject.mga.x
       const my = this.filesObject.mga.y
       const col = Math.floor(side * x)

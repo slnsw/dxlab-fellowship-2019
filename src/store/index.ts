@@ -208,7 +208,7 @@ export default new Vuex.Store({
       }
     },
     getAtlasForBucketIndex({ commit }, { bucket, index }) {
-      const url = BASE_URL + '/atlas/' + bucket.key + '_' + index + '.jpg'
+      const url = BASE_URL + 'atlas/' + bucket.key + '_' + index + '.jpg'
       const texture = new AjaxTextureLoader()
       texture.load(url, (atlas) => {
         commit('decreaseLoadedAtlas')
