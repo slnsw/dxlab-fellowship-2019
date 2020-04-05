@@ -177,6 +177,7 @@ const parseTsne = (data) => {
 
 export default new Vuex.Store({
   state: {
+    loadingBucket: false,
     loaded: false,
     confirmedAtlas: false,
     fileData: {},
@@ -249,40 +250,13 @@ export default new Vuex.Store({
         const fileData = { ...state.fileData, id, palette, colorNames }
         commit('setFileData', fileData)
       })
-    }
-  },
-  mutations: {
-    setConfirmedAtlas: (state) => (state.confirmedAtlas = true),
-    setShowAtlases: (state, value) => (state.showAtlases = value),
-    setSort: (state, value) => {
-      if (!value) value = 'default'
-      state.sort = value
     },
-    setLoadedAtlas: (state, value) => {
-      state.loadedAtlas = value
-    },
-    decreaseLoadedAtlas: (state) => {
-      state.loadedAtlas--
-    },
-    setAtlasForBucketIndex: (state, { bucket, index, atlas }) => {
-      const atlases = { ...state.atlases }
-      let newBucket
-      if (atlases[bucket.key]) {
-        newBucket = [...atlases[bucket.key]]
-      } else {
-        newBucket = []
-      }
-      newBucket[index] = atlas
-      atlases[bucket.key] = newBucket
-      state.atlases = atlases
-    },
-    setFileData: (state, data) => (state.fileData = data),
-    setStuff: (state, stuff) => (state.stuff = stuff),
-    async setBucket(state, bucket) {
+    async loadBucket({ state, commit }, bucket) {
       if (!bucket) {
-        state.currentBucket = null
+        commit('setBucket', null)
         return
       }
+      commit('setLoadingBucket', true)
       const url = BASE_URL + 'buckets/' + bucket.key + '.txt'
       const response = await instance.get(url)
       const ids = response.data
@@ -318,7 +292,40 @@ export default new Vuex.Store({
       state.huePositions = huePositions
       state.hueIndexes = hueIndexes
       state.currentBucket = currentBucket
+      state.loadingBucket = false
+      commit('updateState', state)
+    }
+  },
+  mutations: {
+    setLoadingBucket: (state, value) => (state.loadingBucket = value),
+    updateState: (state, newState) => (state = { ...state, ...newState }),
+    setConfirmedAtlas: (state) => (state.confirmedAtlas = true),
+    setShowAtlases: (state, value) => (state.showAtlases = value),
+    setSort: (state, value) => {
+      if (!value) value = 'default'
+      state.sort = value
     },
+    setLoadedAtlas: (state, value) => {
+      state.loadedAtlas = value
+    },
+    decreaseLoadedAtlas: (state) => {
+      state.loadedAtlas--
+    },
+    setAtlasForBucketIndex: (state, { bucket, index, atlas }) => {
+      const atlases = { ...state.atlases }
+      let newBucket
+      if (atlases[bucket.key]) {
+        newBucket = [...atlases[bucket.key]]
+      } else {
+        newBucket = []
+      }
+      newBucket[index] = atlas
+      atlases[bucket.key] = newBucket
+      state.atlases = atlases
+    },
+    setFileData: (state, data) => (state.fileData = data),
+    setStuff: (state, stuff) => (state.stuff = stuff),
+    setBucket: (state, bucket) => (state.currentBucket = bucket),
     async getIdsForBucket(state, bucket) {
       const url = process.env.VUE_APP_ELASTIC_BASE_URL + '_search'
       const key = bucket.key
@@ -350,7 +357,6 @@ export default new Vuex.Store({
       state.stuff = { ...newStuff }
     },
     async getBuckets(state) {
-      console.log('base', BASE_URL)
       const url = BASE_URL + 'counts.csv'
       const response = await instance.get(url)
       const data = await csv().fromString(response.data)

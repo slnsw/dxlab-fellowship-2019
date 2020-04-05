@@ -263,7 +263,8 @@ export default {
       'itemsTotal',
       'sort',
       'stuff',
-      'showAtlases'
+      'showAtlases',
+      'loadingBucket'
     ])
   },
   mounted() {
@@ -380,7 +381,7 @@ export default {
         this.fileMode = true
         this.cameraObj = obj
         window.setTimeout(() => (this.PAST_INTERSECTED = {}), 100)
-        this.$store.commit('setBucket', this.selectedBucket)
+        this.$store.dispatch('loadBucket', this.selectedBucket)
       }
     },
     createControls() {

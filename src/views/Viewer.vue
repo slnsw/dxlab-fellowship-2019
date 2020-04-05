@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div v-if="!loaded" class="app-loading">
+  <div class="wrapper">
+    <div v-if="loadingBucket || !loaded" class="app-loading">
       <div class="squares">
         <span
           v-for="i in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]"
@@ -224,6 +224,7 @@ export default {
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
       'fileData',
+      'loadingBucket',
       'confirmedAtlas',
       'selectedBucket',
       'loaded',
@@ -245,13 +246,18 @@ export default {
 @import '@/assets/variables';
 
 .app-loading {
+  position: absolute;
+  background-color: transparentize($color: $bg-color, $amount: 0.1);
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
-  background-color: $bg-color;
   color: $main-color;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  z-index: 2;
 }
 
 $loader-speed: 4s;
@@ -496,7 +502,10 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
 </style>
 
 <style lang="scss">
+@import '@/assets/variables';
+
 body {
+  background-color: $bg-color;
   overflow: hidden;
 }
 </style>
