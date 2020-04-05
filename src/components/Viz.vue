@@ -445,6 +445,7 @@ export default {
       }
     },
     fetchAtlases(atlasCount) {
+      if (!this.currentBucket) return
       let loadedAtlases = false
       // check to see if atlases are in memory
       let atlases = this.atlases[this.currentBucket.key]
