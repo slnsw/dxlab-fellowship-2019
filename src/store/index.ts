@@ -192,7 +192,8 @@ export default new Vuex.Store({
     currentBucket: null,
     itemsTotal: 0,
     loadedAtlas: 0,
-    atlases: {}
+    atlases: {},
+    pixels: {}
   },
   getters: {
     totalFromBuckets: (state) =>
@@ -289,7 +290,7 @@ export default new Vuex.Store({
       currentBucket.ids = ids.split(',')
 
       // color data
-      const { pixels, width } = await getPixelsForBucket(currentBucket)
+      const { pixels, width } = state.pixels[bucket.key]
       currentBucket.pixels = pixels
       const { colors, positions, hsls } = getColorsPositions(
         currentBucket.pixels
@@ -354,8 +355,9 @@ export default new Vuex.Store({
       const response = await instance.get(url)
       const data = await csv().fromString(response.data)
       const buckets = {}
+      const pixels = {}
       let total = 0
-      data.forEach((row) => {
+      await asyncForEach(data, async (row) => {
         const key = row.bucket
         if (!STUFF[key]) return
         const count = Number(row.count)
@@ -366,9 +368,14 @@ export default new Vuex.Store({
           bucket.images.push(BASE_URL + 'images/' + key + '/' + i + '.jpg')
         }
         buckets[key] = bucket
+        // get the pixels ahead of time
+        const pixelData = await getPixelsForBucket(bucket)
+        console.log()
+        pixels[key] = pixelData
         total += count
       })
       state.stuff = buckets
+      state.pixels = pixels
       state.itemsTotal = total
       state.loaded = true
     }

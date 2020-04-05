@@ -29,7 +29,7 @@ const CAMERA_FOV = 45
 const CAMERA_MIN_DIST = 0.001
 const CAMERA_MAX_DIST = 4
 
-const DOUBLE_CLICK_DELAY = 200
+const DOUBLE_CLICK_DELAY = 500
 
 // tile stuff
 const SMALL_ATLAS_SIZE = 2048
