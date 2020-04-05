@@ -55,11 +55,7 @@
           />
         </a>
         <p v-if="fileData.title" class="file-description">
-          <a
-            :href="filesBaseUrl + '/' + fileData.id"
-            rel="noopener"
-            target="_blank"
-          >
+          <a :href="filesBaseUrl + fileData.id" rel="noopener" target="_blank">
             {{ fileData.title }}
           </a>
         </p>
