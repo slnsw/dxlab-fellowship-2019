@@ -267,7 +267,7 @@ export default new Vuex.Store({
       const atlases = { ...state.atlases }
       let newBucket
       if (atlases[bucket.key]) {
-        newBucket = { ...atlases[bucket.key] }
+        newBucket = [...atlases[bucket.key]]
       } else {
         newBucket = []
       }
