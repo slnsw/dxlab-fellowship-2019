@@ -1024,6 +1024,7 @@ export default {
     },
     pickFile() {
       if (this.pickingMesh && this.fileMode) {
+        this.raycaster.layers.set(1)
         const intersects = this.raycaster.intersectObject(this.pickingMesh)
 
         if (intersects.length > 0 && intersects[0].uv) {
@@ -1074,6 +1075,7 @@ export default {
     },
     pickBucket() {
       if (this.bucketsGroup && !this.fileMode) {
+        this.raycaster.layers.set(0)
         const intersects = this.bucketsGroup.children
           .map((ch) => this.raycaster.intersectObject(ch))
           .filter((ch) => ch.length > 0)
