@@ -386,6 +386,10 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
 }
 .atlas {
   padding-bottom: 0.5rem;
+
+  label {
+    cursor: pointer;
+  }
 }
 .button-sort {
   background-color: $main-color;
