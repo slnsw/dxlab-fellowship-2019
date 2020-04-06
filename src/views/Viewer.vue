@@ -13,11 +13,14 @@
     <div v-if="loaded" class="grid" id="viewer">
       <div class="header">
         <h1 class="total">
-          <p v-if="currentBucket">
-            <button type="button" class="button-back" @click="back">
-              &lt; back to everything
-            </button>
-          </p>
+          <button
+            type="button"
+            :class="{ 'button-back': true, active: currentBucket }"
+            @click="back"
+          >
+            &lt; back to everything
+          </button>
+
           <strong>{{ formattedItemsTotal }}</strong> {{ description }}
         </h1>
       </div>
@@ -335,11 +338,16 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   font-size: 0.9rem;
   background-color: $main-color;
   color: $bg-color;
-  display: inline-block;
+  display: block;
   text-decoration: none;
   border-radius: 0.2rem;
-  margin: 0 0 0.25rem 0.25rem;
+  margin: -2.5rem 0 0.25rem 0.25rem;
   padding: 0.125rem 0.5rem;
+  transition: margin-top 0.2s ease-out;
+
+  &.active {
+    margin-top: 0;
+  }
 }
 .header {
   background-color: transparentize($color: $bg-color, $amount: 0.15);
