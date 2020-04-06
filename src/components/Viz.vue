@@ -21,7 +21,7 @@ import SpriteText from 'three-spritetext'
 
 // camera stuff
 const CAMERA_NEAR = 0.0001
-const CAMERA_FAR = 10
+const CAMERA_FAR = 100
 const CAMERA_FOV = 45
 const CAMERA_MIN_DIST = 0.001
 const CAMERA_MAX_DIST = 4
