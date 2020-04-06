@@ -26,8 +26,6 @@ const CAMERA_FOV = 45
 const CAMERA_MIN_DIST = 0.001
 const CAMERA_MAX_DIST = 4
 
-const DOUBLE_CLICK_DELAY = 500
-
 // tile stuff
 const SMALL_ATLAS_SIZE = 2048
 const BIG_ATLAS_SIZE = 8192
@@ -214,9 +212,8 @@ export default {
       cursor: null,
       detailMode: false,
       isMoving: false,
-      clickTimeout: null,
+      zoomedBucket: false,
       lastImage: null,
-      lastTap: 0,
       lastMouse: null,
       lastMouseMoveId: null,
       lastChange: 0,
@@ -361,7 +358,7 @@ export default {
       this.cursor = mesh
       this.scene.add(this.cursor)
     },
-    onDoubleClick() {
+    enterBucket() {
       if (
         this.PAST_INTERSECTED.instanceId !== undefined &&
         this.PAST_INTERSECTED.obj.bucketIndex
@@ -890,29 +887,20 @@ export default {
         return
       }
 
-      const now = Date.now()
-      const tapLength = now - this.lastTap
-      clearTimeout(this.clickTimeout)
-      let isDoubleClick = false
+      if (this.isMoving) return // is interpolating
 
-      if (tapLength < DOUBLE_CLICK_DELAY && tapLength > 0) {
-        isDoubleClick = true
-      } else {
-        this.clickTimeout = window.setTimeout(
-          () => clearTimeout(this.clickTimeout),
-          DOUBLE_CLICK_DELAY
-        )
-      }
+      this.camera.layers.disableAll()
 
-      this.lastTap = now
-
-      if (isDoubleClick) {
-        this.onDoubleClick(event)
+      if (
+        this.zoomedBucket &&
+        this.zoomedBucket === this.PAST_INTERSECTED.instanceId
+      ) {
+        // clicked on zoomed bucket
+        this.enterBucket()
+        this.zoomedBucket = false
         return
       }
 
-      this.camera.layers.disableAll()
-      if (this.isMoving) return
       if (this.fileMode) {
         this.camera.layers.enable(1)
         if (this.PAST_INTERSECTED.instanceId === undefined) {
@@ -939,12 +927,14 @@ export default {
         }
         return
       }
+
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         // there is a selected bucket
         this.camera.layers.enable(0)
         if (
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
+          this.zoomedBucket = this.PAST_INTERSECTED.instanceId
           this.lastImage = null
           this.hideCursor()
           this.moveCameraTo(this.PAST_INTERSECTED.obj)
