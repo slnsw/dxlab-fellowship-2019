@@ -65,7 +65,7 @@
             :class="['button-sort', sort === 'default' ? 'active' : '']"
             :to="{ path: '/' }"
           >
-            no sort
+            no sorting
           </router-link>
           <router-link
             :class="['button-sort', sort === 'hue' ? 'active' : '']"
