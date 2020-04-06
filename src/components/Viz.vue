@@ -16,7 +16,6 @@
 import { mapState, mapGetters, mapActions } from 'vuex'
 
 import * as THREE from 'three'
-import { GUI } from 'three/examples/jsm/libs/dat.gui.module.js'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
 import SpriteText from 'three-spritetext'
 
@@ -361,10 +360,6 @@ export default {
       mesh.visible = false
       this.cursor = mesh
       this.scene.add(this.cursor)
-
-      // const gui = new GUI()
-
-      // gui.add(this, 'showAtlases')
     },
     onDoubleClick() {
       if (
