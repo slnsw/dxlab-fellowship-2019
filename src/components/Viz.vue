@@ -1,16 +1,14 @@
 <template>
-  <div class="three">
-    <canvas
-      ref="three"
-      class="three"
-      @mousemove.prevent="onCanvasMouseMove"
-      @touchmove.prevent="onCanvasMouseMove"
-      @mousedown.prevent="onCanvasMouseDown"
-      @touchstart.prevent="onCanvasMouseDown"
-      @mouseup.prevent="onCanvasMouseUp"
-      @touchend.prevent="onCanvasMouseUp"
-    ></canvas>
-  </div>
+  <canvas
+    ref="three"
+    class="three"
+    @mousedown.prevent="onCanvasMouseDown"
+    @mousemove.prevent="onCanvasMouseMove"
+    @mouseup.prevent="onCanvasMouseUp"
+    @touchstart="onCanvasMouseDown"
+    @touchmove="onCanvasMouseMove"
+    @touchend="onCanvasMouseUp"
+  ></canvas>
 </template>
 
 <script>
@@ -368,7 +366,7 @@ export default {
 
       // gui.add(this, 'showAtlases')
     },
-    onDoubleClick(e) {
+    onDoubleClick() {
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         const key = this.PAST_INTERSECTED.obj.bucketIndex
         this.selectedBucket = this.stuff[key]
@@ -879,10 +877,14 @@ export default {
     onCanvasMouseUp(event) {
       this.isDragging = false
       const lastX = this.lastMouse.clientX
+        ? this.lastMouse.clientX
+        : this.lastMouse.pageX
       const lastY = this.lastMouse.clientY
+        ? this.lastMouse.clientY
+        : this.lastMouse.pageY
 
-      const newX = event.clientX
-      const newY = event.clientY
+      const newX = event.clientX ? event.clientX : event.pageX
+      const newY = event.clientY ? event.clientY : event.pageY
 
       const isClick = Math.abs(newX - lastX) < 2 && Math.abs(newY - lastY) < 2
 
@@ -963,8 +965,10 @@ export default {
       this.lastMouse = event
     },
     onCanvasMouseMove(event) {
-      this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1
-      this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
+      const mx = event.clientX ? event.clientX : event.pageX
+      const my = event.clientY ? event.clientY : event.pageY
+      this.mouse.x = (mx / window.innerWidth) * 2 - 1
+      this.mouse.y = -(my / window.innerHeight) * 2 + 1
     },
     hideCursor() {
       this.cursor.visible = false
