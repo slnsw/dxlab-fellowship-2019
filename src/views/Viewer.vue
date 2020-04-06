@@ -65,7 +65,7 @@
             :class="['button-sort', sort === 'default' ? 'active' : '']"
             :to="{ path: '/' }"
           >
-            default
+            no sort
           </router-link>
           <router-link
             :class="['button-sort', sort === 'hue' ? 'active' : '']"
@@ -77,7 +77,7 @@
             :class="['button-sort', sort === 'similar' ? 'active' : '']"
             :to="{ path: '/', query: { sort: 'similar' } }"
           >
-            similarity
+            look alike
           </router-link>
         </div>
         <div class="atlas">
