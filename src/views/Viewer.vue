@@ -442,7 +442,7 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   flex-direction: column;
   padding: 0.5rem 0;
   width: 300px;
-  max-width: 30vw;
+  max-width: 50vw;
   z-index: 1;
   transition: transform 0.2s ease-out;
   transform: translateX(0%);
