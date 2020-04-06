@@ -367,7 +367,10 @@ export default {
       // gui.add(this, 'showAtlases')
     },
     onDoubleClick() {
-      if (this.PAST_INTERSECTED.instanceId !== undefined) {
+      if (
+        this.PAST_INTERSECTED.instanceId !== undefined &&
+        this.PAST_INTERSECTED.obj.bucketIndex
+      ) {
         const key = this.PAST_INTERSECTED.obj.bucketIndex
         this.selectedBucket = this.stuff[key]
         const x = this.PAST_INTERSECTED.obj.position.x
@@ -378,7 +381,6 @@ export default {
         this.moveCameraTo(obj)
         this.fileMode = true
         this.cameraObj = obj
-        window.setTimeout(() => (this.PAST_INTERSECTED = {}), 100)
         this.$store.dispatch('loadBucket', this.selectedBucket)
       }
     },
