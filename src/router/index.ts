@@ -23,11 +23,11 @@ const routes = [
     path: '/',
     name: 'Viewer',
     meta: {
-      title: 'Bird’s Eye',
+      title: 'Aereo',
       metaTags: [
         {
           name: 'description',
-          content: 'Bird’s Eye.'
+          content: 'Aereo.'
         },
         {
           property: 'viewport',
