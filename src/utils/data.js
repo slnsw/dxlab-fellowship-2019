@@ -5,6 +5,11 @@ const STUFF = {
     description:
       'Drawings made for the design and construction of sites, structures, details, fixtures, furnishings, and decorations, as well as other objects designed by an architect or architectural office.'
   },
+  newspapers: {
+    id: '76pM49Z2jxBzR',
+    name: 'newspapers',
+    description: ''
+  },
   coin: {
     id: '76pM49Z2jxBzR',
     name: 'coins',
