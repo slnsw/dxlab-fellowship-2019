@@ -341,12 +341,12 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   display: block;
   text-decoration: none;
   border-radius: 0.2rem;
-  margin: -2.5rem 0 0.25rem 0.25rem;
-  padding: 0.125rem 0.5rem;
+  margin: -2.5rem 0 0.5rem 0.25rem;
+  padding: 0.25rem 0.5rem;
   transition: margin-top 0.2s ease-out;
 
   &.active {
-    margin-top: 0;
+    margin-top: 0.25rem;
   }
 }
 .header {
