@@ -19,7 +19,6 @@ const MAX_WINDOW_SIZE = 20000
 const API_KEY = process.env.VUE_APP_API_KEY
 const BASE_URL = process.env.BASE_URL
 const API_BASE_URL = process.env.VUE_APP_API_BASE_URL
-const FILE_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const S3_BASE_URL = process.env.VUE_APP_S3_BASE_URL
 
 const instance = axios.create({
