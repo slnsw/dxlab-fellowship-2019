@@ -136,7 +136,9 @@ const sortByHue = ({ hsls, width }) => {
   for (let i = 0, i3 = 0; i < l; i++, i3 += 3) {
     toSort.push({ h: hsls[i3], s: hsls[i3 + 1], l: hsls[i3 + 2], i })
   }
-  toSort.sort((a, b) => b.h - a.h) // TODO: implement better color sorting
+  toSort.sort((a, b) =>
+    b.h === a.h ? (b.l === a.l ? a.s - b.s : a.l - b.l) : b.h - a.h
+  )
   const sorted = toSort.map((i) => i.i)
   const huePositions = new Float32Array(hsls.length)
   const hueIndexes = new Float32Array(l)
