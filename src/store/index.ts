@@ -156,7 +156,7 @@ const sortByHue = ({ hsls, width }) => {
 }
 
 const parseTsne = (data) => {
-  const rows = data.split('\n')
+  const rows = data.split('\n').filter((r) => r !== '')
   const header = rows.splice(0, 1)[0]
   const wh = header.split(' ')
   const w = Number(wh[0])
@@ -164,7 +164,6 @@ const parseTsne = (data) => {
   const tsnePositions = new Float32Array(rows.length * 3)
   const tsneIndexes = new Float32Array(w * h).fill(-1)
   rows.forEach((row, i) => {
-    if (row == '') return
     const xy = row.split(' ')
     const x = Number(xy[0])
     const y = Number(xy[1])
@@ -176,6 +175,30 @@ const parseTsne = (data) => {
   return { tsneIndexes, tsnePositions }
 }
 
+const parseYear = (data, side) => {
+  const rows = data.split('\n').filter((r) => r !== '')
+  const toSort = []
+  const l = rows.length
+  for (let i = 0; i < l; i++) {
+    toSort.push({ year: Number(rows[i]), i })
+  }
+  toSort.sort((a, b) => a.year - b.year)
+  const sorted = toSort.map((i) => i.i)
+  const yearPositions = new Float32Array(l * 3)
+  const yearIndexes = new Float32Array(l)
+  sorted.forEach((i, idx) => {
+    // the i-th year item needs to go to x,y based on idx
+    const x = idx % side
+    const y = Math.floor(idx / side)
+    const z = 0
+    yearPositions[i * 3] = x
+    yearPositions[i * 3 + 1] = y
+    yearPositions[i * 3 + 2] = z
+    yearIndexes[idx] = i
+  })
+  return { yearIndexes, yearPositions }
+}
+
 export default new Vuex.Store({
   state: {
     loadingBucket: false,
@@ -185,6 +208,8 @@ export default new Vuex.Store({
     showAtlases: false,
     sort: 'default',
     stuff: STUFF,
+    yearPositions: null,
+    yearIndexes: null,
     tsnePositions: null,
     tsneIndexes: null,
     huePositions: null,
@@ -288,6 +313,22 @@ export default new Vuex.Store({
         tsneIndexes = new Float32Array(currentBucket.ids.length)
       }
 
+      // year data
+      let yearIndexes, yearPositions
+      const yearUrl = BASE_URL + 'years/' + bucket.key + '.txt'
+      try {
+        const yearResponse = await instance.get(yearUrl)
+        const parsedYear = parseYear(yearResponse.data, width)
+        yearIndexes = parsedYear.yearIndexes
+        yearPositions = parsedYear.yearPositions
+      } catch (err) {
+        // in case no similarity
+        yearPositions = positions
+        yearIndexes = new Float32Array(currentBucket.ids.length)
+      }
+
+      state.yearPositions = yearPositions
+      state.yearIndexes = yearIndexes
       state.tsnePositions = tsnePositions
       state.tsneIndexes = tsneIndexes
       state.huePositions = huePositions

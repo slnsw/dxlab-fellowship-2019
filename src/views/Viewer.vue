@@ -79,6 +79,12 @@
           >
             look alike
           </router-link>
+          <router-link
+            :class="['button-sort', sort === 'year' ? 'active' : '']"
+            :to="{ path: '/', query: { sort: 'year' } }"
+          >
+            year
+          </router-link>
         </div>
         <div class="atlas">
           <label for="atlas">

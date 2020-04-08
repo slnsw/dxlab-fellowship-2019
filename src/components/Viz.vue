@@ -249,6 +249,8 @@ export default {
       'defaultColors',
       'huePositions',
       'hueIndexes',
+      'yearPositions',
+      'yearIndexes',
       'tsnePositions',
       'tsneIndexes',
       'atlases',
@@ -613,6 +615,9 @@ export default {
         case 'similar':
           positions = this.tsnePositions
           break
+        case 'year':
+          positions = this.yearPositions
+          break
       }
       const index = this.currentBucket.ids.indexOf(fileId)
       if (index === -1) return
@@ -650,6 +655,9 @@ export default {
         case 'similar':
           from = this.tsnePositions
           break
+        case 'year':
+          from = this.yearPositions
+          break
       }
       switch (this.filesMoveTo) {
         case 'default':
@@ -660,6 +668,9 @@ export default {
           break
         case 'similar':
           to = this.tsnePositions
+          break
+        case 'year':
+          to = this.yearPositions
           break
       }
       if (t >= MOVE_DURATION) {
@@ -997,6 +1008,10 @@ export default {
           case 'similar':
             // uses same indexing as default
             fileId = this.currentBucket.ids[this.tsneIndexes[index]]
+            break
+          case 'year':
+            // uses same indexing as default
+            fileId = this.currentBucket.ids[this.yearIndexes[index]]
             break
         }
         if (!fileId) return null
