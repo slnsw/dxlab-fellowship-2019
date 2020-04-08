@@ -26,7 +26,7 @@ const STUFF = {
     id: 'Z5AB0OkPYjPb9',
     name: 'journals',
     description:
-      'A personal account of events in an individual’s life or an impartial record of an organization’s events, proceedings, and actions.'
+      'Publications issued over a period of time, such as newsletters and magazines. Often may be called yearbooks, journals, annual reports, newsletters, magazines, periodicals, gazettes and so forth'
   },
   manuscripts: {
     id: '330MWgKgY5adZ',
