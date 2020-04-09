@@ -249,27 +249,22 @@ export default new Vuex.Store({
         commit('setAtlasForBucketIndex', { bucket, index, atlas })
       })
     },
-    loadFile: ({ state, commit }, { fileId, index }) => {
-      commit('setFileData', {})
-      const id = fileId
-      const year = state.yearYears[index]
-      let url = API_BASE_URL + 'files/' + fileId
+    loadFileImage: ({ commit }, url) => {
       instance.get(url).then((response) => {
         const image = response.data.file.image.variants['300_300'].url
         const title = response.data.file.title
         const img = new Image()
         img.onload = () => {
-          const fileData = { ...state.fileData, id, year, image, title }
-          commit('setFileData', fileData)
+          commit('setFileImageTitle', { image, title })
         }
         img.onerror = () => {
           const image = BASE_URL + 'not_found.svg'
-          const fileData = { ...state.fileData, id, year, image, title }
-          commit('setFileData', fileData)
+          commit('setFileImageTitle', { image, title })
         }
         img.src = image
       })
-      url = S3_BASE_URL + 'colors_minimal/' + fileId + '.json'
+    },
+    loadFilePalette: ({ commit }, url) => {
       instance.get(url).then((response) => {
         const palettes = response.data
         const palette = palettes
@@ -278,9 +273,17 @@ export default new Vuex.Store({
             })
           : []
         const colorNames = palettes ? palettes.map((p) => p.t.split(':')) : []
-        const fileData = { ...state.fileData, id, palette, colorNames }
-        commit('setFileData', fileData)
+        commit('setFilePalette', { palette, colorNames })
       })
+    },
+    loadFile: ({ state, commit, dispatch }, { fileId, index }) => {
+      const id = fileId
+      const year = state.yearYears[index]
+      let url = API_BASE_URL + 'files/' + fileId
+      commit('setFileData', { id, year })
+      dispatch('loadFileImage', url)
+      url = S3_BASE_URL + 'colors_minimal/' + fileId + '.json'
+      dispatch('loadFilePalette', url)
     },
     async getBuckets({ state, commit }) {
       const bucketKey = state.bucketKey
@@ -393,6 +396,18 @@ export default new Vuex.Store({
     }
   },
   mutations: {
+    setFileImageTitle: (state, { image, title }) => {
+      const fileData = { ...state.fileData, image, title }
+      state.fileData = fileData
+    },
+    setFilePalette: (state, { palette, colorNames }) => {
+      const fileData = { ...state.fileData, palette, colorNames }
+      state.fileData = fileData
+    },
+    setFileImageT: (state, { image, title }) => {
+      const fileData = { ...state.fileData, image, title }
+      state.fileData = fileData
+    },
     setBucketKey: (state, value) => (state.bucketKey = value),
     setLoadingBucket: (state, value) => (state.loadingBucket = value),
     setBucketObjects: (state, value) => (state.bucketObjects = value),
