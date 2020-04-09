@@ -287,6 +287,8 @@ export default {
   },
   watch: {
     $route(to) {
+      const sort = to.query.sort ? to.query.sort : 'default'
+      if (sort !== this.sort) this.$store.commit('setSort', sort)
       const key = to.query.bucket
       if (key && (!this.currentBucket || this.currentBucket.key !== key)) {
         this.enterBucket(this.bucketObjects[key])
@@ -1093,7 +1095,6 @@ export default {
         this.lastFileId = null
         return
       }
-      console.log(this.PAST_INTERSECTED)
       const fileId = this.PAST_INTERSECTED.fileId
       const instanceId = this.PAST_INTERSECTED.instanceId
       if (fileId === this.lastFileId) return

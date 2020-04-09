@@ -182,13 +182,6 @@ export default {
     }
   },
   watch: {
-    $route(to) {
-      const sort = to.query.sort ? to.query.sort : 'default'
-      const bucket = to.query.bucket ? to.query.bucket : null
-      if (sort !== this.sort) this.$store.commit('setSort', sort)
-      console.log(bucket)
-      console.log(this.bucketObjects)
-    },
     fileData(newData) {
       if (newData.id) this.fileHidden = false
     }
