@@ -321,6 +321,7 @@ export default {
       this.filesMoveTo = to
       if (this.lastImage && this.currentBucket) {
         const obj = this.findLastImageFinalPosition()
+        this.putCursorOnFile(obj)
         if (obj) this.moveCameraTo(obj, SCENE_FILE_PADDING)
       }
     }
@@ -956,6 +957,7 @@ export default {
           // clicked a file
           this.detailMode = true
           this.lastImage = { ...this.PAST_INTERSECTED }
+          this.putCursorOnFile(this.PAST_INTERSECTED.obj)
           this.moveCameraTo(this.PAST_INTERSECTED.obj, SCENE_FILE_PADDING)
           this.loadFile()
         }
@@ -979,6 +981,15 @@ export default {
         this.lastImage = null
         this.backToEverything()
       }
+    },
+    putCursorOnFile(obj) {
+      const w = obj.geometry.parameters.width
+      this.cursor.position.x = obj.position.x
+      this.cursor.position.y = obj.position.y + w * 0.24
+      this.cursor.position.z = obj.position.z
+      this.cursor.scale = new THREE.Vector3(w * 0.45, w * 0.056, w)
+      this.cursor.visible = true
+      this.cursor.layers.set(1)
     },
     onCanvasMouseDown(event) {
       this.onCanvasMouseMove(event)
@@ -1103,6 +1114,7 @@ export default {
     },
     pickBucket() {
       if (this.bucketsGroup && !this.fileMode) {
+        this.cursor.layers.set(0)
         this.raycaster.layers.set(0)
         const intersects = this.bucketsGroup.children
           .map((ch) => this.raycaster.intersectObject(ch))

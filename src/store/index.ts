@@ -255,7 +255,6 @@ export default new Vuex.Store({
       const year = state.yearYears[instanceId]
       let url = API_BASE_URL + 'files/' + fileId
       instance.get(url).then((response) => {
-        console.log(response.data)
         const image = response.data.file.image.variants['300_300'].url
         const title = response.data.file.title
         const img = new Image()
