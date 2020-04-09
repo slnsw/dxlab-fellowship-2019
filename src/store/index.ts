@@ -195,7 +195,7 @@ const parseYear = (data, side) => {
     yearPositions[i.i * 3 + 1] = y
     yearPositions[i.i * 3 + 2] = z
     yearIndexes[idx] = i.i
-    yearYears[idx] = i.year
+    yearYears[i.i] = i.year
   })
   return { yearIndexes, yearPositions, yearYears }
 }
