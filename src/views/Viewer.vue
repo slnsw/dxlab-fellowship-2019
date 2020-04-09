@@ -13,24 +13,22 @@
     <div v-if="loaded" class="grid" id="viewer">
       <div :class="{ header: true, hidden: headerHidden }">
         <h1 class="total">
-          <div>
-            <button
-              type="button"
-              :class="{ 'button-back': true, active: currentBucket }"
-              @click="back"
+          <div :class="{ 'button-back-wrapper': true, active: currentBucket }">
+            <router-link
+              class="button-back"
+              :to="pathFor(sort !== 'default' ? sort : null, null)"
             >
               &lt; back to everything
-            </button>
+            </router-link>
           </div>
 
           <strong>{{ formattedItemsTotal }}</strong>
-          <div v-if="!currentBucket" class="bucket-names">
+          <div v-if="!currentBucket && bucketObjects" class="bucket-names">
             <span v-for="(bucket, index) in bucketNames" :key="'b_' + index">
               <span v-if="index === bucketNames.length - 1"> and </span>
-              <router-link
-                :to="{ path: '/', query: { sort, bucket: bucket.key } }"
-                >{{ bucket.name }}</router-link
-              >
+              <router-link :to="pathFor(sort, { key: bucket.key })">{{
+                bucket.name
+              }}</router-link>
               <span v-if="index < bucketNames.length - 1">, </span>
               <span v-if="index === bucketNames.length - 1">.</span>
             </span>
@@ -88,25 +86,25 @@
         <div class="sort">
           <router-link
             :class="['button-sort', sort === 'default' ? 'active' : '']"
-            :to="{ path: '/' }"
+            :to="pathFor(null, currentBucket)"
           >
             no sorting
           </router-link>
           <router-link
             :class="['button-sort', sort === 'hue' ? 'active' : '']"
-            :to="{ path: '/', query: { sort: 'hue' } }"
+            :to="pathFor('hue', currentBucket)"
           >
             color
           </router-link>
           <router-link
             :class="['button-sort', sort === 'similar' ? 'active' : '']"
-            :to="{ path: '/', query: { sort: 'similar' } }"
+            :to="pathFor('similar', currentBucket)"
           >
             look alike
           </router-link>
           <router-link
             :class="['button-sort', sort === 'year' ? 'active' : '']"
-            :to="{ path: '/', query: { sort: 'year' } }"
+            :to="pathFor('year', currentBucket)"
           >
             year
           </router-link>
@@ -186,13 +184,22 @@ export default {
   watch: {
     $route(to) {
       const sort = to.query.sort ? to.query.sort : 'default'
+      const bucket = to.query.bucket ? to.query.bucket : null
       if (sort !== this.sort) this.$store.commit('setSort', sort)
+      console.log(bucket)
+      console.log(this.bucketObjects)
     },
     fileData(newData) {
       if (newData.id) this.fileHidden = false
     }
   },
   methods: {
+    pathFor(sort, bucket) {
+      const path = { path: '/', query: {} }
+      if (bucket) path.query.bucket = bucket.key
+      if (sort && sort !== 'default') path.query.sort = sort
+      return path
+    },
     copyColor(color) {
       navigator.clipboard.writeText(color)
     },
@@ -228,6 +235,9 @@ export default {
     }
   },
   computed: {
+    bucket() {
+      return this.currentBucket ? this.currentBucket.key : null
+    },
     trimmedTitle() {
       return this.fileData.title.length > MAX_TITLE_LENGTH
         ? this.fileData.title.substr(0, MAX_TITLE_LENGTH) + '…'
@@ -262,6 +272,7 @@ export default {
     },
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
+      'bucketObjects',
       'fileData',
       'loadingBucket',
       'confirmedAtlas',
@@ -276,7 +287,9 @@ export default {
   },
   created() {
     this.$store.commit('setSort', this.$route.query.sort)
-    this.$store.commit('getBuckets')
+    if (this.$route.query.bucket)
+      this.$store.commit('setBucketKey', this.$route.query.bucket)
+    this.$store.dispatch('getBuckets')
   }
 }
 </script>
@@ -390,17 +403,21 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   border-radius: 0.2rem;
   padding: 0.125rem 0.5rem;
 }
-.button-back {
+.button-back-wrapper {
   margin: -2.5rem 0 0.5rem 0.25rem;
   transition: margin-top 0.2s ease-out;
 
   &.active {
-    margin-top: 0.25rem;
+    margin-top: 0rem;
   }
+}
+.button-back {
+  display: inline-block;
 }
 .button-header-toggle {
   position: absolute;
   transform: translateY(50%);
+  box-shadow: 0 0 0.25rem $bg-color;
 }
 .header {
   background-color: transparentize($color: $bg-color, $amount: 0.15);

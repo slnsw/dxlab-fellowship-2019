@@ -202,6 +202,8 @@ const parseYear = (data, side) => {
 
 export default new Vuex.Store({
   state: {
+    bucketKey: null,
+    bucketObjects: {},
     loadingBucket: false,
     loaded: false,
     confirmedAtlas: false,
@@ -281,6 +283,39 @@ export default new Vuex.Store({
         commit('setFileData', fileData)
       })
     },
+    async getBuckets({ state, commit }) {
+      const bucketKey = state.bucketKey
+      const url = BASE_URL + 'counts.csv'
+      const response = await instance.get(url)
+      const data = await csv().fromString(response.data)
+      const buckets = {}
+      const pixels = {}
+      let total = 0
+      await asyncForEach(data, async (row) => {
+        const key = row.bucket
+        if (!STUFF[key]) return
+        const count = Number(row.count)
+        const bucket = { ...STUFF[key], count, key }
+        const imCount = count < 10 ? count : 10
+        bucket.images = []
+        for (let i = 0; i < imCount; i++) {
+          bucket.images.push(BASE_URL + 'images/' + key + '/' + i + '.jpg')
+        }
+        buckets[key] = bucket
+        // get the pixels ahead of time
+        const pixelData = await getPixelsForBucket(bucket)
+        pixels[key] = pixelData
+        if (bucketKey && key === bucketKey) {
+          state.currentBucket = bucket
+        }
+        total += count
+      })
+      state.stuff = buckets
+      state.pixels = pixels
+      state.itemsTotal = total
+      state.loaded = true
+      commit('updateState', state)
+    },
     async loadBucket({ state, commit }, bucket) {
       if (!bucket) {
         commit('setBucket', null)
@@ -325,39 +360,8 @@ export default new Vuex.Store({
       state.currentBucket = currentBucket
       state.loadingBucket = false
       commit('updateState', state)
-    }
-  },
-  mutations: {
-    setLoadingBucket: (state, value) => (state.loadingBucket = value),
-    updateState: (state, newState) => (state = { ...state, ...newState }),
-    setConfirmedAtlas: (state) => (state.confirmedAtlas = true),
-    setShowAtlases: (state, value) => (state.showAtlases = value),
-    setSort: (state, value) => {
-      if (!value) value = 'default'
-      state.sort = value
     },
-    setLoadedAtlas: (state, value) => {
-      state.loadedAtlas = value
-    },
-    decreaseLoadedAtlas: (state) => {
-      state.loadedAtlas--
-    },
-    setAtlasForBucketIndex: (state, { bucket, index, atlas }) => {
-      const atlases = { ...state.atlases }
-      let newBucket
-      if (atlases[bucket.key]) {
-        newBucket = [...atlases[bucket.key]]
-      } else {
-        newBucket = []
-      }
-      newBucket[index] = atlas
-      atlases[bucket.key] = newBucket
-      state.atlases = atlases
-    },
-    setFileData: (state, data) => (state.fileData = data),
-    setStuff: (state, stuff) => (state.stuff = stuff),
-    setBucket: (state, bucket) => (state.currentBucket = bucket),
-    async getIdsForBucket(state, bucket) {
+    async getIdsForBucket({ state, commit }, bucket) {
       const url = process.env.VUE_APP_ELASTIC_BASE_URL + '_search'
       const key = bucket.key
       const id = bucket.id
@@ -385,36 +389,42 @@ export default new Vuex.Store({
       const newBucket = { ...bucket, data: [...ids] }
       let newStuff = { ...state.stuff }
       newStuff = { ...newStuff, [key]: newBucket }
-      state.stuff = { ...newStuff }
-    },
-    async getBuckets(state) {
-      const url = BASE_URL + 'counts.csv'
-      const response = await instance.get(url)
-      const data = await csv().fromString(response.data)
-      const buckets = {}
-      const pixels = {}
-      let total = 0
-      await asyncForEach(data, async (row) => {
-        const key = row.bucket
-        if (!STUFF[key]) return
-        const count = Number(row.count)
-        const bucket = { ...STUFF[key], count, key }
-        const imCount = count < 10 ? count : 10
-        bucket.images = []
-        for (let i = 0; i < imCount; i++) {
-          bucket.images.push(BASE_URL + 'images/' + key + '/' + i + '.jpg')
-        }
-        buckets[key] = bucket
-        // get the pixels ahead of time
-        const pixelData = await getPixelsForBucket(bucket)
-        pixels[key] = pixelData
-        total += count
-      })
-      state.stuff = buckets
-      state.pixels = pixels
-      state.itemsTotal = total
-      state.loaded = true
+      const stuff = { ...newStuff }
+      commit('updateState', { ...state, stuff })
     }
+  },
+  mutations: {
+    setBucketKey: (state, value) => (state.bucketKey = value),
+    setLoadingBucket: (state, value) => (state.loadingBucket = value),
+    setBucketObjects: (state, value) => (state.bucketObjects = value),
+    updateState: (state, newState) => (state = { ...state, ...newState }),
+    setConfirmedAtlas: (state) => (state.confirmedAtlas = true),
+    setShowAtlases: (state, value) => (state.showAtlases = value),
+    setSort: (state, value) => {
+      if (!value) value = 'default'
+      state.sort = value
+    },
+    setLoadedAtlas: (state, value) => {
+      state.loadedAtlas = value
+    },
+    decreaseLoadedAtlas: (state) => {
+      state.loadedAtlas--
+    },
+    setAtlasForBucketIndex: (state, { bucket, index, atlas }) => {
+      const atlases = { ...state.atlases }
+      let newBucket
+      if (atlases[bucket.key]) {
+        newBucket = [...atlases[bucket.key]]
+      } else {
+        newBucket = []
+      }
+      newBucket[index] = atlas
+      atlases[bucket.key] = newBucket
+      state.atlases = atlases
+    },
+    setFileData: (state, data) => (state.fileData = data),
+    setStuff: (state, stuff) => (state.stuff = stuff),
+    setBucket: (state, bucket) => (state.currentBucket = bucket)
   },
   modules: {}
 })

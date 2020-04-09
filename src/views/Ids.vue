@@ -73,8 +73,8 @@ export default {
       const buckets = { ...this.stuff }
       const bucket = { ...buckets[key], processed: true }
       buckets[key] = bucket
-      this.$store.commit('getIdsForBucket', buckets[key])
       this.$store.commit('setStuff', buckets)
+      this.$store.dispatch('getIdsForBucket', buckets[key])
     }
   }
 }

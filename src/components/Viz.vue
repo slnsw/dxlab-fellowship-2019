@@ -248,6 +248,7 @@ export default {
   computed: {
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
+      'bucketObjects',
       'fileData',
       'defaultPositions',
       'defaultColors',
@@ -275,6 +276,9 @@ export default {
     this.animate()
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mouseout', this.onCanvasMouseOut)
+    if (this.currentBucket && this.bucketObjects) {
+      this.enterBucket(this.bucketObjects[this.currentBucket.key])
+    }
   },
   beforeDestroy() {
     // Unregister resize before destroying this Vue instance
@@ -282,6 +286,13 @@ export default {
     document.removeEventListener('mouseout', this.onCanvasMouseOut)
   },
   watch: {
+    $route(to) {
+      const key = to.query.bucket
+      if (key && (!this.currentBucket || this.currentBucket.key !== key)) {
+        this.enterBucket(this.bucketObjects[key])
+      }
+      if (!key && this.currentBucket) this.backToEverything()
+    },
     currentBucket(newB) {
       if (newB) {
         if (this.cameraObj) {
@@ -364,21 +375,19 @@ export default {
       this.cursor = mesh
       this.scene.add(this.cursor)
     },
-    enterBucket() {
-      if (
-        this.PAST_INTERSECTED.instanceId !== undefined &&
-        this.PAST_INTERSECTED.obj.bucketIndex
-      ) {
-        const key = this.PAST_INTERSECTED.obj.bucketIndex
+    enterBucket(obj) {
+      this.zoomedBucket = false
+      if (obj.bucketIndex) {
+        const key = obj.bucketIndex
         this.selectedBucket = this.stuff[key]
-        const x = this.PAST_INTERSECTED.obj.position.x
-        const y = this.PAST_INTERSECTED.obj.position.y
-        const w = this.PAST_INTERSECTED.obj.geometry.parameters.width
-        const obj = new THREE.Mesh(new THREE.PlaneBufferGeometry(w, w))
-        obj.position.set(x, y, FILE_Z)
-        this.moveCameraTo(obj, SCENE_FILES_PADDING)
+        const x = obj.position.x
+        const y = obj.position.y
+        const w = obj.geometry.parameters.width
+        const o = new THREE.Mesh(new THREE.PlaneBufferGeometry(w, w))
+        o.position.set(x, y, FILE_Z)
+        this.moveCameraTo(o, SCENE_FILES_PADDING)
         this.fileMode = true
-        this.cameraObj = obj
+        this.cameraObj = o
         this.$store.dispatch('loadBucket', this.selectedBucket)
       }
     },
@@ -729,6 +738,7 @@ export default {
       const yini = 1
       const fullW = 2
       const spacing = fullW / side
+      const bucketObjects = {}
 
       for (let i = 0, i3 = 0, l = bucketCount; i < l; i++, i3 += 3) {
         const b = buckets[i]
@@ -757,6 +767,7 @@ export default {
         mesh.bucketIndex = b.key
         mesh.position.set(x, y, z)
         bucketsGroup.add(mesh)
+        bucketObjects[b.key] = mesh
 
         // text particles
         const textTop = y + w / 2
@@ -775,6 +786,8 @@ export default {
           )
         )
       }
+
+      this.$store.commit('setBucketObjects', bucketObjects)
 
       this.bucketsGroup = bucketsGroup
 
@@ -911,8 +924,12 @@ export default {
         this.zoomedBucket === this.PAST_INTERSECTED.instanceId
       ) {
         // clicked on zoomed bucket
-        this.enterBucket()
-        this.zoomedBucket = false
+        const path = {
+          path: '/',
+          query: { bucket: this.PAST_INTERSECTED.instanceId }
+        }
+        if (this.sort !== 'default') path.query.sort = this.sort
+        this.$router.push(path)
         return
       }
 
