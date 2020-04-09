@@ -11,17 +11,40 @@
       <div>Loading...</div>
     </div>
     <div v-if="loaded" class="grid" id="viewer">
-      <div class="header">
+      <div :class="{ header: true, hidden: headerHidden }">
         <h1 class="total">
+          <div>
+            <button
+              type="button"
+              :class="{ 'button-back': true, active: currentBucket }"
+              @click="back"
+            >
+              &lt; back to everything
+            </button>
+          </div>
+
+          <strong>{{ formattedItemsTotal }}</strong>
+          <div v-if="!currentBucket" class="bucket-names">
+            <span v-for="(bucket, index) in bucketNames" :key="'b_' + index">
+              <span v-if="index === bucketNames.length - 1"> and </span>
+              <router-link
+                :to="{ path: '/', query: { sort, bucket: bucket.key } }"
+                >{{ bucket.name }}</router-link
+              >
+              <span v-if="index < bucketNames.length - 1">, </span>
+              <span v-if="index === bucketNames.length - 1">.</span>
+            </span>
+          </div>
+          <span v-if="currentBucket">{{
+            currentBucket.description.trim()
+          }}</span>
           <button
             type="button"
-            :class="{ 'button-back': true, active: currentBucket }"
-            @click="back"
+            :class="{ 'button-header-toggle': true, active: currentBucket }"
+            @click="headerHidden = !headerHidden"
           >
-            &lt; back to everything
+            {{ !headerHidden ? 'hide' : 'show' }} header
           </button>
-
-          <strong>{{ formattedItemsTotal }}</strong> {{ description }}
         </h1>
       </div>
       <div
@@ -35,12 +58,13 @@
           <span
             class="color"
             v-for="(color, index) in fileData.palette"
-            :title="fileData.colorNames[index].join(', ')"
+            title="click to copy this color to clipboard in #RRGGBB format"
             :key="index"
             :style="{
               backgroundColor: color.color,
               width: color.percent * 100 + '%'
             }"
+            @click="copyColor(color.color)"
           ></span>
         </div>
         <div class="file-loading" v-if="!fileData.title">Loading...</div>
@@ -53,9 +77,10 @@
             class="thumbnail"
           />
         </a>
+        <p v-if="fileData.year" class="file-year">{{ fileData.year }}</p>
         <p v-if="fileData.title" class="file-description">
           <a :href="fileUrl" rel="noopener" target="_blank">
-            {{ fileData.title }}
+            {{ trimmedTitle }}
           </a>
         </p>
       </div>
@@ -144,6 +169,7 @@ import { mapState, mapGetters } from 'vuex'
 import Viz from '@/components/Viz.vue'
 
 const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
+const MAX_TITLE_LENGTH = 140
 
 export default {
   components: { Viz },
@@ -152,6 +178,8 @@ export default {
       dialog: null,
       atlasShown: this.showAtlases,
       filesBaseUrl: FILES_BASE_URL,
+      headerHidden: false,
+      controlsHidden: false,
       fileHidden: false
     }
   },
@@ -165,6 +193,9 @@ export default {
     }
   },
   methods: {
+    copyColor(color) {
+      navigator.clipboard.writeText(color)
+    },
     back() {
       this.$refs.viz.backToEverything()
     },
@@ -197,19 +228,23 @@ export default {
     }
   },
   computed: {
+    trimmedTitle() {
+      return this.fileData.title.length > MAX_TITLE_LENGTH
+        ? this.fileData.title.substr(0, MAX_TITLE_LENGTH) + '…'
+        : this.fileData.title
+    },
     fileUrl() {
       return this.filesBaseUrl + this.fileData.id
     },
+    bucketNames() {
+      return Object.values(this.stuff)
+    },
     description() {
       const l = Object.values(this.stuff).length
-      return this.currentBucket
-        ? this.currentBucket.description !== ''
-          ? this.currentBucket.description.trim()
-          : ''
-        : Object.values(this.stuff)
-            .filter((b) => b.count > 0)
-            .map((s, index) => (index === l - 1 ? 'and ' + s.name : s.name))
-            .join(', ')
+      return Object.values(this.stuff)
+        .filter((b) => b.count > 0)
+        .map((s, index) => (index === l - 1 ? 'and ' + s.name : s.name))
+        .join(', ')
     },
     total() {
       return this.itemsTotal
@@ -221,7 +256,7 @@ export default {
         this.currentBucket
           ? ' ' +
             this.currentBucket.name.trim() +
-            (this.currentBucket.description !== '' ? ':' : '')
+            (this.currentBucket.description !== '' ? ': ' : '')
           : ' '
       }`
     },
@@ -248,6 +283,10 @@ export default {
 
 <style lang="scss" scoped>
 @import '@/assets/variables';
+
+a {
+  color: $main-color;
+}
 
 .app-loading {
   position: absolute;
@@ -338,40 +377,57 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: auto auto 5rem;
 }
-.button-back {
+.button-back,
+.button-hide,
+.button-header-toggle {
+  display: block;
   border: none;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   background-color: $main-color;
   color: $bg-color;
-  display: block;
   text-decoration: none;
   border-radius: 0.2rem;
+  padding: 0.125rem 0.5rem;
+}
+.button-back {
   margin: -2.5rem 0 0.5rem 0.25rem;
-  padding: 0.25rem 0.5rem;
   transition: margin-top 0.2s ease-out;
 
   &.active {
     margin-top: 0.25rem;
   }
 }
+.button-header-toggle {
+  position: absolute;
+  transform: translateY(50%);
+}
 .header {
   background-color: transparentize($color: $bg-color, $amount: 0.15);
   grid-column: 1/4;
   grid-row: 1/2;
   z-index: 1;
+  transition: transform 0.2s ease-out;
+  transform: translateY(0%);
+
+  &.hidden {
+    transform: translateY(-100%);
+  }
 }
 .total {
   color: $main-color;
   font-size: 1.25rem;
   font-weight: normal;
-  max-width: 60ch;
+  max-width: 80ch;
   margin: 0 auto;
   padding: 0.5rem;
 
   @media screen and (max-width: 768px) {
     font-size: 0.9rem;
   }
+}
+.bucket-names {
+  display: inline;
 }
 .controls {
   grid-column: 1/4;
@@ -381,7 +437,7 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   display: flex;
   flex-direction: column;
   margin: 0 auto;
-  background-color: transparentize($color: $bg-color, $amount: 0.5);
+  background-color: transparentize($color: $bg-color, $amount: 0.15);
   width: 30%;
   min-width: 18rem;
   border-radius: 0.5rem 0.5rem 0 0;
@@ -411,6 +467,7 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   }
 
   &.active {
+    color: $white-color;
     background-color: $bg-active;
   }
 }
@@ -464,16 +521,8 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
 }
 .button-hide {
   align-self: flex-start;
-  border: none;
-  cursor: pointer;
-  font-size: 0.8rem;
-  background-color: $main-color;
-  color: $bg-color;
   display: inline-block;
-  text-decoration: none;
-  border-radius: 0.2rem;
   margin: 0 0 0.5rem 0.5rem;
-  padding: 0.125rem 0.5rem;
 }
 .file-loading {
   background-color: transparentize($color: $bg-color, $amount: 0.5);
@@ -492,6 +541,7 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   height: 3rem;
   padding: 0.5rem;
   margin-right: 1px;
+  cursor: pointer;
 
   &:last-child {
     margin: 0;
@@ -502,15 +552,13 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   width: 100%;
   height: auto;
 }
-.file-description {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.file-year {
   margin: 0.5rem 0.5rem 0 0.5rem;
-
-  a {
-    color: $main-color;
-  }
+  color: $white-color;
+  font-weight: bold;
+}
+.file-description {
+  margin: 0 0.5rem 0 0.5rem;
 }
 </style>
 

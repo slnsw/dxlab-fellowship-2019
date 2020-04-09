@@ -26,7 +26,7 @@ const STUFF = {
     id: 'Z5AB0OkPYjPb9',
     name: 'journals',
     description:
-      'Publications issued over a period of time, such as newsletters and magazines. Often may be called yearbooks, journals, annual reports, newsletters, magazines, periodicals, gazettes and so forth'
+      'Publications issued over a period of time, such as newsletters and magazines. Often may be called yearbooks, journals, annual reports, newsletters, magazines, periodicals, gazettes and so forth.'
   },
   manuscripts: {
     id: '330MWgKgY5adZ',

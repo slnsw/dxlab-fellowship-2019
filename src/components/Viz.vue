@@ -38,7 +38,11 @@ const BUCKET_PADDING = 0.1
 const FILE_Z = -1
 const CURSOR_COLOR = new THREE.Color('hsl(3.6, 100%, 29%)')
 const MOVE_DURATION = 300
-const SCENE_PADDING = 1.25
+const SCENE_DEFAULT_PADDING = 1.25
+const SCENE_HOME_PADDING = 0.8
+const SCENE_BUCKET_PADDING = 1.25
+const SCENE_FILE_PADDING = 2.5
+const SCENE_FILES_PADDING = 0.8
 const TEXT_SIZE = 0.025
 const TEXT_Z = 0 // relative
 const TILE_PADDING = 0.5
@@ -267,7 +271,7 @@ export default {
     this.init()
     this.createControls()
     this.paintBuckets()
-    this.moveCameraTo(this.bucketsGroup)
+    this.moveCameraTo(this.bucketsGroup, SCENE_HOME_PADDING)
     this.animate()
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mouseout', this.onCanvasMouseOut)
@@ -304,7 +308,7 @@ export default {
       this.filesMoveTo = to
       if (this.lastImage && this.currentBucket) {
         const obj = this.findLastImageFinalPosition()
-        if (obj) this.moveCameraTo(obj)
+        if (obj) this.moveCameraTo(obj, SCENE_FILE_PADDING)
       }
     }
   },
@@ -312,7 +316,7 @@ export default {
     backToEverything() {
       this.camera.layers.enable(0)
       this.cleanFiles()
-      this.moveCameraTo(this.bucketsGroup)
+      this.moveCameraTo(this.bucketsGroup, SCENE_HOME_PADDING)
       this.hideCursor()
       this.selectedInstance = {}
       this.fileMode = false
@@ -372,7 +376,7 @@ export default {
         const w = this.PAST_INTERSECTED.obj.geometry.parameters.width
         const obj = new THREE.Mesh(new THREE.PlaneBufferGeometry(w, w))
         obj.position.set(x, y, FILE_Z)
-        this.moveCameraTo(obj)
+        this.moveCameraTo(obj, SCENE_FILES_PADDING)
         this.fileMode = true
         this.cameraObj = obj
         this.$store.dispatch('loadBucket', this.selectedBucket)
@@ -789,7 +793,7 @@ export default {
       this.scene.remove(this.bucketsGroup)
       this.scene.remove(this.textGroup)
     },
-    moveCameraTo(obj) {
+    moveCameraTo(obj, padding = SCENE_DEFAULT_PADDING) {
       let o
 
       if (obj instanceof THREE.InstancedMesh) {
@@ -803,7 +807,7 @@ export default {
 
       const sphere = new THREE.Sphere()
       o.getBoundingSphere(sphere)
-      const side = sphere.radius * SCENE_PADDING
+      const side = sphere.radius * padding
 
       const center = new THREE.Vector3()
       o.getCenter(center)
@@ -920,20 +924,20 @@ export default {
           //   // go back to files
           //   // this.camera.layers.enable(1)
           //   // this.detailMode = false
-          //   // this.moveCameraTo(this.cameraObj)
+          //   // this.moveCameraTo(this.cameraObj, SCENE_FILES_PADDING)
           //   // } else {
           //   //   // go back to bucket
           //   //   this.camera.layers.enable(0)
           //   //   this.fileMode = false
           //   //   this.cleanFiles()
-          //   //   this.moveCameraTo(this.selectedInstance.obj)
+          //   //   this.moveCameraTo(this.selectedInstance.obj, SCENE_BUCKET_PADDING)
           //   //   this.$store.commit('setBucket', null)
           // }
         } else {
           // clicked a file
           this.detailMode = true
           this.lastImage = { ...this.PAST_INTERSECTED }
-          this.moveCameraTo(this.PAST_INTERSECTED.obj)
+          this.moveCameraTo(this.PAST_INTERSECTED.obj, SCENE_FILE_PADDING)
           this.loadFile()
         }
         return
@@ -948,7 +952,7 @@ export default {
           this.zoomedBucket = this.PAST_INTERSECTED.instanceId
           this.lastImage = null
           this.hideCursor()
-          this.moveCameraTo(this.PAST_INTERSECTED.obj)
+          this.moveCameraTo(this.PAST_INTERSECTED.obj, SCENE_BUCKET_PADDING)
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
         this.$store.commit('setBucket', null)
@@ -1066,16 +1070,18 @@ export default {
       }
     },
     loadFile() {
+      this.$store.commit('setFileData', {})
       // get data from API
       if (!this.PAST_INTERSECTED.fileId) {
         this.lastFileId = null
         return
       }
+      console.log(this.PAST_INTERSECTED)
       const fileId = this.PAST_INTERSECTED.fileId
+      const instanceId = this.PAST_INTERSECTED.instanceId
       if (fileId === this.lastFileId) return
       this.lastFileId = fileId
-      this.$store.commit('setFileData', {})
-      this.$store.dispatch('loadFile', fileId)
+      this.$store.dispatch('loadFile', { fileId, instanceId })
     },
     pickBucket() {
       if (this.bucketsGroup && !this.fileMode) {

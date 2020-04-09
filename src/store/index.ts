@@ -183,20 +183,21 @@ const parseYear = (data, side) => {
     toSort.push({ year: Number(rows[i]), i })
   }
   toSort.sort((a, b) => a.year - b.year)
-  const sorted = toSort.map((i) => i.i)
   const yearPositions = new Float32Array(l * 3)
   const yearIndexes = new Float32Array(l)
-  sorted.forEach((i, idx) => {
+  const yearYears = new Float32Array(l)
+  toSort.forEach((i, idx) => {
     // the i-th year item needs to go to x,y based on idx
     const x = idx % side
     const y = Math.floor(idx / side)
     const z = 0
-    yearPositions[i * 3] = x
-    yearPositions[i * 3 + 1] = y
-    yearPositions[i * 3 + 2] = z
-    yearIndexes[idx] = i
+    yearPositions[i.i * 3] = x
+    yearPositions[i.i * 3 + 1] = y
+    yearPositions[i.i * 3 + 2] = z
+    yearIndexes[idx] = i.i
+    yearYears[idx] = i.year
   })
-  return { yearIndexes, yearPositions }
+  return { yearIndexes, yearPositions, yearYears }
 }
 
 export default new Vuex.Store({
@@ -210,6 +211,7 @@ export default new Vuex.Store({
     stuff: STUFF,
     yearPositions: null,
     yearIndexes: null,
+    yearYears: null,
     tsnePositions: null,
     tsneIndexes: null,
     huePositions: null,
@@ -245,21 +247,23 @@ export default new Vuex.Store({
         commit('setAtlasForBucketIndex', { bucket, index, atlas })
       })
     },
-    loadFile: ({ state, commit }, fileId) => {
+    loadFile: ({ state, commit }, { fileId, instanceId }) => {
       commit('setFileData', {})
       const id = fileId
+      const year = state.yearYears[instanceId]
       let url = API_BASE_URL + 'files/' + fileId
       instance.get(url).then((response) => {
+        console.log(response.data)
         const image = response.data.file.image.variants['300_300'].url
         const title = response.data.file.title
         const img = new Image()
         img.onload = () => {
-          const fileData = { ...state.fileData, id, image, title }
+          const fileData = { ...state.fileData, id, year, image, title }
           commit('setFileData', fileData)
         }
         img.onerror = () => {
           const image = BASE_URL + 'not_found.svg'
-          const fileData = { ...state.fileData, id, image, title }
+          const fileData = { ...state.fileData, id, year, image, title }
           commit('setFileData', fileData)
         }
         img.src = image
@@ -300,35 +304,20 @@ export default new Vuex.Store({
       const { huePositions, hueIndexes } = sortByHue({ hsls, width })
 
       // tsne data
-      let tsneIndexes, tsnePositions
       const tsneUrl = BASE_URL + 'similarities/' + bucket.key + '.txt'
-      try {
-        const tsneResponse = await instance.get(tsneUrl)
-        const parsedTsne = parseTsne(tsneResponse.data)
-        tsneIndexes = parsedTsne.tsneIndexes
-        tsnePositions = parsedTsne.tsnePositions
-      } catch (err) {
-        // in case no similarity
-        tsnePositions = positions
-        tsneIndexes = new Float32Array(currentBucket.ids.length)
-      }
+      const tsneResponse = await instance.get(tsneUrl)
+      const parsedTsne = parseTsne(tsneResponse.data)
+      const { tsneIndexes, tsnePositions } = parsedTsne
 
       // year data
-      let yearIndexes, yearPositions
       const yearUrl = BASE_URL + 'years/' + bucket.key + '.txt'
-      try {
-        const yearResponse = await instance.get(yearUrl)
-        const parsedYear = parseYear(yearResponse.data, width)
-        yearIndexes = parsedYear.yearIndexes
-        yearPositions = parsedYear.yearPositions
-      } catch (err) {
-        // in case no similarity
-        yearPositions = positions
-        yearIndexes = new Float32Array(currentBucket.ids.length)
-      }
+      const yearResponse = await instance.get(yearUrl)
+      const parsedYear = parseYear(yearResponse.data, width)
+      const { yearIndexes, yearPositions, yearYears } = parsedYear
 
       state.yearPositions = yearPositions
       state.yearIndexes = yearIndexes
+      state.yearYears = yearYears
       state.tsnePositions = tsnePositions
       state.tsneIndexes = tsneIndexes
       state.huePositions = huePositions
