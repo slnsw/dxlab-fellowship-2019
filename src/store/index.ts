@@ -249,10 +249,10 @@ export default new Vuex.Store({
         commit('setAtlasForBucketIndex', { bucket, index, atlas })
       })
     },
-    loadFile: ({ state, commit }, { fileId, instanceId }) => {
+    loadFile: ({ state, commit }, { fileId, index }) => {
       commit('setFileData', {})
       const id = fileId
-      const year = state.yearYears[instanceId]
+      const year = state.yearYears[index]
       let url = API_BASE_URL + 'files/' + fileId
       instance.get(url).then((response) => {
         const image = response.data.file.image.variants['300_300'].url

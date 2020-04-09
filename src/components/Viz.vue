@@ -1108,9 +1108,24 @@ export default {
       }
       const fileId = this.PAST_INTERSECTED.fileId
       const instanceId = this.PAST_INTERSECTED.instanceId
+      let index
+      switch (this.sort) {
+        case 'default':
+          index = instanceId
+          break
+        case 'hue':
+          index = this.hueIndexes[instanceId]
+          break
+        case 'similar':
+          index = this.tsneIndexes[instanceId]
+          break
+        case 'year':
+          index = this.yearIndexes[instanceId]
+          break
+      }
       if (fileId === this.lastFileId) return
       this.lastFileId = fileId
-      this.$store.dispatch('loadFile', { fileId, instanceId })
+      this.$store.dispatch('loadFile', { fileId, index })
     },
     pickBucket() {
       if (this.bucketsGroup && !this.fileMode) {
