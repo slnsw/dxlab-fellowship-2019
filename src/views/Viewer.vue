@@ -65,7 +65,9 @@
             @click="copyColor(color.color)"
           ></span>
         </div>
-        <div class="file-loading" v-if="!fileData.title">Loading...</div>
+        <div class="file-loading" v-if="!fileData.title">
+          Loading...
+        </div>
         <a :href="fileUrl" rel="noopener" target="_blank">
           <img
             v-if="fileData.image"
@@ -76,7 +78,7 @@
           />
         </a>
         <p v-if="fileData.year" class="file-year">{{ fileData.year }}</p>
-        <p v-if="fileData.title" class="file-description">
+        <p v-if="fileData.title !== -1" class="file-description">
           <a :href="fileUrl" rel="noopener" target="_blank">
             {{ trimmedTitle }}
           </a>
@@ -232,9 +234,11 @@ export default {
       return this.currentBucket ? this.currentBucket.key : null
     },
     trimmedTitle() {
-      return this.fileData.title.length > MAX_TITLE_LENGTH
-        ? this.fileData.title.substr(0, MAX_TITLE_LENGTH) + '…'
-        : this.fileData.title
+      return this.fileData.title
+        ? this.fileData.title.length > MAX_TITLE_LENGTH
+          ? this.fileData.title.substr(0, MAX_TITLE_LENGTH) + '…'
+          : this.fileData.title
+        : ''
     },
     fileUrl() {
       return this.filesBaseUrl + this.fileData.id
