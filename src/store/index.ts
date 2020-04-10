@@ -200,39 +200,6 @@ const parseYear = (data, side) => {
   return { yearIndexes, yearPositions, yearYears }
 }
 
-const loadFilePalette = async (url) => {
-  let palette = []
-  const colorNames = []
-  try {
-    const response = await instance.get(url)
-    const palettes = response.data
-    palette = palettes
-      ? palettes.map((p) => {
-          return { color: p.h, percent: Number(p.f) }
-        })
-      : []
-    const colorNames = palettes ? palettes.map((p) => p.t.split(':')) : []
-    return { palette, colorNames }
-  } catch {
-    return { palette, colorNames }
-  }
-}
-
-const loadFileImage = async (url) => {
-  const notFoundImg = BASE_URL + 'not_found.svg'
-  try {
-    const response = await instance.get(url)
-    const image = response.data.file.image.variants['300_300'].url
-    const title = response.data.file.title
-    const img = await loadImage(image)
-    if (img) {
-      return { image, title }
-    }
-  } catch {
-    return { image: notFoundImg, title: -1 }
-  }
-}
-
 export default new Vuex.Store({
   state: {
     bucketKey: null,
@@ -282,15 +249,43 @@ export default new Vuex.Store({
         commit('setAtlasForBucketIndex', { bucket, index, atlas })
       })
     },
-    loadFile: async ({ state, commit }, { fileId, index }) => {
+    async loadFilePalette({ commit }, { id, url }) {
+      let palette = []
+      const colorNames = []
+      try {
+        const response = await instance.get(url)
+        const palettes = response.data
+        palette = palettes
+          ? palettes.map((p) => {
+              return { color: p.h, percent: Number(p.f) }
+            })
+          : []
+        const colorNames = palettes ? palettes.map((p) => p.t.split(':')) : []
+        commit('setFilePalette', { id, palette, colorNames })
+      } catch {
+        commit('setFilePalette', { id, palette, colorNames })
+      }
+    },
+    async loadFileImage({ commit }, { id, url }) {
+      const notFoundImg = BASE_URL + 'not_found.svg'
+      try {
+        const response = await instance.get(url)
+        const image = response.data.file.image.variants['300_300'].url
+        const title = response.data.file.title
+        const img = await loadImage(image)
+        if (img) {
+          commit('setFileImageTitle', { id, image, title })
+        }
+      } catch {
+        commit('setFileImageTitle', { id, image: notFoundImg, title: -1 })
+      }
+    },
+    loadFile({ dispatch }, { fileId }) {
       const id = fileId
-      const year = state.yearYears[index]
       let url = API_BASE_URL + 'files/' + fileId
-      commit('setFileData', { id, year })
-      const { image, title } = await loadFileImage(url)
-      url = S3_BASE_URL + 'colors_minimal/' + fileId + '.json'
-      const { palette, colorNames } = await loadFilePalette(url)
-      commit('setFileImage', { image, title, palette, colorNames })
+      dispatch('loadFileImage', { id, url })
+      url = S3_BASE_URL + 'colors_minimal/' + id + '.json'
+      dispatch('loadFilePalette', { id, url })
     },
     async getBuckets({ state, commit }) {
       const bucketKey = state.bucketKey
@@ -403,16 +398,14 @@ export default new Vuex.Store({
     }
   },
   mutations: {
-    setFileImageTitle: (state, { image, title }) => {
+    setFileImageTitle: (state, { id, image, title }) => {
+      if (id !== state.fileData['id']) return // race condition lost
       const fileData = { ...state.fileData, image, title }
       state.fileData = fileData
     },
-    setFilePalette: (state, { palette, colorNames }) => {
+    setFilePalette: (state, { id, palette, colorNames }) => {
+      if (id !== state.fileData['id']) return // race condition lost
       const fileData = { ...state.fileData, palette, colorNames }
-      state.fileData = fileData
-    },
-    setFileImage: (state, { image, title, palette, colorNames }) => {
-      const fileData = { ...state.fileData, image, title, palette, colorNames }
       state.fileData = fileData
     },
     setBucketKey: (state, value) => (state.bucketKey = value),

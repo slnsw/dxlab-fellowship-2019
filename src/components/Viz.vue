@@ -248,6 +248,7 @@ export default {
   computed: {
     ...mapGetters(['totalFromBuckets']),
     ...mapState([
+      'yearYears',
       'bucketObjects',
       'fileData',
       'defaultPositions',
@@ -1125,6 +1126,8 @@ export default {
       }
       if (fileId === this.lastFileId) return
       this.lastFileId = fileId
+      const year = this.yearYears[index]
+      this.$store.commit('setFileData', { id: fileId, year })
       this.$store.dispatch('loadFile', { fileId, index })
     },
     pickBucket() {
