@@ -90,7 +90,7 @@
             :class="['button-sort', sort === 'default' ? 'active' : '']"
             :to="pathFor(null, currentBucket)"
           >
-            no sorting
+            unsorted
           </router-link>
           <router-link
             :class="['button-sort', sort === 'hue' ? 'active' : '']"
@@ -190,7 +190,7 @@ export default {
   },
   methods: {
     pathFor(sort, bucket) {
-      const path = { path: '/', query: {} }
+      const path = { path: '/viewer', query: {} }
       if (bucket) path.query.bucket = bucket.key
       if (sort && sort !== 'default') path.query.sort = sort
       return path
@@ -475,6 +475,7 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   border-radius: 0.2rem;
   margin: 0 0 0.5rem 0.5rem;
   padding: 0.25rem 1rem;
+  white-space: nowrap;
 
   &:first-child {
     margin-left: 0;

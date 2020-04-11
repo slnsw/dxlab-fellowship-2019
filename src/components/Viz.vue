@@ -929,7 +929,7 @@ export default {
       ) {
         // clicked on zoomed bucket
         const path = {
-          path: '/',
+          path: '/viewer',
           query: { bucket: this.PAST_INTERSECTED.instanceId }
         }
         if (this.sort !== 'default') path.query.sort = this.sort
