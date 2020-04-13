@@ -60,14 +60,14 @@
           href="https://dxlab.sl.nsw.gov.au/"
           rel="noopener"
           target="_blank"
-          ><img src="/logo-dxlab.png"
+          ><img :src="baseUrl + 'logo-dxlab.png'"
         /></a>
         <a
           class="nsw-link"
           href="http://sl.nsw.gov.au/"
           rel="noopener"
           target="_blank"
-          ><img src="/logo-slnsw-white.png"
+          ><img :src="baseUrl + 'logo-slnsw-white.png'"
         /></a>
       </div>
     </footer>
@@ -105,10 +105,13 @@
 </template>
 
 <script>
+const BASE_URL = process.env.BASE_URL
+
 export default {
   data() {
     return {
-      dialog: null
+      dialog: null,
+      baseUrl: BASE_URL
     }
   },
   computed: {
