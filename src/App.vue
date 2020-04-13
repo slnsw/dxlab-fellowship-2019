@@ -7,17 +7,6 @@
 
 <style lang="scss">
 @import '@/assets/reset';
-
-@import '@/assets/widgets';
-
+@import '@/assets/general';
 @import '@/assets/a11y-dialog';
-
-#app {
-  font-family: Avenir, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #2c3e50;
-}
 </style>

@@ -11,6 +11,9 @@
       <div>Loading...</div>
     </div>
     <div v-if="loaded" class="grid" id="viewer">
+      <router-link class="button-about" to="/">
+        <span class="visuallyhidden">about</span>
+      </router-link>
       <div :class="{ header: true, hidden: headerHidden }">
         <h1 class="total">
           <div :class="{ 'button-back-wrapper': true, active: currentBucket }">
@@ -222,6 +225,7 @@ export default {
     },
     assignDialogRef(dialog) {
       this.dialog = dialog
+      if (!this.dialog) return
       this.dialog.on('hide', () => {
         if (!this.confirmedAtlas) {
           this.atlasShown = !this.atlasShown
@@ -283,6 +287,9 @@ export default {
     ])
   },
   created() {
+    console.log('hi')
+    this.$store.commit('setBucket', null)
+    this.$store.commit('setFileData', {})
     this.$store.commit('setSort', this.$route.query.sort)
     if (this.$route.query.bucket)
       this.$store.commit('setBucketKey', this.$route.query.bucket)
@@ -293,100 +300,31 @@ export default {
 
 <style lang="scss" scoped>
 @import '@/assets/variables';
-
-a {
-  color: $main-color;
-}
-
-.app-loading {
-  position: absolute;
-  background-color: transparentize($color: $bg-color, $amount: 0.1);
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  color: $main-color;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-}
-
-$loader-speed: 4s;
-$loader-count: 16;
-$loader-size: 3rem;
-$loader-margin: 0.1;
-$loader-side: 4;
-$loader-segment: $loader-size / $loader-side;
-$p_0: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15;
-$p_1: 6, 12, 8, 14, 11, 9, 4, 0, 3, 13, 15, 7, 5, 10, 2, 1;
-$p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
-
-.squares {
-  position: relative;
-  margin-bottom: 1rem;
-  margin-left: $loader-size;
-  transform: translate(
-    -1 * $loader-side * $loader-segment,
-    -1 * $loader-side * $loader-segment
-  );
-}
-
-.square {
-  display: inline-block;
-  width: $loader-segment * (1 - $loader-margin);
-  height: $loader-segment * (1 - $loader-margin);
-  overflow: hidden;
-  position: absolute;
-  text-indent: -9999px;
-}
-
-@for $i from 1 through $loader-count {
-  $x_0: ($i - 1) % $loader-side;
-  $y_0: floor(($i - 1) / $loader-side);
-  $x_1: nth($p_1, $i) % $loader-side;
-  $y_1: floor(nth($p_1, $i) / $loader-side);
-  $x_2: nth($p_2, $i) % $loader-side;
-  $y_2: floor(nth($p_2, $i) / $loader-side);
-
-  @keyframes loader_#{$i} {
-    0% {
-      transform: translate($x_0 * $loader-segment, $y_0 * $loader-segment);
-    }
-    6% {
-      transform: translate($x_1 * $loader-segment, $y_1 * $loader-segment);
-    }
-    33% {
-      transform: translate($x_1 * $loader-segment, $y_1 * $loader-segment);
-    }
-    39% {
-      transform: translate($x_2 * $loader-segment, $y_2 * $loader-segment);
-    }
-    63% {
-      transform: translate($x_2 * $loader-segment, $y_2 * $loader-segment);
-    }
-    69% {
-      transform: translate($x_0 * $loader-segment, $y_0 * $loader-segment);
-    }
-    100% {
-      transform: translate($x_0 * $loader-segment, $y_0 * $loader-segment);
-    }
-  }
-
-  .square_#{$i} {
-    background: mix($main-color, #333, random(90) + 10);
-    animation: loader_#{$i} $loader-speed infinite ease-in-out;
-  }
-}
+@import '@/assets/general';
+@import '@/assets/loading';
 
 .grid {
-  background-color: $bg-color;
-  color: $main-color;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: auto auto 5rem;
+  position: relative;
 }
+.button-about {
+  position: absolute;
+  left: 0.25rem;
+  top: 0.25rem;
+  width: 3rem;
+  height: 3rem;
+  z-index: 2;
+  background-image: url('/logo.svg');
+  background-size: contain;
+
+  @media screen and (max-width: 990px) {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
 .button-back,
 .button-hide,
 .button-header-toggle {
@@ -417,7 +355,7 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   box-shadow: 0 0 0.25rem $bg-color;
 }
 .header {
-  background-color: transparentize($color: $bg-color, $amount: 0.15);
+  background-color: transparentize($color: $bg-color, $amount: 0.1);
   grid-column: 1/4;
   grid-row: 1/2;
   z-index: 1;
@@ -429,14 +367,14 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   }
 }
 .total {
-  color: $main-color;
   font-size: 1.25rem;
   font-weight: normal;
   max-width: 80ch;
   margin: 0 auto;
   padding: 0.5rem;
 
-  @media screen and (max-width: 768px) {
+  @media screen and (max-width: 990px) {
+    margin-left: 2.5rem;
     font-size: 0.9rem;
   }
 }
@@ -451,7 +389,7 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
   display: flex;
   flex-direction: column;
   margin: 0 auto;
-  background-color: transparentize($color: $bg-color, $amount: 0.15);
+  background-color: transparentize($color: $bg-color, $amount: 0.1);
   width: 30%;
   min-width: 18rem;
   border-radius: 0.5rem 0.5rem 0 0;
@@ -578,10 +516,7 @@ $p_2: 9, 2, 4, 12, 0, 15, 3, 1, 6, 10, 13, 8, 11, 5, 7, 14;
 </style>
 
 <style lang="scss">
-@import '@/assets/variables';
-
 body {
-  background-color: $bg-color;
   overflow: hidden;
 }
 </style>

@@ -1,11 +1,9 @@
 $main-color: wheat;
 $bg-color: hsl(0, 0%, 15%);
-$white-color: hsl(0, 0%, 95%);
+$white-color: hsl(0, 0%, 90%);
 $bg-active: hsl(0, 0%, 44%);
 
-// for the old ui
-$facet-bar-color: #545454;
-$expansion-color: darkgray;
+$text-color: $white-color;
 
 // for a11y-dialog
 $modal-backdrop: rgba(0, 0, 0, 0.66);
