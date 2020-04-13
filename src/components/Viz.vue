@@ -324,6 +324,8 @@ export default {
         const obj = this.findLastImageFinalPosition()
         this.putCursorOnFile(obj)
         if (obj) this.moveCameraTo(obj, SCENE_FILE_PADDING)
+      } else {
+        this.hideCursor()
       }
     }
   },
@@ -915,7 +917,6 @@ export default {
       const isClick = Math.abs(newX - lastX) < 2 && Math.abs(newY - lastY) < 2
 
       if (!isClick) {
-        this.lastImage = null // user interacted. we should “forget” the image
         return
       }
 
@@ -972,18 +973,17 @@ export default {
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
           this.zoomedBucket = this.PAST_INTERSECTED.instanceId
-          this.lastImage = null
           this.hideCursor()
           this.moveCameraTo(this.PAST_INTERSECTED.obj, SCENE_BUCKET_PADDING)
           this.selectedInstance = { ...this.PAST_INTERSECTED }
         }
         this.$store.commit('setBucket', null)
       } else {
-        this.lastImage = null
         this.backToEverything()
       }
     },
     putCursorOnFile(obj) {
+      if (!obj) return
       const w = obj.geometry.parameters.width
       this.cursor.position.x = obj.position.x
       this.cursor.position.y = obj.position.y + w * 0.24
