@@ -11,7 +11,13 @@
       <div>Loading...</div>
     </div>
     <div v-if="loaded" class="grid" id="viewer">
-      <router-link class="button-about" to="/">
+      <router-link
+        class="button-about"
+        :style="{
+          backgroundImage: 'url(' + baseUrl + 'logo-txt.svg)'
+        }"
+        to="/"
+      >
         <span class="visuallyhidden">about</span>
       </router-link>
       <div :class="{ header: true, hidden: headerHidden }">
@@ -171,6 +177,7 @@ import { mapState, mapGetters } from 'vuex'
 
 import Viz from '@/components/Viz.vue'
 
+const BASE_URL = process.env.BASE_URL
 const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const MAX_TITLE_LENGTH = 140
 
@@ -178,6 +185,7 @@ export default {
   components: { Viz },
   data() {
     return {
+      baseUrl: BASE_URL,
       dialog: null,
       atlasShown: this.showAtlases,
       filesBaseUrl: FILES_BASE_URL,
@@ -315,7 +323,6 @@ export default {
   width: 3rem;
   height: 3rem;
   z-index: 2;
-  background-image: url('/logo.svg');
   background-size: contain;
 
   @media screen and (max-width: 990px) {
