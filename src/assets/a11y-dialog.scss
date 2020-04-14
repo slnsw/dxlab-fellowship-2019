@@ -46,6 +46,7 @@ dialog::backdrop {
 
 .dialog-content {
   background-color: $main-color;
+  color: $bg-color;
   z-index: 3;
   position: fixed;
   top: 10vh;
