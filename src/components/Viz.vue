@@ -336,8 +336,8 @@ export default {
       this.moveCameraTo(this.bucketsGroup, SCENE_HOME_PADDING)
       this.hideCursor()
       this.selectedInstance = {}
-      this.fileData = {}
       this.fileMode = false
+      this.$store.commit('setFileData', {})
       this.$store.commit('setBucket', null)
     },
     paintSort() {
