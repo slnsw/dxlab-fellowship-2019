@@ -133,7 +133,7 @@
         </div>
       </div>
       <a11y-dialog
-        id="app-dialog"
+        id="app-bigfiles"
         app-root="#viewer"
         dialog-root="#dialog-root"
         @dialog-ref="assignDialogRef"
@@ -169,6 +169,7 @@
       </a11y-dialog>
       <viz class="viz" ref="viz" />
     </div>
+    <SpecialCare />
   </div>
 </template>
 
@@ -176,13 +177,14 @@
 import { mapState, mapGetters } from 'vuex'
 
 import Viz from '@/components/Viz.vue'
+import SpecialCare from '@/components/SpecialCare'
 
 const BASE_URL = process.env.BASE_URL
 const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const MAX_TITLE_LENGTH = 140
 
 export default {
-  components: { Viz },
+  components: { Viz, SpecialCare },
   data() {
     return {
       baseUrl: BASE_URL,

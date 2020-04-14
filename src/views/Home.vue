@@ -23,6 +23,14 @@
       <p>answer</p>
       <h3>q4</h3>
       <p>answer</p>
+      <p>
+        <a
+          href="https://www.sl.nsw.gov.au/research-and-collections/ask-librarian"
+          rel="noopener"
+          target="_blank"
+          >Ask a librarian</a
+        >
+      </p>
     </section>
     <footer>
       <div class="links">
@@ -71,67 +79,20 @@
         /></a>
       </div>
     </footer>
-    <a11y-dialog
-      id="app-dialog"
-      app-root="#app"
-      dialog-root="#dialog-root"
-      @dialog-ref="assignDialogRef"
-      :class-names="{
-        base: 'dialog',
-        overlay: 'dialog-overlay',
-        element: 'dialog-content',
-        title: 'dialog-title',
-        document: 'dialog-document',
-        closeButton: 'dialog-close'
-      }"
-    >
-      <template v-slot:title>
-        <span>Special Care Notice</span>
-      </template>
-      <div>
-        <p>
-          This website may contain images or documentation relating to
-          Aboriginal and Torres Strait Islander people who are deceased.
-        </p>
-        <p>
-          The State Library of NSW acknowledges that its historical collection
-          items can be offensive and confronting in today’s context. They are
-          published with respect to the descendants and communities of the
-          individuals they depict.
-        </p>
-      </div>
-    </a11y-dialog>
+    <SpecialCare />
   </div>
 </template>
 
 <script>
+import SpecialCare from '@/components/SpecialCare'
+
 const BASE_URL = process.env.BASE_URL
 
 export default {
+  components: { SpecialCare },
   data() {
     return {
-      dialog: null,
       baseUrl: BASE_URL
-    }
-  },
-  computed: {
-    hasSpecialCare() {
-      const cookies = document.cookie.split(';')
-      return (
-        cookies
-          .map((c) => c.trim().split('='))
-          .filter((c) => c[0] === 'specialCare').length > 0
-      )
-    }
-  },
-  methods: {
-    assignDialogRef(dialog) {
-      this.dialog = dialog
-      if (!this.dialog) return
-      if (!this.hasSpecialCare) this.dialog.show()
-      this.dialog.on('hide', () => {
-        document.cookie = 'specialCare=true'
-      })
     }
   }
 }
