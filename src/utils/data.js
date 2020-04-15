@@ -1,7 +1,7 @@
 const STUFF = {
   archTechDrawings: {
     id: 'm6zK940qx9v7K',
-    name: 'architectural drawings',
+    name: 'architectural\ndrawings',
     description:
       'Drawings made for the design and construction of sites, structures, details, fixtures, furnishings, and decorations, as well as other objects designed by an architect or architectural office.'
   },
@@ -36,19 +36,19 @@ const STUFF = {
   },
   manuscriptMaps: {
     id: 'Xp1qba0O2k32v',
-    name: 'unpublished maps',
+    name: 'unpublished\nmaps',
     description:
       'Hand drawn maps or the original drawing of a map as compiled or constructed from various data, such as ground surveys and photographs.'
-  },
-  manuscriptNotatedMusic: {
-    id: 'oWWJDK5PO44me',
-    name: 'notated music',
-    description:
-      'Graphic representations of musical works such as musical scores. Often the means for communicating to the performer(s) how the musical work is to be realized in sound.'
+    // },
+    // manuscriptNotatedMusic: {
+    //   id: 'oWWJDK5PO44me',
+    //   name: 'notated music',
+    //   description:
+    //     'Graphic representations of musical works such as musical scores. Often the means for communicating to the performer(s) how the musical work is to be realized in sound.'
   },
   maps: {
     id: '40XObXd7aA4a',
-    name: 'published maps',
+    name: 'published   \nmaps',
     description:
       'Published graphic representations of areas of land or sea or another celestial sphere indicating the relative position of artificial and natural features according to a scale.'
   },
@@ -117,12 +117,12 @@ const STUFF = {
     name: 'stamps',
     description:
       'Government-authorized hand stamps, adhesive stamps, or meter markings intended as evidence of payment of postage. Also, stamps issued by private mail delivery companies to denote payment of their delivery fees.'
-  },
-  video: {
-    id: 'NWOD2N4edDPzO',
-    name: 'video',
-    description:
-      'Audiovisual materials which are motion pictures, film, movies. Can be on a film, disc or digital physical carrier.'
+    // },
+    // video: {
+    //   id: 'NWOD2N4edDPzO',
+    //   name: 'video',
+    //   description:
+    //     'Audiovisual materials which are motion pictures, film, movies. Can be on a film, disc or digital physical carrier.'
   }
 }
 

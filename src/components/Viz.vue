@@ -33,15 +33,17 @@ const ATLAS_TILE_SIZE = 32
 const EMPTY_TEXTURE = new THREE.Texture(undefined)
 
 const BASE_SCALE = 1.0
+const BUCKET_COLUMNS = 6
 const BUCKET_Z = 1
 const BUCKET_PADDING = 0.1
+const BUCKET_V_SPACING = 1.15
 const FILE_Z = -1
 const CURSOR_COLOR = new THREE.Color('hsl(3.6, 100%, 29%)')
 const MOVE_DURATION = 300
 const SCENE_DEFAULT_PADDING = 1.25
 const SCENE_HOME_PADDING = 0.8
 const SCENE_BUCKET_PADDING = 1.25
-const SCENE_FILE_PADDING = 2.75
+const SCENE_FILE_PADDING = 4.0
 const SCENE_FILES_PADDING = 0.8
 const TEXT_SIZE = 0.025
 const TEXT_Z = 0 // relative
@@ -740,7 +742,7 @@ export default {
       const color = new THREE.Color()
       const bucketsGroup = new THREE.Group()
       const textGroup = new THREE.Group()
-      const side = Math.ceil(Math.sqrt(bucketCount))
+      const side = BUCKET_COLUMNS
       const xini = -1
       const yini = 1
       const fullW = 2
@@ -755,7 +757,7 @@ export default {
         const scale = this.scaled ? Math.sqrt(pct) : BASE_SCALE
         const w = (spacing - spacing * BUCKET_PADDING) * scale
         const x = xini + (i % side) * spacing
-        const y = yini - Math.floor(i / side) * spacing
+        const y = yini - Math.floor(i / side) * spacing * BUCKET_V_SPACING
         const z = BUCKET_Z
 
         color.setHSL(0.01 + 0.1 * (i / l), 1.0, 0.5)
@@ -943,19 +945,19 @@ export default {
         this.camera.layers.enable(1)
         if (this.PAST_INTERSECTED.instanceId === undefined) {
           // clicked outside
-          // if (this.detailMode) {
-          //   // go back to files
-          //   // this.camera.layers.enable(1)
-          //   // this.detailMode = false
-          //   // this.moveCameraTo(this.cameraObj, SCENE_FILES_PADDING)
-          //   // } else {
-          //   //   // go back to bucket
-          //   //   this.camera.layers.enable(0)
-          //   //   this.fileMode = false
-          //   //   this.cleanFiles()
-          //   //   this.moveCameraTo(this.selectedInstance.obj, SCENE_BUCKET_PADDING)
-          //   //   this.$store.commit('setBucket', null)
-          // }
+          if (this.detailMode) {
+            // go back to files
+            this.camera.layers.enable(1)
+            this.detailMode = false
+            this.moveCameraTo(this.cameraObj, SCENE_FILES_PADDING)
+          } else {
+            // go back to buckets
+            const path = { path: '/viewer', query: {} }
+            if (this.sort && this.sort !== 'default')
+              path.query.sort = this.sort
+            this.$router.push(path)
+            this.backToEverything()
+          }
         } else {
           // clicked a file
           this.detailMode = true
@@ -1156,9 +1158,9 @@ export default {
             this.PAST_INTERSECTED.obj = obj
             const w = obj.geometry.parameters.width
             this.cursor.position.x = obj.position.x
-            this.cursor.position.y = obj.position.y + w * 0.5 + w * 0.05
+            this.cursor.position.y = obj.position.y + w * 0.5 + w * 0.1
             this.cursor.position.z = obj.position.z
-            this.cursor.scale = new THREE.Vector3(w * 1.02, w * 0.1, w)
+            this.cursor.scale = new THREE.Vector3(w * 1.02, w * 0.2, w)
             this.cursor.visible = true
           }
         } else if (this.PAST_INTERSECTED.instanceId) {

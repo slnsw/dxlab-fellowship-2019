@@ -153,7 +153,7 @@
       <h2 id="sorting-and-machine-learning">Sorting and machine learning</h2>
       <p>
         Aereo comprises about 1.2 million files in 20 different categories that
-        can each be organized in four ways: unsorted, year, color, and “look
+        can each be organized in four ways: unsorted, year, colour, and “look
         alike”.
       </p>
       <p>[ animated gif or video of different sorting in action ]</p>
@@ -188,36 +188,36 @@
         (e.g.: 1914). In case of no date found it will be zero and not
         displayed.
       </p>
-      <h3 id="color">3. Color</h3>
+      <h3 id="colour">3. Colour</h3>
       <p>
         I wanted to provide new ways of sorting and looking at the items, beyond
         of what already existed in the SLNSW data set. I processed all 2 million
         images through a
-        <a href="http://mkweb.bcgsc.ca/colorsummarizer/">color summarizer</a>
-        that extracts the most prominent colors from an image as well as other
+        <a href="http://mkweb.bcgsc.ca/colorsummarizer/">colour summarizer</a>
+        that extracts the most prominent colours from an image as well as other
         information such as its histogram. This information is displayed above
         the selected image:
       </p>
-      <p>[ image of color palette ]</p>
+      <p>[ image of colour palette ]</p>
       <p>
-        As a bonus, clicking on a color will copy its hexadecimal red, green,
+        As a bonus, clicking on a colour will copy its hexadecimal red, green,
         blue value (e.g.: “#FF0000” for red) to the clipboard.
       </p>
       <p>
-        Sorting by color
+        Sorting by colour
         <a href="https://www.alanzucconi.com/2015/09/30/colour-sorting/"
           >is hard</a
         >, especially when we’re talking about 500 thousand images as is the
         case for manuscripts. For simplicity, I’m choosing the
-        <strong>first color</strong>, which is the most prominent from the list
+        <strong>first colour</strong>, which is the most prominent from the list
         of five and sorting by hue, then saturation and, finally, lightness.
-        Color sorting is
+        Colour sorting is
         <router-link
           :to="{ path: '/viewer', query: { bucket: 'pictures', sort: 'hue' } }"
           >better viewed when image thumbnails are not visible</router-link
         >:
       </p>
-      <p>[ image of color sorting ]</p>
+      <p>[ image of colour sorting ]</p>
       <h3 id="“look-alike”">4. “Look alike”</h3>
       <p>
         The Library has done some
@@ -289,7 +289,7 @@
         </li>
         <li>
           <a href="https://github.com/mgiraldo/image-utils"
-            >Repository for image color and similarity processing</a
+            >Repository for image colour and similarity processing</a
           >
         </li>
         <li>
@@ -318,12 +318,12 @@
             <td>48.1 MB</td>
           </tr>
           <tr>
-            <td>Color summarizing (full version, gzipped)</td>
+            <td>Colour summarizing (full version, gzipped)</td>
             <td>2,212,318</td>
             <td>64.3 GB</td>
           </tr>
           <tr>
-            <td>Color summarizing (compact version)</td>
+            <td>Colour summarizing (compact version)</td>
             <td>2,231,480</td>
             <td>1.3 GB</td>
           </tr>
@@ -464,10 +464,6 @@ h1 img {
   }
 }
 
-h2 {
-  // margin-left: -2rem;
-}
-
 h3 {
   margin-top: 2rem;
 }
@@ -478,6 +474,7 @@ p {
 
 table {
   border-collapse: collapse;
+  width: 100%;
 
   th,
   td {

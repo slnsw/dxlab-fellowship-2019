@@ -5,6 +5,8 @@ $bg-active: hsl(0, 0%, 44%);
 
 $text-color: $white-color;
 $border-color: $bg-active;
+$button-bg-color: $bg-color;
+$button-text-color: $white-color;
 
 // for a11y-dialog
 $modal-backdrop: rgba(0, 0, 0, 0.66);

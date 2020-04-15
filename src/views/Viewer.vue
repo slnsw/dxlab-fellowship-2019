@@ -105,7 +105,7 @@
             :class="['button-sort', sort === 'hue' ? 'active' : '']"
             :to="pathFor('hue', currentBucket)"
           >
-            color
+            colour
           </router-link>
           <router-link
             :class="['button-sort', sort === 'similar' ? 'active' : '']"
@@ -153,7 +153,7 @@
           <p>
             Some categories (especially manuscripts, photographs, and negatives)
             have <em>a lot</em> of images (updwards of 100 megabytes) and their
-            thumbnails will take a while to download. If you are in a mobile
+            thumbnails will take a while to download. If you are on a mobile
             device you might want to wait until you are on Wi-Fi to view them or
             they might not load at all.
           </p>
@@ -191,7 +191,7 @@ export default {
       dialog: null,
       atlasShown: this.showAtlases,
       filesBaseUrl: FILES_BASE_URL,
-      headerHidden: false,
+      headerHidden: true,
       controlsHidden: false,
       fileHidden: false
     }
@@ -210,9 +210,6 @@ export default {
     },
     copyColor(color) {
       navigator.clipboard.writeText(color)
-    },
-    back() {
-      this.$refs.viz.backToEverything()
     },
     acceptAtlas() {
       this.atlasShown = true
@@ -345,8 +342,8 @@ export default {
   border: none;
   cursor: pointer;
   font-size: 0.8rem;
-  background-color: $main-color;
-  color: $bg-color;
+  background-color: $button-bg-color;
+  color: $button-text-color;
   text-decoration: none;
   border-radius: 0.2rem;
   padding: 0.125rem 0.5rem;
@@ -404,7 +401,7 @@ export default {
   margin: 0 auto;
   background-color: transparentize($color: $bg-color, $amount: 0.1);
   width: 30%;
-  min-width: 18rem;
+  min-width: 23.5rem;
   border-radius: 0.5rem 0.5rem 0 0;
 }
 .sort {
@@ -419,8 +416,8 @@ export default {
   }
 }
 .button-sort {
-  background-color: $main-color;
-  color: $bg-color;
+  background-color: $button-bg-color;
+  color: $button-text-color;
   text-decoration: none;
   display: inline-block;
   border-radius: 0.2rem;
