@@ -178,7 +178,8 @@
         <a href="http://mkweb.bcgsc.ca/colorsummarizer/">colour summarizer</a>
         that extracts the most prominent colours from an image as well as other
         information such as its histogram. This information is displayed above
-        the selected image:
+        the selected image as coloured boxes, the size of which is proportional
+        to the amount of that colour in the image:
       </p>
       <div class="palettes">
         <img
@@ -307,18 +308,19 @@
         <em>look similar to the algorithm</em>. The algorithm will make
         mistakes, classifying an image as, for example, a Frisbee, but it will
         make similar mistakes for images that look similar (other images that
-        look like Frisbees). Notice how, in the two black and white images
-        above, the algorithm has mistakenly classified them as “barbershop” and
-        “barber chair” but the images do look similar: black and white, person
-        standing holding something, indoors in a relatively asceptic
-        environment. The complete process of converting these values into a
-        similarity score will be described in a separate post but you can
+        look like Frisbees to the algorithm). Notice how, in the two black and
+        white images above, the algorithm has mistakenly classified them as
+        “barbershop” and “barber chair” but the images do look similar: black
+        and white, a person in a white outfit standing holding something,
+        indoors in a relatively asceptic environment. The complete process of
+        converting these values into a similarity score will be described in a
+        separate post but you can
         <router-link
           :to="{
             path: '/viewer',
             query: { bucket: 'paintings', sort: 'similar' }
           }"
-          >see it in action in paintings</router-link
+          >see it in action</router-link
         >.
       </p>
       <img
