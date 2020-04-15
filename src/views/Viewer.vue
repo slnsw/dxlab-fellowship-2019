@@ -312,6 +312,10 @@ export default {
 @import '@/assets/general';
 @import '@/assets/loading';
 
+.wrapper {
+  overflow: hidden;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -520,11 +524,5 @@ export default {
 }
 .file-description {
   margin: 0 0.5rem 0 0.5rem;
-}
-</style>
-
-<style lang="scss">
-body {
-  overflow: hidden;
 }
 </style>
