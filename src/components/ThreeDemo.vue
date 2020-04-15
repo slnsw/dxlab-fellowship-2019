@@ -10,7 +10,7 @@ import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls
 const START_PARTICLES = 64
 const CAMERA_FAR = 100000
 const CAMERA_FOV = 60
-const SPRITE_URL = '/medals.jpg'
+const SPRITE_URL = process.env.BASE_URL + 'assets/medals.jpg'
 const texture = new THREE.TextureLoader().load(SPRITE_URL)
 texture.encoding = THREE.sRGBEncoding
 

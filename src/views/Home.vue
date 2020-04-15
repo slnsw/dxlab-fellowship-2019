@@ -2,13 +2,20 @@
   <div class="wrapper">
     <section class="intro">
       <h1 id="aereo">
-        <img :src="baseUrl + 'logo-txt.svg'" alt="Aereo" />
+        <img :src="baseUrl + 'assets/logo-txt.svg'" alt="Aereo" />
         <span class="visuallyhidden">Aereo</span>
       </h1>
-      <p>
-        [ hero image ]
-      </p>
-      <p>
+      <div class="hero">
+        <img
+          class="image-hero"
+          :src="`${baseUrl}assets/hero@0.5x.jpg`"
+          alt=""
+          :srcset="
+            `${baseUrl}assets/hero.jpg 1x, ${baseUrl}assets/hero@2x.jpg 2x`
+          "
+        />
+      </div>
+      <p class="lead">
         Aereo is an attempt at looking at library digital collections as a
         whole, rather than a list of discrete items or files in response to a
         keyword search. By displaying everything<sup class="footnote-ref"
@@ -17,13 +24,17 @@
         in a single interface there is hopefully more opportunity for a
         broad-based and serendipitous exploration of the collection.
       </p>
-      <p><router-link to="/viewer">ENTER</router-link></p>
+      <router-link class="enter" to="/viewer">ENTER</router-link>
     </section>
     <section class="categories">
-      <h2 id="categories">Categories</h2>
-      <p>
-        [ category image ]
-      </p>
+      <img
+        class="standalone image-categories"
+        :src="`${baseUrl}assets/categories@0.5x.jpg`"
+        alt="The main view of categories in Aereo"
+        :srcset="
+          `${baseUrl}assets/categories.jpg 1x, ${baseUrl}assets/categories@2x.jpg 2x`
+        "
+      />
       <p>
         To the layperson, a library “item” can represent many different things:
         <a href="https://collection.sl.nsw.gov.au/record/1l4lKpX1"
@@ -52,76 +63,29 @@
           >a drawer</a
         >.
       </p>
-      <p>[ image of the globe theatre? ]</p>
+      <img
+        class="standalone image-globe"
+        :src="`${baseUrl}assets/globe@0.5x.jpg`"
+        alt="Model of the Globe Theatre, London"
+        :srcset="
+          `${baseUrl}assets/globe.jpg 1x, ${baseUrl}assets/globe@2x.jpg 2x`
+        "
+      />
       <p>
         Not every item is (or will be) photographed by SLNSW to be published
         online. As of early February 2020, when this fellowship began and I
         received a bulk data set, SLNSW had provided access to over two million
-        item files. I selected a subset of 20 categories (or “formats” in
-        library parlance) to work with:
-        <router-link :to="{ path: '/viewer', query: { bucket: 'manuscripts' } }"
-          >manuscripts</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'photographs' } }"
-          >photographs</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'negatives' } }"
-          >negatives</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'maps' } }"
-          >published maps</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'drawings' } }"
-          >drawings</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'objects' } }"
-          >objects</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'pictures' } }"
-          >pictures</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'ephemera' } }"
-          >ephemera</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'journals' } }"
-          >journals</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'prints' } }"
-          >prints</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'medals' } }"
-          >medals</router-link
-        >,
-        <router-link
-          :to="{ path: '/viewer', query: { bucket: 'manuscriptMaps' } }"
-          >unpublished maps</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'paintings' } }"
-          >paintings</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'coin' } }"
-          >coins</router-link
-        >,
-        <router-link
-          :to="{ path: '/viewer', query: { bucket: 'archTechDrawings' } }"
-          >architectural drawings</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'newspapers' } }"
-          >newspapers</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'posters' } }"
-          >posters</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'stamps' } }"
-          >stamps</router-link
-        >,
-        <router-link :to="{ path: '/viewer', query: { bucket: 'video' } }"
-          >video</router-link
-        >, and
-        <router-link
-          :to="{ path: '/viewer', query: { bucket: 'manuscriptNotatedMusic' } }"
-          >notated music</router-link
-        >. These categories comprise about 1.2 million files which were then
+        item files. I selected a subset of {{ total }} categories (or “formats”
+        in library parlance) to work with:
+        <span v-for="(bucket, index) in bucketNames" :key="'b_' + index">
+          <span v-if="index === bucketNames.length - 1"> and </span>
+          <router-link :to="pathFor(sort, { key: bucket.key })">{{
+            bucket.name
+          }}</router-link>
+          <span v-if="index < bucketNames.length - 1">, </span>
+          <span v-if="index === bucketNames.length - 1">.</span>
+        </span>
+        These categories comprise about 1.2 million files which were then
         analysed with different algorithms to produce Aereo.
       </p>
       <p>
@@ -132,17 +96,16 @@
         would be interesting to explore an interface that would combine both
         audio and images).
       </p>
-      <p>[ image ]</p>
       <p>
         If you look at the formats available currently in the
         <a href="https://collection.sl.nsw.gov.au/digital">library website</a>
-        you will notice only 11 and I have just mentioned 23. That is because I
-        had access to a bit more granular data about the items. This data is not
-        surfaced directly in the site either because it is incomplete or
-        otherwise not up to the high standards the library has in serving its
-        materials to patrons <mark>(need to double-check)</mark>. You will
-        probably see things that seem off and that is to be expected. For any
-        questions regarding the categorization, you can
+        you will notice only 11 and I have just mentioned {{ total + 3 }}. That
+        is because I had access to a bit more granular data about the items.
+        This data is not surfaced directly in the site either because it is
+        incomplete or otherwise not up to the high standards the library has in
+        serving its materials to patrons <mark>(need to double-check)</mark>.
+        You will probably see things that seem off and that is to be expected.
+        For any questions regarding the categorization, you can
         <a
           href="https://www.sl.nsw.gov.au/research-and-collections/ask-librarian"
           >ask a librarian</a
@@ -152,11 +115,30 @@
     <section class="sorting">
       <h2 id="sorting-and-machine-learning">Sorting and machine learning</h2>
       <p>
-        Aereo comprises about 1.2 million files in 20 different categories that
-        can each be organized in four ways: unsorted, year, colour, and “look
-        alike”.
+        Aereo comprises about 1.2 million files in {{ total }} different
+        categories that can each be organized in four ways: unsorted, year,
+        colour, and “look alike”.
       </p>
-      <p>[ animated gif or video of different sorting in action ]</p>
+      <video
+        class="video"
+        :src="`${baseUrl}assets/sorting.mp4`"
+        preload
+        loop
+        autoplay
+        muted
+      >
+        <p>
+          This displays a video. You can
+          <a
+            :href="`${baseUrl}assets/sorting.mp4`"
+            target="_blank"
+            rel="noopener"
+            >download the video</a
+          >
+          instead.
+        </p>
+      </video>
+
       <h3 id="unsorted">1. Unsorted</h3>
       <p>
         Pretty self-explanatory, except that it isn’t
@@ -198,7 +180,32 @@
         information such as its histogram. This information is displayed above
         the selected image:
       </p>
-      <p>[ image of colour palette ]</p>
+      <div class="palettes">
+        <img
+          class="image-palette"
+          :src="`${baseUrl}assets/palette1@0.5x.png`"
+          alt="An example color palette"
+          :srcset="
+            `${baseUrl}assets/palette1.png 1x, ${baseUrl}assets/palette1@2x.png 2x`
+          "
+        />
+        <img
+          class="image-palette"
+          :src="`${baseUrl}assets/palette2@0.5x.png`"
+          alt="An example color palette"
+          :srcset="
+            `${baseUrl}assets/palette2.png 1x, ${baseUrl}assets/palette2@2x.png 2x`
+          "
+        />
+        <img
+          class="image-palette"
+          :src="`${baseUrl}assets/palette3@0.5x.png`"
+          alt="An example color palette"
+          :srcset="
+            `${baseUrl}assets/palette3.png 1x, ${baseUrl}assets/palette3@2x.png 2x`
+          "
+        />
+      </div>
       <p>
         As a bonus, clicking on a colour will copy its hexadecimal red, green,
         blue value (e.g.: “#FF0000” for red) to the clipboard.
@@ -217,7 +224,14 @@
           >better viewed when image thumbnails are not visible</router-link
         >:
       </p>
-      <p>[ image of colour sorting ]</p>
+      <img
+        class="standalone image-colour"
+        :src="`${baseUrl}assets/colour@0.5x.png`"
+        alt="Colour sorting example"
+        :srcset="
+          `${baseUrl}assets/colour.png 1x, ${baseUrl}assets/colour@2x.png 2x`
+        "
+      />
       <h3 id="“look-alike”">4. “Look alike”</h3>
       <p>
         The Library has done some
@@ -237,7 +251,44 @@
         level of uncertainty, zeroes or ones will rarely come up, and more often
         values in between will be returned:
       </p>
-      <p>[ example images with word values ]</p>
+      <div class="predictions">
+        <div>
+          <img
+            class="image-predictions"
+            :src="`${baseUrl}assets/predictions1@0.5x.jpg`"
+            alt="An example of (very wrong) text predictions"
+            :srcset="
+              `${baseUrl}assets/predictions1.jpg 1x, ${baseUrl}assets/predictions1@2x.jpg 2x`
+            "
+          />
+          <img
+            class="image-predictions"
+            :src="`${baseUrl}assets/predictions2@0.5x.jpg`"
+            alt="An example of (very wrong) text predictions"
+            :srcset="
+              `${baseUrl}assets/predictions2.jpg 1x, ${baseUrl}assets/predictions2@2x.jpg 2x`
+            "
+          />
+        </div>
+        <div>
+          <img
+            class="image-predictions"
+            :src="`${baseUrl}assets/predictions3@0.5x.jpg`"
+            alt="An example of (very wrong) text predictions"
+            :srcset="
+              `${baseUrl}assets/predictions3.jpg 1x, ${baseUrl}assets/predictions3@2x.jpg 2x`
+            "
+          />
+          <img
+            class="image-predictions"
+            :src="`${baseUrl}assets/predictions4@0.5x.jpg`"
+            alt="An example of (very wrong) text predictions"
+            :srcset="
+              `${baseUrl}assets/predictions4.jpg 1x, ${baseUrl}assets/predictions4@2x.jpg 2x`
+            "
+          />
+        </div>
+      </div>
       <p>
         Machine learning algorithms are only as good as their training data:
         somebody has previously classified by hand as many images as possible
@@ -256,8 +307,12 @@
         <em>look similar to the algorithm</em>. The algorithm will make
         mistakes, classifying an image as, for example, a Frisbee, but it will
         make similar mistakes for images that look similar (other images that
-        look like Frisbees). The complete process of converting these values
-        into a similarity score will be described in a separate post but you can
+        look like Frisbees). Notice how, in the two black and white images
+        above, the algorithm has mistakenly classified them as “barbershop” and
+        “barber chair” but the images do look similar: black and white, person
+        standing holding something, indoors in a relatively asceptic
+        environment. The complete process of converting these values into a
+        similarity score will be described in a separate post but you can
         <router-link
           :to="{
             path: '/viewer',
@@ -266,7 +321,14 @@
           >see it in action in paintings</router-link
         >.
       </p>
-      <p>[ image of paintings sorted by similarity ]</p>
+      <img
+        class="standalone image-similarity"
+        :src="`${baseUrl}assets/similarity@0.5x.jpg`"
+        alt="Images sorted by similarity"
+        :srcset="
+          `${baseUrl}assets/similarity.jpg 1x, ${baseUrl}assets/similarity@2x.jpg 2x`
+        "
+      />
     </section>
     <section class="data">
       <h2 id="its-all-yours">It’s all yours!</h2>
@@ -408,14 +470,14 @@
           href="https://dxlab.sl.nsw.gov.au/"
           rel="noopener"
           target="_blank"
-          ><img :src="baseUrl + 'logo-dxlab.png'"
+          ><img :src="baseUrl + 'assets/logo-dxlab.png'"
         /></a>
         <a
           class="nsw-link"
           href="http://sl.nsw.gov.au/"
           rel="noopener"
           target="_blank"
-          ><img :src="baseUrl + 'logo-slnsw-white.png'"
+          ><img :src="baseUrl + 'assets/logo-slnsw-white.png'"
         /></a>
       </div>
     </footer>
@@ -424,6 +486,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+
 import SpecialCare from '@/components/SpecialCare'
 
 const BASE_URL = process.env.BASE_URL
@@ -433,6 +497,23 @@ export default {
   data() {
     return {
       baseUrl: BASE_URL
+    }
+  },
+  computed: {
+    total() {
+      return this.bucketNames.length
+    },
+    bucketNames() {
+      return Object.values(this.stuff)
+    },
+    ...mapState(['stuff'])
+  },
+  methods: {
+    pathFor(sort, bucket) {
+      const path = { path: '/viewer', query: {} }
+      if (bucket) path.query.bucket = bucket.key
+      if (sort && sort !== 'default') path.query.sort = sort
+      return path
     }
   }
 }
@@ -496,6 +577,79 @@ table {
 
   .name {
     text-align: left;
+  }
+}
+
+.hero {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: -1;
+  filter: brightness(0.75);
+  mask-image: linear-gradient(
+    transparentize($bg-color, 0.75),
+    transparent 80vh
+  );
+}
+
+.lead {
+  font-size: 1.5rem;
+}
+
+.enter {
+  font-size: 1.5rem;
+  background-color: $main-color;
+  color: $bg-color;
+  text-decoration: none;
+  display: block;
+  width: 8rem;
+  text-align: center;
+  border-radius: 0.2rem;
+  margin: 2rem auto;
+  padding: 0.25rem 1rem;
+}
+
+.standalone {
+  display: block;
+  margin: 2rem auto;
+}
+
+.video {
+  display: block;
+  max-width: 70%;
+  margin: 2rem auto;
+}
+
+.palettes,
+.predictions {
+  display: flex;
+  margin: 2rem auto;
+}
+
+.predictions {
+  flex-direction: column;
+
+  div {
+    display: flex;
+    margin-bottom: 1px;
+  }
+}
+
+.image-predictions {
+  margin-right: 1px;
+
+  &:last-child {
+    margin-right: 0;
+  }
+}
+
+.image-palette {
+  margin-right: 1px;
+
+  &:last-child {
+    margin-right: 0;
   }
 }
 

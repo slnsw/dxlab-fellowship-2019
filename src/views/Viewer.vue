@@ -14,7 +14,7 @@
       <router-link
         class="button-about"
         :style="{
-          backgroundImage: 'url(' + baseUrl + 'logo-txt.svg)'
+          backgroundImage: 'url(' + baseUrl + 'assets/logo-txt.svg)'
         }"
         to="/"
       >

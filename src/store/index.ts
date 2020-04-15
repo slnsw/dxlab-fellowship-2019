@@ -267,7 +267,7 @@ export default new Vuex.Store({
       }
     },
     async loadFileImage({ commit }, { id, url }) {
-      const notFoundImg = BASE_URL + 'not_found.svg'
+      const notFoundImg = BASE_URL + 'assets/not_found.svg'
       try {
         const response = await instance.get(url)
         const image = response.data.file.image.variants['300_300'].url
