@@ -4,6 +4,8 @@ module.exports = {
       entry: 'src/main.ts',
       template: 'public/index.html',
       filename: 'index.html',
+      description:
+        'A broad-based and serendipitous exploration of the Library’s collection.',
       title: 'Aereo | a DX Lab project'
     }
   },

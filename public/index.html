@@ -8,10 +8,12 @@
       content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
 
+    <meta property="og:site_name" content="<%= htmlWebpackPlugin.options.title %>">
+        <meta property="og:type" content="website">
     <meta property="og:title" content="Aereo | DX Lab - State Library of NSW" />
     <meta
       property="og:description"
-      content="A broad-based and serendipitous exploration of the Library’s collection."
+      content="<%= htmlWebpackPlugin.options.description %>"
     />
     <meta
       property="og:image"
@@ -19,6 +21,7 @@
     />
     <meta property="og:url" content="<%= VUE_APP_FINAL_URL %>" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@statelibrarynsw">
 
     <link rel="icon" href="<%= BASE_URL %>favicon.ico" />
     <title><%= htmlWebpackPlugin.options.title %></title>
