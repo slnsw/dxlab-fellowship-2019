@@ -443,8 +443,9 @@ export default {
 
 .wrapper {
   min-height: 100%;
-  max-width: 60ch;
+  max-width: 70ch;
   margin: 0 auto;
+  padding: 0 1rem;
 }
 
 section {
@@ -455,6 +456,12 @@ h1 img {
   width: 8rem;
   height: 8rem;
   margin: 1rem 0 1rem -3rem;
+
+  @media screen and (max-width: 90ch) {
+    width: 6rem;
+    height: 6rem;
+    margin-left: -1rem;
+  }
 }
 
 h2 {

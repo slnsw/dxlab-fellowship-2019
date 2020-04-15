@@ -324,16 +324,17 @@ export default {
 }
 .button-about {
   position: absolute;
-  left: 0.25rem;
-  top: 0.25rem;
+  left: 0;
+  top: 0.5rem;
   width: 3rem;
   height: 3rem;
   z-index: 2;
   background-size: contain;
 
   @media screen and (max-width: 990px) {
-    width: 2rem;
-    height: 2rem;
+    top: 0.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
   }
 }
 
