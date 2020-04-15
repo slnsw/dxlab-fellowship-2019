@@ -28,11 +28,12 @@ const routes = [
     path: '/viewer',
     name: 'Viewer',
     meta: {
-      title: 'Aereo',
+      title: 'Aereo | a DX Lab project',
       metaTags: [
         {
           name: 'description',
-          content: 'Aereo.'
+          content:
+            'A broad-based and serendipitous exploration of the Library’s collection.'
         },
         {
           property: 'viewport',

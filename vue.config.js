@@ -4,7 +4,7 @@ module.exports = {
       entry: 'src/main.ts',
       template: 'public/index.html',
       filename: 'index.html',
-      title: 'Aereo'
+      title: 'Aereo | a DX Lab project'
     }
   },
   // publicPath:
