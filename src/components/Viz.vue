@@ -195,8 +195,8 @@ const createEmptyAtlases = (count) => {
 }
 
 const createText = (text, x, y, z, scale) => {
-  text = text ? text : '[undefined]'
-  if (isNaN(text) && text.indexOf('|||') !== -1) text = text.split('|||')[1]
+  text = text || '[undefined]'
+  if (isNaN(text) && text.includes('|||')) text = text.split('|||')[1]
   const myText = new SpriteText(text)
   myText.fontFace = 'monospace'
   myText.textHeight = TEXT_SIZE * scale
@@ -271,23 +271,6 @@ export default {
       'loadingBucket'
     ])
   },
-  mounted() {
-    this.init()
-    this.createControls()
-    this.paintBuckets()
-    this.moveCameraTo(this.bucketsGroup, SCENE_HOME_PADDING)
-    this.animate()
-    window.addEventListener('resize', this.onResize)
-    document.addEventListener('mouseout', this.onCanvasMouseOut)
-    if (this.currentBucket && this.bucketObjects) {
-      this.enterBucket(this.bucketObjects[this.currentBucket.key])
-    }
-  },
-  beforeDestroy() {
-    // Unregister resize before destroying this Vue instance
-    window.removeEventListener('resize', this.onResize)
-    document.removeEventListener('mouseout', this.onCanvasMouseOut)
-  },
   watch: {
     $route(to) {
       const sort = to.query.sort ? to.query.sort : 'default'
@@ -330,6 +313,23 @@ export default {
         this.hideCursor()
       }
     }
+  },
+  mounted() {
+    this.init()
+    this.createControls()
+    this.paintBuckets()
+    this.moveCameraTo(this.bucketsGroup, SCENE_HOME_PADDING)
+    this.animate()
+    window.addEventListener('resize', this.onResize)
+    document.addEventListener('mouseout', this.onCanvasMouseOut)
+    if (this.currentBucket && this.bucketObjects) {
+      this.enterBucket(this.bucketObjects[this.currentBucket.key])
+    }
+  },
+  beforeDestroy() {
+    // Unregister resize before destroying this Vue instance
+    window.removeEventListener('resize', this.onResize)
+    document.removeEventListener('mouseout', this.onCanvasMouseOut)
   },
   methods: {
     backToEverything() {
@@ -435,9 +435,9 @@ export default {
       if (!this.selectedBucket) return
       const tileCount = this.selectedBucket.count
 
-      const smallAtlasCount = Math.pow(SMALL_ATLAS_SIZE / ATLAS_TILE_SIZE, 2)
+      const smallAtlasCount = (SMALL_ATLAS_SIZE / ATLAS_TILE_SIZE) ** 2
 
-      const bigAtlasCount = Math.pow(BIG_ATLAS_SIZE / ATLAS_TILE_SIZE, 2)
+      const bigAtlasCount = (BIG_ATLAS_SIZE / ATLAS_TILE_SIZE) ** 2
 
       let countPerAtlas, atlasSize
 
@@ -489,8 +489,8 @@ export default {
         this.filesObject.material.uniforms.showAtlases.value = 0.0
         this.filesObject.material.uniforms.showAtlases.needsUpdate = true
       } else if (this.atlases[this.currentBucket.key]) {
-        const arr = [],
-          observable = this.atlases[this.currentBucket.key]
+        const arr = []
+        const observable = this.atlases[this.currentBucket.key]
         for (let i = 0; i < Number.POSITIVE_INFINITY; i++) {
           if (observable[i]) arr.push(observable[i])
           else break
@@ -522,8 +522,8 @@ export default {
         atlasCount
       } = this.calculateAtlases()
 
-      let atlases = [],
-        loadedAtlases = false
+      let atlases = []
+      let loadedAtlases = false
       if (this.showAtlases) {
         const fetched = this.fetchAtlases(atlasCount)
         atlases = fetched.atlases
@@ -902,7 +902,7 @@ export default {
         this.filesObject.material.uniforms.pointScale.needsUpdate = true
       }
     },
-    onCanvasMouseOut(event) {
+    onCanvasMouseOut() {
       this.lastFileId = null
     },
     onCanvasMouseUp(event) {

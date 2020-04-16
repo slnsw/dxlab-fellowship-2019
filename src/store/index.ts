@@ -1,12 +1,10 @@
+/* eslint-disable dot-notation */
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
-const axios = require('axios').default
 
 import Vue from 'vue'
 import Vuex from 'vuex'
-
-Vue.use(Vuex)
 
 import bodybuilder from 'bodybuilder'
 import csv from 'csvtojson'
@@ -14,6 +12,10 @@ import * as THREE from 'three'
 
 import AjaxTextureLoader from '@/utils/AjaxTextureLoader'
 import STUFF from '@/utils/data'
+
+Vue.use(Vuex)
+
+const axios = require('axios').default
 
 const MAX_WINDOW_SIZE = 20000
 const API_KEY = process.env.VUE_APP_API_KEY

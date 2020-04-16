@@ -3,7 +3,6 @@
     id="app-care"
     app-root="#app"
     dialog-root="#dialog-root"
-    @dialog-ref="assignDialogRef"
     :class-names="{
       base: 'dialog',
       overlay: 'dialog-overlay',
@@ -12,6 +11,7 @@
       document: 'dialog-document',
       closeButton: 'dialog-close'
     }"
+    @dialog-ref="assignDialogRef"
   >
     <template v-slot:title>
       <span>Special Care Notice</span>

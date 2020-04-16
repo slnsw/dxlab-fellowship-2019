@@ -1,8 +1,9 @@
 import Vue from 'vue'
+import VueA11yDialog from 'vue-a11y-dialog'
+
 import App from './App.vue'
 import router from './router'
 import store from './store'
-import VueA11yDialog from 'vue-a11y-dialog'
 
 Vue.config.productionTip = false
 

@@ -23,7 +23,7 @@
         <em>Aereo</em> is an attempt at looking at library digital collections
         as a whole, rather than a list of discrete items or files in response to
         a keyword search. By displaying everything<sup class="footnote-ref"
-          ><a href="#fn1" id="fnref1">1</a></sup
+          ><a id="fnref1" href="#fn1">1</a></sup
         >
         in a single interface there is hopefully more opportunity for a
         broad-based and serendipitous exploration of the collection.
@@ -374,7 +374,7 @@
             <th class="name">Name</th>
             <th class="files">
               File count<sup class="footnote-ref"
-                ><a href="#fn2" id="fnref2">2</a></sup
+                ><a id="fnref2" href="#fn2">2</a></sup
               >
             </th>
             <th class="size">Size</th>

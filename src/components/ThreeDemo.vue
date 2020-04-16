@@ -262,7 +262,7 @@ export default {
 
       // material
       const pmaterial = new THREE.ShaderMaterial({
-        uniforms: uniforms,
+        uniforms,
         vertexShader: vShader,
         fragmentShader: fShader,
         transparent: true

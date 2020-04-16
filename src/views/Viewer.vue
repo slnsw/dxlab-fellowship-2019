@@ -10,7 +10,7 @@
       </div>
       <div>Loading...</div>
     </div>
-    <div v-if="loaded" class="grid" id="viewer">
+    <div v-if="loaded" id="viewer" class="grid">
       <router-link
         class="button-about"
         :style="{
@@ -55,18 +55,18 @@
         </h1>
       </div>
       <div
-        :class="{ file: true, hidden: !fileData.id || fileHidden }"
         ref="file"
+        :class="{ file: true, hidden: !fileData.id || fileHidden }"
       >
         <button class="button-hide" type="button" @click="fileHidden = true">
           hide
         </button>
         <div v-if="fileData.palette" class="palette">
           <span
-            class="color"
             v-for="(color, index) in fileData.palette"
-            title="click to copy this color to clipboard in #RRGGBB format"
             :key="index"
+            class="color"
+            title="click to copy this color to clipboard in #RRGGBB format"
             :style="{
               backgroundColor: color.color,
               width: color.percent * 100 + '%'
@@ -74,7 +74,7 @@
             @click="copyColor(color.color)"
           ></span>
         </div>
-        <div class="file-loading" v-if="!fileData.title">
+        <div v-if="!fileData.title" class="file-loading">
           Loading...
         </div>
         <a :href="fileUrl" rel="noopener" target="_blank">
@@ -123,9 +123,9 @@
         <div class="atlas">
           <label for="atlas">
             <input
-              type="checkbox"
               id="atlas"
               v-model="atlasShown"
+              type="checkbox"
               @change="confirmAtlas"
             />
             show thumbnails
@@ -136,7 +136,6 @@
         id="app-bigfiles"
         app-root="#viewer"
         dialog-root="#dialog-root"
-        @dialog-ref="assignDialogRef"
         :class-names="{
           base: 'dialog',
           overlay: 'dialog-overlay',
@@ -145,6 +144,7 @@
           document: 'dialog-document',
           closeButton: 'dialog-close'
         }"
+        @dialog-ref="assignDialogRef"
       >
         <template v-slot:title>
           <span>Big files alert!</span>
@@ -167,7 +167,7 @@
           </div>
         </div>
       </a11y-dialog>
-      <viz class="viz" ref="viz" />
+      <viz ref="viz" class="viz" />
     </div>
     <SpecialCare />
   </div>
@@ -196,54 +196,7 @@ export default {
       fileHidden: false
     }
   },
-  watch: {
-    fileData(newData) {
-      if (newData.id) this.fileHidden = false
-    }
-  },
-  methods: {
-    pathFor(sort, bucket) {
-      const path = { path: '/viewer', query: {} }
-      if (bucket) path.query.bucket = bucket.key
-      if (sort && sort !== 'default') path.query.sort = sort
-      return path
-    },
-    copyColor(color) {
-      navigator.clipboard.writeText(color)
-    },
-    acceptAtlas() {
-      this.atlasShown = true
-      this.$store.commit('setConfirmedAtlas', true)
-      this.$store.commit('setShowAtlases', true)
-      if (this.dialog) this.dialog.hide()
-    },
-    cancelAtlas() {
-      this.atlasShown = false
-      this.$store.commit('setConfirmedAtlas', true)
-      this.$store.commit('setShowAtlases', false)
-      if (this.dialog) this.dialog.hide()
-    },
-    confirmAtlas() {
-      if (this.atlasShown && !this.confirmedAtlas) {
-        if (this.dialog) this.dialog.show()
-      } else {
-        this.$store.commit('setShowAtlases', this.atlasShown)
-      }
-    },
-    assignDialogRef(dialog) {
-      this.dialog = dialog
-      if (!this.dialog) return
-      this.dialog.on('hide', () => {
-        if (!this.confirmedAtlas) {
-          this.atlasShown = !this.atlasShown
-        }
-      })
-    }
-  },
   computed: {
-    bucket() {
-      return this.currentBucket ? this.currentBucket.key : null
-    },
     trimmedTitle() {
       return this.fileData.title
         ? this.fileData.title.length > MAX_TITLE_LENGTH
@@ -293,6 +246,12 @@ export default {
       'showAtlases'
     ])
   },
+  watch: {
+    fileData(newData) {
+      if (newData.id) this.fileHidden = false
+    }
+  },
+
   created() {
     this.$store.commit('setBucket', null)
     this.$store.commit('setFileData', {})
@@ -300,6 +259,45 @@ export default {
     if (this.$route.query.bucket)
       this.$store.commit('setBucketKey', this.$route.query.bucket)
     this.$store.dispatch('getBuckets')
+  },
+  methods: {
+    pathFor(sort, bucket) {
+      const path = { path: '/viewer', query: {} }
+      if (bucket) path.query.bucket = bucket.key
+      if (sort && sort !== 'default') path.query.sort = sort
+      return path
+    },
+    copyColor(color) {
+      navigator.clipboard.writeText(color)
+    },
+    acceptAtlas() {
+      this.atlasShown = true
+      this.$store.commit('setConfirmedAtlas', true)
+      this.$store.commit('setShowAtlases', true)
+      if (this.dialog) this.dialog.hide()
+    },
+    cancelAtlas() {
+      this.atlasShown = false
+      this.$store.commit('setConfirmedAtlas', true)
+      this.$store.commit('setShowAtlases', false)
+      if (this.dialog) this.dialog.hide()
+    },
+    confirmAtlas() {
+      if (this.atlasShown && !this.confirmedAtlas) {
+        if (this.dialog) this.dialog.show()
+      } else {
+        this.$store.commit('setShowAtlases', this.atlasShown)
+      }
+    },
+    assignDialogRef(dialog) {
+      this.dialog = dialog
+      if (!this.dialog) return
+      this.dialog.on('hide', () => {
+        if (!this.confirmedAtlas) {
+          this.atlasShown = !this.atlasShown
+        }
+      })
+    }
   }
 }
 </script>
