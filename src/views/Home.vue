@@ -76,11 +76,11 @@
         "
       />
       <p>
-        Not every item is (or will be) photographed by SLNSW to be published
-        online. As of early February 2020, when this fellowship began and I
-        received a bulk data set, SLNSW had provided access to over two million
-        item files. I selected a subset of {{ total }} categories (or “formats”
-        in library parlance) to work with:
+        Not every item is (or will be) photographed by the Library to be
+        published online. As of early February 2020, when this fellowship began
+        and I received a bulk data set, the Library had provided access to over
+        two million item files. I selected a subset of {{ total }} categories
+        (or “formats” in library parlance) to work with:
         <span v-for="(bucket, index) in bucketNames" :key="'b_' + index">
           <span v-if="index === bucketNames.length - 1"> and </span>
           <router-link :to="pathFor(sort, { key: bucket.key })">{{
@@ -165,7 +165,7 @@
       <h3 id="year">2. Year</h3>
       <p>
         Dates are another common criteria for search interface sorting, that is,
-        when items <em>do</em> have a date associated with them. In the SLNSW
+        when items <em>do</em> have a date associated with them. In the Library
         data set an item can have multiple dates or none at all. For the purpose
         of this project I chose to work with what the data set calls
         <code>published.date_creation</code> and
@@ -180,7 +180,7 @@
       <h3 id="colour">3. Colour</h3>
       <p>
         I wanted to provide new ways of sorting and looking at the items, beyond
-        of what already existed in the SLNSW data set. I processed all 2 million
+        of what already existed in the data set. I processed all 2 million
         images through a
         <a href="http://mkweb.bcgsc.ca/colorsummarizer/">colour summarizer</a>
         that extracts the most prominent colours from an image as well as other
@@ -353,17 +353,17 @@
       <ul>
         <li>
           <a href="https://github.com/slnsw/dxlab-fellowship-2019"
-            >Repository for <em>Aereo</em> interface</a
+            >Code repository for <em>Aereo</em> interface</a
           >
         </li>
         <li>
           <a href="https://github.com/mgiraldo/image-utils"
-            >Repository for image colour and similarity processing</a
+            >Code repository for image colour and similarity processing</a
           >
         </li>
         <li>
           <a href="https://github.com/mgiraldo/aereo-pixels"
-            >Repository for thumbnail processing for <em>Aereo</em></a
+            >Code repository for thumbnail processing for <em>Aereo</em></a
           >
         </li>
       </ul>
@@ -425,7 +425,7 @@
           <p>
             [1] “everything” is a complicated word in library land and will be
             addressed in a future post but for now let’s say it means everything
-            that was digitised at SLNSW by early February 2020 and was
+            that was digitised at the Library by early February 2020 and was
             classified in the selected categories.
             <a href="#fnref1" class="footnote-backref">↩︎</a>
           </p>
