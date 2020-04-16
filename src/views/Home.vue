@@ -20,9 +20,9 @@
         />
       </div>
       <p class="lede">
-        Aereo is an attempt at looking at library digital collections as a
-        whole, rather than a list of discrete items or files in response to a
-        keyword search. By displaying everything<sup class="footnote-ref"
+        <em>Aereo</em> is an attempt at looking at library digital collections
+        as a whole, rather than a list of discrete items or files in response to
+        a keyword search. By displaying everything<sup class="footnote-ref"
           ><a href="#fn1" id="fnref1">1</a></sup
         >
         in a single interface there is hopefully more opportunity for a
@@ -54,11 +54,11 @@
           >a photograph of a scale model</a
         >
         during the construction phase of the project, in that same collection.
-        Aereo is only concerned with the digital surrogates of these items: the
-        <em>files</em>, photographs taken by library staff to these items. The
-        categories and years for these files are inherited from the items they
-        portray. An item might fall under multiple categories (e.g.: medals are
-        also objects) and can also have multiple files, like
+        <em>Aereo</em> is only concerned with the digital surrogates of these
+        items: the <em>files</em>, photographs taken by library staff to these
+        items. The categories and years for these files are inherited from the
+        items they portray. An item might fall under multiple categories (e.g.:
+        medals are also objects) and can also have multiple files, like
         <a href="https://collection.sl.nsw.gov.au/record/n88X6WJn"
           >this model of the Globe Theatre, London</a
         >
@@ -90,14 +90,14 @@
           <span v-if="index === bucketNames.length - 1">.</span>
         </span>
         These categories comprise about 1.2 million files which were then
-        analysed with different algorithms to produce Aereo.
+        analysed with different algorithms to produce <em>Aereo</em>.
       </p>
       <p>
         This selection left out, for example, books (some interesting book
         covers but mostly text and remember that each image of each page of
-        every book would be present in Aereo and we’re talking of about 1.5
-        million books here so… skipped this one), audio and music (although it
-        would be interesting to explore an interface that would combine both
+        every book would be present in <em>Aereo</em> and we’re talking of about
+        1.5 million books here so… skipped this one), audio and music (although
+        it would be interesting to explore an interface that would combine both
         audio and images).
       </p>
       <p>
@@ -119,9 +119,9 @@
     <section class="sorting">
       <h2 id="sorting-and-machine-learning">Sorting and machine learning</h2>
       <p>
-        Aereo comprises about 1.2 million files in {{ total }} different
-        categories that can each be organized in four ways: unsorted, year,
-        colour, and “look alike”.
+        <em>Aereo</em> comprises about 1.2 million files in
+        {{ total }} different categories that can each be organized in four
+        ways: unsorted, year, colour, and “look alike”.
       </p>
       <video
         class="video"
@@ -249,15 +249,15 @@
           keywords</a
         >
         for item files called TIGER. A similar process is used for the “look
-        alike” sorting in Aereo but, while TIGER aims to provide a description
-        of an individual file, I use it to determine how similar images are to
-        each other. The process basically provides a score between 0 and 1 for
-        4,096 words for every one of the 2 million images. This score represents
-        how confident the algorithm is on a given word being present in an
-        image: 0 being total certainty it <em>is not</em> present and 1 being
-        total certainty it <em>is</em> present. Since there will always be some
-        level of uncertainty, zeroes or ones will rarely come up, and more often
-        values in between will be returned:
+        alike” sorting in <em>Aereo</em> but, while TIGER aims to provide a
+        description of an individual file, I use it to determine how similar
+        images are to each other. The process basically provides a score between
+        0 and 1 for 4,096 words for every one of the 2 million images. This
+        score represents how confident the algorithm is on a given word being
+        present in an image: 0 being total certainty it <em>is not</em> present
+        and 1 being total certainty it <em>is</em> present. Since there will
+        always be some level of uncertainty, zeroes or ones will rarely come up,
+        and more often values in between will be returned:
       </p>
       <div class="predictions first">
         <img
@@ -304,12 +304,12 @@
         companies that have proprietary versions charge a lot of money for their
         use. Fortunately there are open source data sets, one of which, called
         <a href="http://image-net.org/about-stats">Imagenet</a> is in use in
-        Aereo. Imagenet is trained on contemporary images, so it is “looking”
-        for things like “food processor”, “vacuum cleaner”, or “Frisbee”, which
-        may not be present in a collection that spans hundreds of years to the
-        past and, conversely, contains images for words not present in the
-        Imagenet vocabulary. While these words won’t be useful to describe the
-        images themselves, it can be useful to find images that
+        <em>Aereo</em>. Imagenet is trained on contemporary images, so it is
+        “looking” for things like “food processor”, “vacuum cleaner”, or
+        “Frisbee”, which may not be present in a collection that spans hundreds
+        of years to the past and, conversely, contains images for words not
+        present in the Imagenet vocabulary. While these words won’t be useful to
+        describe the images themselves, it can be useful to find images that
         <em>look similar to the algorithm</em>. The algorithm will make
         mistakes, classifying an image as, for example, a Frisbee, but it will
         make similar mistakes for images that look similar (other images that
@@ -340,10 +340,10 @@
     <section class="data">
       <h2 id="its-all-yours">It’s all yours!</h2>
       <p>
-        Aereo is only an interface to a bunch of data that I have produced with
-        the help of the awesome DX-Lab and web teams of the State Library of New
-        South Wales and all of it is available for you to download and do
-        whatever you want to with it.
+        <em>Aereo</em> is only an interface to a bunch of data that I have
+        produced with the help of the awesome DX-Lab and web teams of the State
+        Library of New South Wales and all of it is available for you to
+        download and do whatever you want to with it.
         <strong
           >Processing and classifying two million images was no small
           task</strong
@@ -353,7 +353,7 @@
       <ul>
         <li>
           <a href="https://github.com/slnsw/dxlab-fellowship-2019"
-            >Repository for Aereo interface</a
+            >Repository for <em>Aereo</em> interface</a
           >
         </li>
         <li>
@@ -363,7 +363,7 @@
         </li>
         <li>
           <a href="https://github.com/mgiraldo/aereo-pixels"
-            >Repository for thumbnail processing for Aereo</a
+            >Repository for thumbnail processing for <em>Aereo</em></a
           >
         </li>
       </ul>
