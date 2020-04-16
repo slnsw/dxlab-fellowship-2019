@@ -1,7 +1,15 @@
 {
-  "name": "viewer",
-  "version": "0.1.0",
-  "private": true,
+  "name": "aereo",
+  "description": "A broad-based and serendipitous exploration of the Library’s collection.",
+  "version": "0.8.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/slnsw/dxlab-fellowship-2019.git"
+  },
+  "keywords": [],
+  "author": "Mauricio Giraldo Arteaga",
+  "license": "Apache2",
+  "homepage": "https://github.com/slnsw/dxlab-fellowship-2019",
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build --mode production",
@@ -22,6 +30,7 @@
     "vuex": "^3.1.2"
   },
   "devDependencies": {
+    "@nuxtjs/eslint-config": "^2.0.2",
     "@typescript-eslint/eslint-plugin": "^2.18.0",
     "@typescript-eslint/parser": "^2.18.0",
     "@vue/cli-plugin-eslint": "~4.2.0",
