@@ -19,7 +19,7 @@
           "
         />
       </div>
-      <p class="lead">
+      <p class="lede">
         Aereo is an attempt at looking at library digital collections as a
         whole, rather than a list of discrete items or files in response to a
         keyword search. By displaying everything<sup class="footnote-ref"
@@ -609,7 +609,7 @@ table {
   }
 }
 
-.lead {
+.lede {
   font-size: 1.5rem;
   text-align: center;
 
