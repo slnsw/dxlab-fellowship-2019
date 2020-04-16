@@ -125,12 +125,15 @@
       </p>
       <video
         class="video"
-        :src="`${baseUrl}assets/sorting.mp4`"
+        type="video/mp4"
+        height="auto"
         preload
         loop
         autoplay
         muted
+        playsInline
       >
+        <source :src="`${baseUrl}assets/sorting.mp4`" type="video/mp4" />
         <p>
           This displays a video. You can
           <a
@@ -596,6 +599,7 @@ table {
     transparentize($bg-color, 0.75),
     transparent 80vh
   );
+  overflow: hidden;
 }
 
 .image-hero {
@@ -633,7 +637,7 @@ table {
 
 .video {
   display: block;
-  max-width: 70%;
+  width: 70%;
   margin: 2rem auto;
 }
 
