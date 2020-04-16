@@ -611,6 +611,7 @@ table {
 
 .lead {
   font-size: 1.5rem;
+  text-align: center;
 
   @media screen and (max-width: 90ch) {
     font-size: 1.2rem;
