@@ -2,7 +2,11 @@
   <div class="wrapper">
     <section class="intro">
       <h1 id="aereo">
-        <img :src="baseUrl + 'assets/logo-txt.svg'" alt="Aereo" />
+        <img
+          class="logo-aereo"
+          :src="baseUrl + 'assets/logo-txt.svg'"
+          alt="Aereo"
+        />
         <span class="visuallyhidden">Aereo</span>
       </h1>
       <div class="hero">
@@ -252,43 +256,41 @@
         level of uncertainty, zeroes or ones will rarely come up, and more often
         values in between will be returned:
       </p>
-      <div class="predictions">
-        <div>
-          <img
-            class="image-predictions"
-            :src="`${baseUrl}assets/predictions1@0.5x.jpg`"
-            alt="An example of (very wrong) text predictions"
-            :srcset="
-              `${baseUrl}assets/predictions1.jpg 1x, ${baseUrl}assets/predictions1@2x.jpg 2x`
-            "
-          />
-          <img
-            class="image-predictions"
-            :src="`${baseUrl}assets/predictions2@0.5x.jpg`"
-            alt="An example of (very wrong) text predictions"
-            :srcset="
-              `${baseUrl}assets/predictions2.jpg 1x, ${baseUrl}assets/predictions2@2x.jpg 2x`
-            "
-          />
-        </div>
-        <div>
-          <img
-            class="image-predictions"
-            :src="`${baseUrl}assets/predictions3@0.5x.jpg`"
-            alt="An example of (very wrong) text predictions"
-            :srcset="
-              `${baseUrl}assets/predictions3.jpg 1x, ${baseUrl}assets/predictions3@2x.jpg 2x`
-            "
-          />
-          <img
-            class="image-predictions"
-            :src="`${baseUrl}assets/predictions4@0.5x.jpg`"
-            alt="An example of (very wrong) text predictions"
-            :srcset="
-              `${baseUrl}assets/predictions4.jpg 1x, ${baseUrl}assets/predictions4@2x.jpg 2x`
-            "
-          />
-        </div>
+      <div class="predictions first">
+        <img
+          class="image-predictions"
+          :src="`${baseUrl}assets/predictions1@0.5x.jpg`"
+          alt="An example of (very wrong) text predictions"
+          :srcset="
+            `${baseUrl}assets/predictions1.jpg 1x, ${baseUrl}assets/predictions1@2x.jpg 2x`
+          "
+        />
+        <img
+          class="image-predictions"
+          :src="`${baseUrl}assets/predictions2@0.5x.jpg`"
+          alt="An example of (very wrong) text predictions"
+          :srcset="
+            `${baseUrl}assets/predictions2.jpg 1x, ${baseUrl}assets/predictions2@2x.jpg 2x`
+          "
+        />
+      </div>
+      <div class="predictions second">
+        <img
+          class="image-predictions"
+          :src="`${baseUrl}assets/predictions3@0.5x.jpg`"
+          alt="An example of (very wrong) text predictions"
+          :srcset="
+            `${baseUrl}assets/predictions3.jpg 1x, ${baseUrl}assets/predictions3@2x.jpg 2x`
+          "
+        />
+        <img
+          class="image-predictions"
+          :src="`${baseUrl}assets/predictions4@0.5x.jpg`"
+          alt="An example of (very wrong) text predictions"
+          :srcset="
+            `${baseUrl}assets/predictions4.jpg 1x, ${baseUrl}assets/predictions4@2x.jpg 2x`
+          "
+        />
       </div>
       <p>
         Machine learning algorithms are only as good as their training data:
@@ -535,7 +537,7 @@ section {
   margin-bottom: 3rem;
 }
 
-h1 img {
+.logo-aereo {
   width: 8rem;
   height: 8rem;
   margin: 1rem 0 1rem -3rem;
@@ -596,8 +598,19 @@ table {
   );
 }
 
+.image-hero {
+  @media screen and (max-width: 90ch) {
+    height: 100%;
+    max-width: initial;
+  }
+}
+
 .lead {
   font-size: 1.5rem;
+
+  @media screen and (max-width: 90ch) {
+    font-size: 1.2rem;
+  }
 }
 
 .enter {
@@ -626,20 +639,25 @@ table {
 
 .palettes,
 .predictions {
+  align-items: start;
   display: flex;
   margin: 2rem auto;
 }
 
 .predictions {
-  flex-direction: column;
+  width: 100%;
 
-  div {
-    display: flex;
+  &.first {
     margin-bottom: 1px;
+  }
+
+  &.second {
+    margin-top: 0;
   }
 }
 
 .image-predictions {
+  width: 50%;
   margin-right: 1px;
 
   &:last-child {
@@ -649,6 +667,7 @@ table {
 
 .image-palette {
   margin-right: 1px;
+  width: 33%;
 
   &:last-child {
     margin-right: 0;
