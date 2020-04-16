@@ -52,6 +52,8 @@ function AjaxTextureLoader() {
 
       image.src = objUrl
       image.style.visibility = 'hidden'
+      image.style.width = 0
+      image.style.height = 0
       document.body.appendChild(image)
     }
 
