@@ -432,7 +432,7 @@
       <p>
         I also want to thank folks at the open source community who helped me
         out in this project: Douglas Duhaime at the Yale DH Lab, Mario
-        Klingemann, Kyle McDonald, Cyril Diagne, Gene Kogan, Mr. Doob.
+        Klingemann, Kyle McDonald, Cyril Diagne, Gene Kogan, Ricardo Cabello.
       </p>
     </section>
     <section class="footnotes">
