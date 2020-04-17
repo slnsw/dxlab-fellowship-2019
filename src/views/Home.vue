@@ -513,7 +513,7 @@ export default {
     bucketNames() {
       return Object.values(this.stuff)
     },
-    ...mapState(['stuff'])
+    ...mapState(['stuff', 'sort'])
   },
   methods: {
     pathFor(sort, bucket) {
