@@ -217,9 +217,6 @@ export default {
         .map((s, index) => (index === l - 1 ? 'and ' + s.name : s.name))
         .join(', ')
     },
-    total() {
-      return this.itemsTotal
-    },
     formattedItemsTotal() {
       return `${new Intl.NumberFormat().format(
         this.currentBucket ? this.currentBucket.count : this.totalFromBuckets
