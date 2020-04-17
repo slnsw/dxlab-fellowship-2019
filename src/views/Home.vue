@@ -419,6 +419,22 @@
         </tbody>
       </table>
     </section>
+    <section class="acknowledgments">
+      <h2>Thanks!</h2>
+      <p>
+        Thanks to the State Library of New South Wales, State Librarian Dr John
+        Vallance and Mitchell Librarian Richard Neville, and especially to the
+        DX Lab team: Paula Bray, Kaho Cheung, and Luke Dearnley, for their
+        support during this project. Thanks also to Jenna Bain and Robertus
+        Johansyah at the web team, and all the Library staff who were immensely
+        helpful and patient.
+      </p>
+      <p>
+        I also want to thank folks at the open source community who helped me
+        out in this project: Douglas Duhaime at the Yale DH Lab, Mario
+        Klingemann, Kyle McDonald, Cyril Diagne, Gene Kogan, Mr. Doob.
+      </p>
+    </section>
     <section class="footnotes">
       <ol class="footnotes-list">
         <li id="fn1" class="footnote-item">
@@ -440,7 +456,6 @@
         </li>
       </ol>
     </section>
-
     <footer>
       <div class="links">
         <a
