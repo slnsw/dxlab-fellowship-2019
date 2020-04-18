@@ -248,8 +248,7 @@ export default {
       if (newData.id) this.fileHidden = false
     }
   },
-
-  created() {
+  mounted() {
     this.$store.commit('setBucket', null)
     this.$store.commit('setFileData', {})
     this.$store.commit('setSort', this.$route.query.sort)

@@ -326,7 +326,8 @@
             query: { bucket: 'paintings', sort: 'similar' }
           }"
           >see it in action</router-link
-        >.
+        >
+        (remember to activate thumbnails).
       </p>
       <img
         class="standalone image-similarity"

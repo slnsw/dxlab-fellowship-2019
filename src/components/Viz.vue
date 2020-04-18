@@ -322,8 +322,9 @@ export default {
     this.animate()
     window.addEventListener('resize', this.onResize)
     document.addEventListener('mouseout', this.onCanvasMouseOut)
-    if (this.currentBucket && this.bucketObjects) {
-      this.enterBucket(this.bucketObjects[this.currentBucket.key])
+    const key = this.$route.query.bucket
+    if (key && this.bucketObjects) {
+      this.enterBucket(this.bucketObjects[key])
     }
   },
   beforeDestroy() {
@@ -1019,7 +1020,7 @@ export default {
       this.pickFile()
     },
     getFileAt(uv) {
-      if (!this.currentBucket) return
+      if (!this.currentBucket || !this.currentBucket.ids) return
       const { x, y } = uv
       const { realW, side } = this.filesObject.mga
       const mx = this.filesObject.mga.x
