@@ -3,11 +3,13 @@
     <div class="wrapper">
       <section class="intro">
         <h1 id="aereo">
-          <img
-            class="logo-aereo"
-            :src="baseUrl + 'assets/logo-txt.svg'"
-            alt="Aereo"
-          />
+          <router-link to="/">
+            <img
+              class="logo-aereo"
+              :src="baseUrl + 'assets/logo-txt.svg'"
+              alt="Aereo"
+            />
+          </router-link>
           <span class="visuallyhidden">Aereo</span>
         </h1>
         <div class="hero">
