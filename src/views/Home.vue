@@ -1,35 +1,34 @@
 <template>
   <div class="wrapper">
-    <section class="intro">
-      <h1 id="aereo">
-        <img
-          class="logo-aereo"
-          :src="baseUrl + 'assets/logo-txt.svg'"
-          alt="Aereo"
-        />
-        <span class="visuallyhidden">Aereo</span>
-      </h1>
-      <div class="hero">
-        <img
-          class="image-hero"
-          :src="`${baseUrl}assets/hero@0.5x.jpg`"
-          alt=""
-          :srcset="
-            `${baseUrl}assets/hero.jpg 1x, ${baseUrl}assets/hero@2x.jpg 2x`
-          "
-        />
-      </div>
-      <p class="lede">
-        An experimental bird’s eye view of the digital collections from the
-        State Library of NSW.
-      </p>
-      <router-link class="enter" to="/viewer">
-        ENTER
-      </router-link>
-      <router-link class="about" to="/about">
-        ABOUT
-      </router-link>
-    </section>
+    <h1 id="aereo">
+      <img
+        class="logo-aereo"
+        :src="baseUrl + 'assets/logo-txt.svg'"
+        alt="Aereo"
+      />
+      <span class="visuallyhidden">Aereo</span>
+    </h1>
+    <div class="hero">
+      <img
+        class="image-hero"
+        :src="`${baseUrl}assets/hero@0.5x.jpg`"
+        alt=""
+        :srcset="
+          `${baseUrl}assets/hero.jpg 1x, ${baseUrl}assets/hero@2x.jpg 2x`
+        "
+      />
+    </div>
+    <p class="lede">
+      An experimental bird’s eye view of the digital collections from the State
+      Library of NSW.
+    </p>
+    <router-link class="enter" to="/viewer">
+      ENTER
+    </router-link>
+    <router-link class="about" to="/about">
+      ABOUT
+    </router-link>
+
     <Footer />
     <SpecialCare />
   </div>
@@ -77,20 +76,20 @@ export default {
   min-height: 100vh;
   max-width: 100vw;
   margin: 0 auto;
-  position: relative;
-}
-
-.intro {
-  min-height: 100vh;
-  margin-bottom: -4.5rem;
-
-  @media screen and (max-width: 720px) {
-    margin-bottom: -5.75rem;
-  }
+  display: grid;
+  grid-gap: 0.5rem;
+  align-items: start;
+  grid-template:
+    'logo  logo logo' 7rem
+    'lede lede .' auto
+    '. enter .' auto
+    'about . .' auto
+    'footer footer footer' auto / 1fr 8rem 1fr;
 }
 
 #aereo {
-  padding: 1rem 0 1rem 1rem;
+  grid-area: logo;
+  padding: 1rem 0 0 1rem;
 }
 
 .logo-aereo {
@@ -125,6 +124,7 @@ p {
 }
 
 .lede {
+  grid-area: lede;
   background-color: $bg-color;
   font-size: 1.2rem;
   max-width: 30ch;
@@ -146,14 +146,24 @@ p {
   width: 8rem;
   text-align: center;
   border-radius: 0.2rem;
-  margin: 2rem auto;
   padding: 0.5rem 1rem;
 }
 
+.enter {
+  grid-area: enter;
+}
+
 .about {
+  align-self: end;
+  grid-area: about;
   font-size: 1.25rem;
-  margin: 1rem;
+  margin: 0 0 0 1rem;
   padding: 0.5rem;
   display: inline-block;
+}
+
+footer {
+  grid-area: footer;
+  align-self: stretch;
 }
 </style>
