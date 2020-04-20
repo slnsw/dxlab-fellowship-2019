@@ -121,6 +121,9 @@
           </router-link>
         </div>
         <div class="atlas">
+          <span v-if="loadedAtlas > 0 && showAtlases" class="atlas-loading"
+            >loading...</span
+          >
           <label for="atlas">
             <input
               id="atlas"
@@ -240,7 +243,8 @@ export default {
       'stuff',
       'currentBucket',
       'sort',
-      'showAtlases'
+      'showAtlases',
+      'loadedAtlas'
     ])
   },
   watch: {
@@ -404,6 +408,14 @@ export default {
 }
 .atlas {
   padding-bottom: 0.5rem;
+  position: relative;
+
+  .atlas-loading {
+    position: absolute;
+    left: 0;
+    margin-left: -50%;
+    color: darken($text-color, 30%);
+  }
 
   label {
     cursor: pointer;
