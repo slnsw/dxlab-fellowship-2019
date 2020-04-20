@@ -577,8 +577,8 @@ table {
   z-index: -1;
   filter: brightness(0.75);
   mask-image: linear-gradient(
-    transparentize($bg-color, 0.75),
-    transparent 80vh
+    transparentize($bg-color, 0.55),
+    transparent 90vh
   );
   overflow: hidden;
 }
@@ -593,6 +593,8 @@ table {
 .lede {
   font-size: 1.25rem;
   text-align: center;
+  background-color: $bg-color;
+  padding: 1rem;
 
   @media screen and (max-width: 90ch) {
     font-size: 1.2rem;

@@ -82,10 +82,10 @@ export default {
 
 .intro {
   min-height: 100vh;
-  margin-bottom: -3.25rem;
+  margin-bottom: -4.5rem;
 
   @media screen and (max-width: 720px) {
-    margin-bottom: -5rem;
+    margin-bottom: -5.75rem;
   }
 }
 
@@ -114,7 +114,6 @@ p {
   height: 100vh;
   z-index: -1;
   filter: brightness(0.75);
-  mask-image: linear-gradient(transparentize($bg-color, 0.5), transparent 95vh);
   overflow: hidden;
 }
 

@@ -61,11 +61,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import '@/assets/variables';
+
 footer {
+  background-color: $bg-color;
   display: flex;
   flex-direction: row-reverse;
   align-items: center;
   font-size: 0.9rem;
+  padding: 0.5rem;
 
   @media screen and (max-width: 720px) {
     font-size: 0.8rem;
