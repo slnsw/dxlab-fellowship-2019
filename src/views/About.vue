@@ -56,7 +56,7 @@
           >
           during the construction phase of the project, in that same collection.
           <em>Aereo</em> is only concerned with the digital surrogates of these
-          items: the <em>files</em>, photographs taken by library staff to these
+          items: the <em>files</em>, photographs taken by library staff of these
           items. The categories and years for these files are inherited from the
           items they portray. An item might fall under multiple categories
           (e.g.: medals are also objects) and can also have multiple files, like
