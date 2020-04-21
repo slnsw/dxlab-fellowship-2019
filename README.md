@@ -1,6 +1,6 @@
 # Aereo
 
-Code repository for [_Aereo_](https://dxlab.sl.nsw.gov.au/aereo/), project by [Mauricio Giraldo Arteaga](https://github.com/mgiraldo/) for the [2019 DX Lab Fellowship](https://dxlab.sl.nsw.gov.au/blog/winner-dx-lab-fellowship-3) of the State Library of New South Wales.
+Code repository for [_Aereo_](https://dxlab.sl.nsw.gov.au/aereo/), an experimental bird’s eye view of the digital collections from the State Library of New South Wales by [Mauricio Giraldo Arteaga](https://github.com/mgiraldo/) for the [2019 DX Lab Fellowship](https://dxlab.sl.nsw.gov.au/blog/winner-dx-lab-fellowship-3).
 
 ## Data download
 
