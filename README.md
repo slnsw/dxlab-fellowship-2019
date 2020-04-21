@@ -112,7 +112,7 @@ These are the object recognition predictions for every image. These are 4,096 ne
   <dt>Folder</dt>
   <dd><code>similarities</code></dd>
   <dt>Type</dt>
-  <dd>Multiple</dd>
+  <dd>Multiple, see below</dd>
 </dl>
 
 These are the similarity calculations for each category of files in _Aereo_. The internal names of the categories are:
@@ -145,6 +145,10 @@ The process includes:
 - converting the 4,096 down to the 300 most informative values via [Principal Component Analysis (PCA)](https://en.wikipedia.org/wiki/Principal_component_analysis). <br />Filename: `[CATEGORY]_pca.p` (e.g.: `[BUCKET]/similarities/prints_pca.p`);
 - shaping those 300 into a three-dimensional space using [t-distributed Stochastic Neighbor Embedding (t-SNE)](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding). I later replaced this with [Uniform Manifold Approximation and Projection (UMAP)](https://umap-learn.readthedocs.io/en/latest/) which is much faster (but kept the original t-SNE anyway). <br />Filename: `[CATEGORY]_[tsne or umap].p` (e.g.: `[BUCKET]/similarities/prints_umap.p`);
 - converting the three-dimensional space into a two-dimensional grid using [RasterFairy](https://github.com/Quasimondo/RasterFairy) and producing a newline-separated list of `x y` coordinates for each file in the category and starting with a `COLUMNS ROWS` line.<br />Filename: `[CATEGORY].txt` (e.g.: `[BUCKET]/similarities/prints.txt`)
+
+### Image thumbnails
+
+There are two folders, one with 150x150 pixel thumbnails (folder `150_150`) and one with 32x32 pixel thumbnails (folder `32_32`). Both have the same naming convention but the 32x32 has PNG files and the 150x150 has JPEG files (I have no good explanation for this difference 😳): `[first_four_characters_of_filename]/filename.[png or jpg]` (e.g.: `[BUCKET]/32_32/1000/10000130.png` and `[BUCKET]/150_150/1000/10000130.jpg`).
 
 ## Setup and running locally
 
