@@ -25,10 +25,7 @@
     <router-link class="enter" to="/viewer">
       ENTER
     </router-link>
-    <router-link class="about" to="/about">
-      ABOUT
-    </router-link>
-
+    <AboutButton />
     <Footer />
     <SpecialCare />
   </div>
@@ -37,13 +34,14 @@
 <script>
 import { mapState } from 'vuex'
 
+import AboutButton from '@/components/AboutButton'
 import Footer from '@/components/Footer'
 import SpecialCare from '@/components/SpecialCare'
 
 const BASE_URL = process.env.BASE_URL
 
 export default {
-  components: { Footer, SpecialCare },
+  components: { AboutButton, Footer, SpecialCare },
   data() {
     return {
       baseUrl: BASE_URL
@@ -136,8 +134,7 @@ p {
   }
 }
 
-.enter,
-.about {
+.enter {
   font-size: 1.5rem;
   background-color: $bg-color;
   color: $text-color;
@@ -156,10 +153,6 @@ p {
 .about {
   align-self: end;
   grid-area: about;
-  font-size: 1.25rem;
-  margin: 0 0 0 1rem;
-  padding: 0.5rem;
-  display: inline-block;
 }
 
 footer {

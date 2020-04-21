@@ -12,13 +12,13 @@
     </div>
     <div v-if="loaded" id="viewer" class="grid">
       <router-link
-        class="button-about"
+        class="logo"
         :style="{
           backgroundImage: 'url(' + baseUrl + 'assets/logo-txt.svg)'
         }"
         to="/"
       >
-        <span class="visuallyhidden">about</span>
+        <span class="visuallyhidden">Aereo homepage</span>
       </router-link>
       <div :class="{ header: true, hidden: headerHidden }">
         <h1 class="total">
@@ -93,6 +93,7 @@
           </a>
         </p>
       </div>
+      <AboutButton />
       <div class="controls">
         <div class="sort">
           <router-link
@@ -180,6 +181,7 @@
 import { mapState, mapGetters } from 'vuex'
 
 import Viz from '@/components/Viz.vue'
+import AboutButton from '@/components/AboutButton'
 import SpecialCare from '@/components/SpecialCare'
 
 const BASE_URL = process.env.BASE_URL
@@ -187,7 +189,7 @@ const FILES_BASE_URL = process.env.VUE_APP_FILES_BASE_URL
 const MAX_TITLE_LENGTH = 140
 
 export default {
-  components: { Viz, SpecialCare },
+  components: { AboutButton, Viz, SpecialCare },
   data() {
     return {
       baseUrl: BASE_URL,
@@ -317,7 +319,7 @@ export default {
   grid-template-rows: auto auto 5rem;
   position: relative;
 }
-.button-about {
+.logo {
   position: absolute;
   left: 0;
   top: 0.5rem;
@@ -388,6 +390,12 @@ export default {
 }
 .bucket-names {
   display: inline;
+}
+.about {
+  grid-column: 1/2;
+  grid-row: 3/4;
+  z-index: 1;
+  align-self: center;
 }
 .controls {
   grid-column: 1/4;
