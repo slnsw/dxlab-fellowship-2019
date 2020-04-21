@@ -333,6 +333,10 @@ export default {
     document.removeEventListener('mouseout', this.onCanvasMouseOut)
   },
   methods: {
+    clearLastImage() {
+      this.lastImage = null
+      this.hideCursor()
+    },
     backToEverything() {
       this.camera.layers.enable(0)
       this.cleanFiles()

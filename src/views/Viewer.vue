@@ -58,7 +58,7 @@
         ref="file"
         :class="{ file: true, hidden: !fileData.id || fileHidden }"
       >
-        <button class="button-hide" type="button" @click="fileHidden = true">
+        <button class="button-hide" type="button" @click="hideFile">
           hide
         </button>
         <div v-if="fileData.palette" class="palette">
@@ -103,6 +103,12 @@
             unsorted
           </router-link>
           <router-link
+            :class="['button-sort', sort === 'year' ? 'active' : '']"
+            :to="pathFor('year', currentBucket)"
+          >
+            year
+          </router-link>
+          <router-link
             :class="['button-sort', sort === 'hue' ? 'active' : '']"
             :to="pathFor('hue', currentBucket)"
           >
@@ -113,12 +119,6 @@
             :to="pathFor('similar', currentBucket)"
           >
             look alike
-          </router-link>
-          <router-link
-            :class="['button-sort', sort === 'year' ? 'active' : '']"
-            :to="pathFor('year', currentBucket)"
-          >
-            year
           </router-link>
         </div>
         <div class="atlas">
@@ -264,6 +264,11 @@ export default {
     this.$store.dispatch('getBuckets')
   },
   methods: {
+    hideFile() {
+      this.fileHidden = true
+      this.$refs.viz.clearLastImage()
+      this.$store.commit('setFileData', {})
+    },
     pathFor(sort, bucket) {
       const path = { path: '/viewer', query: {} }
       if (bucket) path.query.bucket = bucket.key
