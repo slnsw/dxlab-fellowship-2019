@@ -255,6 +255,7 @@ export default {
     }
   },
   mounted() {
+    this.atlasShown = this.showAtlases
     this.$store.commit('setBucket', null)
     this.$store.commit('setFileData', {})
     this.$store.commit('setSort', this.$route.query.sort)
