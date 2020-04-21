@@ -144,7 +144,7 @@ The process includes:
 
 - converting the 4,096 down to the 300 most informative values via [Principal Component Analysis (PCA)](https://en.wikipedia.org/wiki/Principal_component_analysis). <br />Filename: `[CATEGORY]_pca.p` (e.g.: `[BUCKET]/similarities/prints_pca.p`);
 - shaping those 300 into a three-dimensional space using [t-distributed Stochastic Neighbor Embedding (t-SNE)](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding). I later replaced this with [Uniform Manifold Approximation and Projection (UMAP)](https://umap-learn.readthedocs.io/en/latest/) which is much faster (but kept the original t-SNE anyway). <br />Filename: `[CATEGORY]_[tsne or umap].p` (e.g.: `[BUCKET]/similarities/prints_umap.p`);
-- converting the three-dimensional space into a two-dimensional grid using [RasterFairy](https://github.com/Quasimondo/RasterFairy) and producing a newline-separated list of `x y` coordinates for each file in the category and starting with a `COLUMNS ROWS` line.<br />Filename: `[CATEGORY].txt` (e.g.: `[BUCKET]/similarities/prints.txt`)
+- converting the three-dimensional space into a two-dimensional grid using [RasterFairy](https://github.com/Quasimondo/RasterFairy) and producing a newline-separated list of `x y` coordinates for each file in the category and starting with a `COLUMNS ROWS` line. The `photographs` category wouldn't work in RasterFairy so it was gridded using [Lagrangian Gradient Descent](https://colab.research.google.com/drive/16-eM-t3ZevY72I1gBQUSnUZnFkL2GG0h#scrollTo=ROJMfqIzzSw2).<br />Filename: `[CATEGORY].txt` (e.g.: `[BUCKET]/similarities/prints.txt`)
 
 ### Image thumbnails
 
