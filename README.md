@@ -1,4 +1,6 @@
-# Viewer
+# Aereo
+
+Code repository for [_Aereo_](https://dxlab.sl.nsw.gov.au/aereo/), project by [Mauricio Giraldo Arteaga](https://github.com/mgiraldo/) for the [2019 DX Lab Fellowship](https://dxlab.sl.nsw.gov.au/blog/winner-dx-lab-fellowship-3) of the State Library of New South Wales.
 
 ## Data download
 
@@ -161,9 +163,4 @@ yarn serve
 ### Compiles and minifies for production
 ```
 yarn build
-```
-
-### Lints and fixes files
-```
-yarn lint
 ```
