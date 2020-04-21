@@ -383,6 +383,13 @@
           </li>
         </ul>
         <h3 id="data-and-files">Data and files</h3>
+        <p>
+          To download these files you need to know how to use
+          <a href="https://aws.amazon.com/s3/" rel="noopener" target="_blank"
+            >Amazon S3</a
+          >
+          and follow the guidelines in the code repository.
+        </p>
         <table>
           <thead>
             <tr>
@@ -397,12 +404,12 @@
           </thead>
           <tbody>
             <tr>
-              <td>File ID to URL mapping for categories/full set</td>
+              <td>File ID to URL mapping for categories/full set (CSV)</td>
               <td>22</td>
               <td>48.1 MB</td>
             </tr>
             <tr>
-              <td>Colour summarizing (full version, gzipped)</td>
+              <td>Colour summarizing (full version)</td>
               <td>2,212,318</td>
               <td>64.3 GB</td>
             </tr>
@@ -412,7 +419,7 @@
               <td>1.3 GB</td>
             </tr>
             <tr>
-              <td>Image predictions (4,096 word values)</td>
+              <td>Image predictions (4,096 word values, gzipped)</td>
               <td>2,231,222</td>
               <td>33.8 GB</td>
             </tr>

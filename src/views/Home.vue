@@ -48,9 +48,6 @@ export default {
     }
   },
   computed: {
-    total() {
-      return this.bucketNames.length
-    },
     bucketNames() {
       return Object.values(this.stuff)
     },
