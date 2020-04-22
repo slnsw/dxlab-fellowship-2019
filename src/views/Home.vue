@@ -79,7 +79,7 @@ export default {
     'lede lede .' auto
     '. enter .' auto
     'about . .' auto
-    'footer footer footer' auto / 1fr 8rem 1fr;
+    'footer footer footer' 0.1fr / 1fr 8rem 1fr;
 }
 
 #aereo {
@@ -112,7 +112,7 @@ p {
 }
 
 .image-hero {
-  @media screen and (max-width: 110ch) {
+  @media screen and (max-width: 200ch) {
     height: 100%;
     max-width: initial;
   }
