@@ -112,7 +112,11 @@ p {
 }
 
 .image-hero {
-  @media screen and (max-width: 200ch) {
+  @media screen and (orientation: landscape) {
+    width: 100%;
+    max-height: initial;
+  }
+  @media screen and (orientation: portrait) {
     height: 100%;
     max-width: initial;
   }
