@@ -139,7 +139,13 @@
 
         <p>
           You can read more about the making of this experiment in
-          <mark> this blog post </mark>.
+          <mark> this blog post </mark> or
+          <a
+            href="https://github.com/slnsw/dxlab-fellowship-2019/"
+            target="_blank"
+            rel="noopener"
+            >check out the repository in Github</a
+          >.
         </p>
 
         <p>
