@@ -31,9 +31,13 @@
             href="https://dxlab.sl.nsw.gov.au/blog/winner-dx-lab-fellowship-3"
             target="_blank"
             rel="noopener"
-            >DX Lab Fellowship #3</a
           >
-          built by Interaction Designer and Developer Mauricio Giraldo.
+            DX Lab Fellowship #3
+          </a>
+          built by Interaction Designer and Developer
+          <a href="https://mauriciogiraldo.com" target="_blank" rel="noopener">
+            Mauricio Giraldo </a
+          >.
         </p>
       </section>
       <section class="categories">
@@ -145,8 +149,9 @@
             href="https://www.sl.nsw.gov.au/research-and-collections/ask-librarian over bold text"
             target="_blank"
             rel="noopener"
-            >Ask a Librarian</a
           >
+            Ask a Librarian
+          </a>
           service.
         </p>
 
