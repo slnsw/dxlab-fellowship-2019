@@ -8,7 +8,7 @@
   },
   "keywords": [],
   "author": "Mauricio Giraldo Arteaga",
-  "license": "Apache2",
+  "license": "Apache-2.0",
   "homepage": "https://github.com/slnsw/dxlab-fellowship-2019",
   "scripts": {
     "serve": "vue-cli-service serve",
