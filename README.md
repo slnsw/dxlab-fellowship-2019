@@ -2,13 +2,26 @@
 
 Code repository for [_Aereo_](https://dxlab.sl.nsw.gov.au/aereo/), an experimental bird’s eye view of the digital collections from the State Library of New South Wales by [Mauricio Giraldo Arteaga](https://github.com/mgiraldo/) for the [2019 DX Lab Fellowship](https://dxlab.sl.nsw.gov.au/blog/winner-dx-lab-fellowship-3).
 
+<video
+  class="video"
+  type="video/mp4"
+  height="auto"
+  preload
+  loop
+  autoplay
+  muted
+  playsInline
+>
+<source src="/public/assets/sorting.mp4" type="video/mp4" />
+</video>
+
 ## Data download
 
 To download these files you need to know how to use [Amazon S3](https://aws.amazon.com/s3/). The files are located in this bucket:
 
-````
+```
 https://dxlab-fellowship-2019.s3.amazonaws.com/
-````
+```
 
 All files are in their own subfolder in that bucket and <a href="https://dxlab-fellowship-2019.s3.amazonaws.com/csv/all.csv" target="_blank" rel="noopener">mapped in this CSV</a> (85 MB). The CSV has three columns: `id`, `filename`, `access_pid`. This is really one of the CSVs listed below in “File ID to URL mapping” that contains every file.
 
@@ -155,16 +168,19 @@ There are two folders, one with 150x150 pixel thumbnails (folder `150_150`) and 
 See `.env.example` for the necessary environment variables and rename to `.env.local` for proper functioning in localhost.
 
 ### Project setup
+
 ```
 yarn install
 ```
 
 ### Compiles and hot-reloads for development
+
 ```
 yarn serve
 ```
 
 ### Compiles and minifies for production
+
 ```
 yarn build
 ```
