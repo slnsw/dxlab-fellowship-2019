@@ -4,6 +4,17 @@ Code repository for [_Aereo_](https://dxlab.sl.nsw.gov.au/aereo/), an experiment
 
 ![sorting demo](demo.gif)
 
+## Related repositories
+
+### Image analysis and machine learning
+
+Used to create object predictions and obtain color palettes from the images: https://github.com/mgiraldo/image-utils
+
+### Category pixels and atlases
+
+Used to create the category pixels (when thumbnails are off) and atlases  (when thumbnails are on): https://github.com/mgiraldo/aereo-pixels
+
+
 ## Data download
 
 To download these files you need to know how to use [Amazon S3](https://aws.amazon.com/s3/). The files are located in this bucket:
