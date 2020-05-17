@@ -8,11 +8,15 @@ Code repository for [_Aereo_](https://dxlab.sl.nsw.gov.au/aereo/), an experiment
 
 ### Image analysis and machine learning
 
-Used to create object predictions and obtain color palettes from the images: https://github.com/mgiraldo/image-utils
+Used to create object predictions and obtain color palettes from the images:
+
+https://github.com/mgiraldo/image-utils
 
 ### Category pixels and atlases
 
-Used to create the category pixels (when thumbnails are off) and atlases  (when thumbnails are on): https://github.com/mgiraldo/aereo-pixels
+Used to create the category pixels (when thumbnails are off) and atlases  (when thumbnails are on):
+
+https://github.com/mgiraldo/aereo-pixels
 
 
 ## Data download
