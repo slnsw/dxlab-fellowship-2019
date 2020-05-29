@@ -49,6 +49,7 @@
             `${baseUrl}assets/categories.jpg 1x, ${baseUrl}assets/categories@2x.jpg 2x`
           "
         />
+        <BrowserNotice />
 
         <p>
           The DX Lab Fellowship is supported through a gift to the
@@ -178,12 +179,13 @@
 import { mapState } from 'vuex'
 
 import Footer from '@/components/Footer'
+import BrowserNotice from '@/components/BrowserNotice'
 import SpecialCare from '@/components/SpecialCare'
 
 const BASE_URL = process.env.BASE_URL
 
 export default {
-  components: { Footer, SpecialCare },
+  components: { Footer, BrowserNotice, SpecialCare },
   data() {
     return {
       baseUrl: BASE_URL

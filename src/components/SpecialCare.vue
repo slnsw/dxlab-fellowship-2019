@@ -17,6 +17,7 @@
       <span>Special Care Notice</span>
     </template>
     <div>
+      <BrowserNotice />
       <p>
         This website may contain images or documentation relating to Aboriginal
         and Torres Strait Islander people who are deceased.
@@ -32,7 +33,10 @@
 </template>
 
 <script>
+import BrowserNotice from '@/components/BrowserNotice'
+
 export default {
+  components: { BrowserNotice },
   data() {
     return {
       dialog: null
