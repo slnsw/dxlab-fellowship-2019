@@ -94,7 +94,7 @@
         </p>
       </div>
       <AboutButton />
-      <div class="controls">
+      <div v-if="currentBucket" class="controls">
         <div class="sort">
           <router-link
             :class="['button-sort', sort === 'default' ? 'active' : '']"
