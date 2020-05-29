@@ -49,7 +49,7 @@
             :class="{ 'button-header-toggle': true, active: currentBucket }"
             @click="headerHidden = !headerHidden"
           >
-            {{ !headerHidden ? 'hide' : 'show' }} header
+            {{ !headerHidden ? 'hide' : 'more info' }}
           </button>
         </h1>
       </div>
