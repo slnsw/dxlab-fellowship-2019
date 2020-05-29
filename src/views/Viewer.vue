@@ -20,17 +20,16 @@
       >
         <span class="visuallyhidden">Aereo homepage</span>
       </router-link>
+      <div v-if="currentBucket" class="button-back-wrapper">
+        <router-link
+          class="button-back"
+          :to="pathFor(sort !== 'default' ? sort : null, null)"
+        >
+          &lt; back to everything
+        </router-link>
+      </div>
       <div :class="{ header: true, hidden: headerHidden }">
         <h1 class="total">
-          <div :class="{ 'button-back-wrapper': true, active: currentBucket }">
-            <router-link
-              class="button-back"
-              :to="pathFor(sort !== 'default' ? sort : null, null)"
-            >
-              &lt; back to everything
-            </router-link>
-          </div>
-
           <strong>{{ formattedItemsTotal }}</strong>
           <div v-if="!currentBucket && bucketObjects" class="bucket-names">
             <span v-for="(bucket, index) in bucketNames" :key="'b_' + index">
@@ -355,12 +354,10 @@ export default {
   padding: 0.125rem 0.5rem;
 }
 .button-back-wrapper {
-  margin: -2.5rem 0 0.5rem 0.25rem;
-  transition: margin-top 0.2s ease-out;
-
-  &.active {
-    margin-top: 0rem;
-  }
+  left: 4rem;
+  top: 1rem;
+  position: absolute;
+  z-index: 2;
 }
 .button-back {
   display: inline-block;
