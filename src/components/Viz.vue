@@ -390,7 +390,6 @@ export default {
       this.scene.add(this.cursor)
     },
     enterBucket(obj) {
-      this.zoomedBucket = false
       if (obj.bucketIndex) {
         const key = obj.bucketIndex
         this.selectedBucket = this.stuff[key]
@@ -932,38 +931,9 @@ export default {
 
       this.camera.layers.disableAll()
 
-      if (
-        this.zoomedBucket &&
-        this.zoomedBucket === this.PAST_INTERSECTED.instanceId
-      ) {
-        // clicked on zoomed bucket
-        const path = {
-          path: '/viewer',
-          query: { bucket: this.PAST_INTERSECTED.instanceId }
-        }
-        if (this.sort !== 'default') path.query.sort = this.sort
-        this.$router.push(path)
-        return
-      }
-
       if (this.fileMode) {
         this.camera.layers.enable(1)
-        if (this.PAST_INTERSECTED.instanceId === undefined) {
-          // clicked outside
-          if (this.detailMode) {
-            // go back to files
-            this.camera.layers.enable(1)
-            this.detailMode = false
-            this.moveCameraTo(this.cameraObj, SCENE_FILES_PADDING)
-          } else {
-            // go back to buckets
-            const path = { path: '/viewer', query: {} }
-            if (this.sort && this.sort !== 'default')
-              path.query.sort = this.sort
-            this.$router.push(path)
-            this.backToEverything()
-          }
-        } else {
+        if (this.PAST_INTERSECTED.instanceId !== undefined) {
           // clicked a file
           this.detailMode = true
           this.lastImage = { ...this.PAST_INTERSECTED }
@@ -976,19 +946,18 @@ export default {
 
       if (this.PAST_INTERSECTED.instanceId !== undefined) {
         // there is a selected bucket
-        this.camera.layers.enable(0)
         if (
           this.PAST_INTERSECTED.instanceId !== this.selectedInstance.instanceId
         ) {
-          this.zoomedBucket = this.PAST_INTERSECTED.instanceId
-          this.hideCursor()
-          this.moveCameraTo(this.PAST_INTERSECTED.obj, SCENE_BUCKET_PADDING)
-          this.selectedInstance = { ...this.PAST_INTERSECTED }
+          const path = {
+            path: '/viewer',
+            query: { bucket: this.PAST_INTERSECTED.instanceId }
+          }
+          if (this.sort !== 'default') path.query.sort = this.sort
+          this.$router.push(path)
         }
-        this.$store.commit('setBucket', null)
-      } else {
-        this.backToEverything()
       }
+      this.camera.layers.enable(0)
     },
     putCursorOnFile(obj) {
       if (!obj) return
