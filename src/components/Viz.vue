@@ -130,8 +130,20 @@ void main() {
 }
 `
 
+const isRetinaDisplay = () => {
+  const query =
+    '(-webkit-min-device-pixel-ratio: 2), (min-device-pixel-ratio: 2), (min-resolution: 192dpi)'
+  if (window.matchMedia) {
+    const mq = window.matchMedia(query)
+    return (mq && mq.matches) || window.devicePixelRatio > 1
+  }
+  return false
+}
+
+const RETINA_SCALE = isRetinaDisplay() ? 1 : 0.5
+
 const getPointScale = (side) => {
-  return window.innerHeight / (side * TILE_PADDING)
+  return (window.innerHeight / (side * TILE_PADDING)) * RETINA_SCALE
 }
 
 const getBoundsFromMesh = (obj) => {
