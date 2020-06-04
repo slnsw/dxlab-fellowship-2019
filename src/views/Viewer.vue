@@ -135,6 +135,10 @@
           </label>
         </div>
       </div>
+      <div v-if="currentBucket" class="zoom-control">
+        <button class="button-zoom" type="button" @click="zoomIn">+</button>
+        <button class="button-zoom" type="button" @click="zoomOut">-</button>
+      </div>
       <a11y-dialog
         id="app-bigfiles"
         app-root="#viewer"
@@ -263,6 +267,12 @@ export default {
     this.$store.dispatch('getBuckets')
   },
   methods: {
+    zoomIn() {
+      this.$refs.viz.zoomIn()
+    },
+    zoomOut() {
+      this.$refs.viz.zoomOut()
+    },
     hideFile() {
       this.fileHidden = true
       this.$refs.viz.clearLastImage()
@@ -340,6 +350,7 @@ export default {
   }
 }
 
+.button-zoom,
 .button-back,
 .button-hide,
 .button-header-toggle {
@@ -412,6 +423,23 @@ export default {
   width: 30%;
   min-width: 23.5rem;
   border-radius: 0.5rem 0.5rem 0 0;
+}
+.zoom-control {
+  grid-column: 3/4;
+  grid-row: 3/4;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  justify-self: end;
+  margin-right: 1rem;
+}
+.button-zoom {
+  background-color: $button-text-color;
+  color: $button-bg-color;
+}
+.button-zoom:first-child {
+  margin-bottom: 0.5rem;
 }
 .sort {
   display: flex;

@@ -25,6 +25,9 @@ const CAMERA_FAR = 100
 const CAMERA_FOV = 45
 const CAMERA_MIN_DIST = 0.001
 const CAMERA_MAX_DIST = 4
+const CAMERA_ZOOM_STEP = 0.01
+const CAMERA_ZOOM_ALL = -0.5565378067729787 // the zoom where camera sees all files (based on FOV 45 and padding 0.8)
+const CAMERA_VIEW_MAX = 8 // proxy for side of max items to view (not real # of items in view)
 
 // tile stuff
 const SMALL_ATLAS_SIZE = 2048
@@ -47,6 +50,28 @@ const SCENE_FILES_PADDING = 0.8
 const TEXT_SIZE = 0.025
 const TEXT_Z = 0 // relative
 const TILE_PADDING = 0.5
+
+const isRetinaDisplay = () => {
+  const query =
+    '(-webkit-min-device-pixel-ratio: 2), (min-device-pixel-ratio: 2), (min-resolution: 192dpi)'
+  if (window.matchMedia) {
+    const mq = window.matchMedia(query)
+    return (mq && mq.matches) || window.devicePixelRatio > 1
+  }
+  return false
+}
+
+const RETINA_SCALE = isRetinaDisplay() ? 1 : 0.5
+
+const getPointScale = (side) => {
+  return (window.innerHeight / (side * TILE_PADDING)) * RETINA_SCALE
+}
+
+const easeInOutQuad = (t, b, c, d) => {
+  // t: current time, b: beginning value, c: change In value, d: duration
+  if ((t /= d / 2) < 1) return (c / 2) * t * t + b
+  return (-c / 2) * (--t * (t - 2) - 1) + b
+}
 
 const vShader = `
 precision mediump float;
@@ -130,22 +155,6 @@ void main() {
 }
 `
 
-const isRetinaDisplay = () => {
-  const query =
-    '(-webkit-min-device-pixel-ratio: 2), (min-device-pixel-ratio: 2), (min-resolution: 192dpi)'
-  if (window.matchMedia) {
-    const mq = window.matchMedia(query)
-    return (mq && mq.matches) || window.devicePixelRatio > 1
-  }
-  return false
-}
-
-const RETINA_SCALE = isRetinaDisplay() ? 1 : 0.5
-
-const getPointScale = (side) => {
-  return (window.innerHeight / (side * TILE_PADDING)) * RETINA_SCALE
-}
-
 const getBoundsFromMesh = (obj) => {
   const o = new THREE.Box3()
   const count = obj.instanceMatrix.count
@@ -174,12 +183,6 @@ const getBoundsFromGroup = (obj) => {
     o.expandByObject(child)
   }
   return o
-}
-
-const easeInOutQuad = (t, b, c, d) => {
-  // t: current time, b: beginning value, c: change In value, d: duration
-  if ((t /= d / 2) < 1) return (c / 2) * t * t + b
-  return (-c / 2) * (--t * (t - 2) - 1) + b
 }
 
 const createBaseCamera = () => {
@@ -344,6 +347,24 @@ export default {
     document.removeEventListener('mouseout', this.onCanvasMouseOut)
   },
   methods: {
+    applyZoom(scale) {
+      const { side } = this.filesObject.mga
+      const maxZoom =
+        FILE_Z + Math.abs((CAMERA_ZOOM_ALL * CAMERA_VIEW_MAX) / side)
+      const pos = this.camera.position.clone()
+      if (scale > 0 || pos.z >= maxZoom) {
+        pos.z += CAMERA_ZOOM_STEP * scale
+        this.camera.position.copy(pos)
+      }
+    },
+    zoomIn() {
+      if (!this.filesObject.mga) return
+      this.applyZoom(-1)
+    },
+    zoomOut() {
+      if (!this.filesObject.mga) return
+      this.applyZoom(1)
+    },
     clearLastImage() {
       this.lastImage = null
       this.hideCursor()
