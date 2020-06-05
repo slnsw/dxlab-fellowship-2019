@@ -322,7 +322,11 @@ export default {
       if (this.lastImage && this.currentBucket) {
         const obj = this.findLastImageFinalPosition()
         this.putCursorOnFile(obj)
-        if (obj) this.moveCameraTo(obj, SCENE_FILE_PADDING)
+        if (obj) {
+          // we take the current camera pos distance
+          const cameraPos = this.camera.position.clone()
+          this.moveCameraTo(obj, SCENE_FILE_PADDING, cameraPos.z)
+        }
       } else {
         this.hideCursor()
       }
@@ -851,7 +855,7 @@ export default {
       this.scene.remove(this.bucketsGroup)
       this.scene.remove(this.textGroup)
     },
-    moveCameraTo(obj, padding = SCENE_DEFAULT_PADDING) {
+    moveCameraTo(obj, padding = SCENE_DEFAULT_PADDING, newDist = null) {
       let o
 
       if (obj instanceof THREE.InstancedMesh) {
@@ -875,6 +879,8 @@ export default {
 
       const dir = new THREE.Vector3(0, 0, 1)
       const newPos = new THREE.Vector3().addVectors(center, dir.setLength(dist))
+
+      if (newDist) newPos.z = newDist // comes when file is selected so has to keep existing distance
 
       this.lastCamera = this.camera.clone()
       this.toCamera = this.camera.clone()
