@@ -970,7 +970,6 @@ export default {
           this.detailMode = true
           this.lastImage = { ...this.PAST_INTERSECTED }
           this.putCursorOnFile(this.PAST_INTERSECTED.obj)
-          this.moveCameraTo(this.PAST_INTERSECTED.obj, SCENE_FILE_PADDING)
           this.loadFile()
         }
         return
