@@ -362,6 +362,7 @@ export default {
       }
     },
     zoomIn() {
+      console.log(this.camera.position.z)
       if (!this.filesObject.mga) return
       this.applyZoom(-1)
     },

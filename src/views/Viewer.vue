@@ -365,8 +365,8 @@ export default {
   padding: 0.125rem 0.5rem;
 }
 .button-back-wrapper {
-  left: 4rem;
-  top: 1rem;
+  left: 0.5rem;
+  top: 4rem;
   position: absolute;
   z-index: 2;
 }
@@ -377,6 +377,7 @@ export default {
   position: absolute;
   transform: translateY(50%);
   box-shadow: 0 0 0.25rem $bg-color;
+  right: 0;
 }
 .header {
   background-color: transparentize($color: $bg-color, $amount: 0.1);
@@ -396,9 +397,11 @@ export default {
   max-width: 80ch;
   margin: 0 auto;
   padding: 0.5rem;
+  position: relative;
 
   @media screen and (max-width: 990px) {
     margin-left: 2.5rem;
+    max-width: none;
     font-size: 0.9rem;
   }
 }
