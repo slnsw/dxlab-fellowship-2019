@@ -41,14 +41,16 @@
         </p>
       </section>
       <section class="categories">
-        <img
-          class="standalone image-categories"
-          :src="`${baseUrl}assets/categories@0.5x.jpg`"
-          alt="The main view of categories in Aereo"
-          :srcset="
-            `${baseUrl}assets/categories.jpg 1x, ${baseUrl}assets/categories@2x.jpg 2x`
-          "
-        />
+        <router-link to="/viewer">
+          <img
+            class="standalone image-categories"
+            :src="`${baseUrl}assets/categories@0.5x.jpg`"
+            alt="The main view of categories in Aereo"
+            :srcset="
+              `${baseUrl}assets/categories.jpg 1x, ${baseUrl}assets/categories@2x.jpg 2x`
+            "
+          />
+        </router-link>
         <BrowserNotice />
 
         <p>
