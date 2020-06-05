@@ -174,6 +174,53 @@
           </div>
         </div>
       </a11y-dialog>
+      <a11y-dialog
+        id="app-category"
+        app-root="#viewer"
+        dialog-root="#dialog-root"
+        :class-names="{
+          base: 'dialog',
+          overlay: 'dialog-overlay',
+          element: 'dialog-content',
+          title: 'dialog-title',
+          document: 'dialog-document',
+          closeButton: 'dialog-close'
+        }"
+        @dialog-ref="assignCategoryCallRef"
+      >
+        <template v-slot:title>
+          <span><em>Aereo</em> view!</span>
+        </template>
+        <ul class="call-list">
+          <li>
+            Each <strong>square represents a file</strong> and is painted with
+            the <strong>most prominent color</strong> in that file.
+          </li>
+          <li>
+            <strong>Zoom in</strong> (using the mouse wheel or touchpad) to get
+            closer.
+          </li>
+          <li>
+            Select <strong>Show thumbnails</strong> below to view the files.
+          </li>
+          <li>
+            <strong>Click a square</strong> to see a larger version of the file.
+          </li>
+          <li>
+            Select <strong>different sorting criteria</strong> to reorganize
+            files accordingly.
+          </li>
+        </ul>
+        <div class="dialog-buttons">
+          <button
+            type="button"
+            class="button-confirm"
+            @click="confirmCategoryCall"
+          >
+            Got it!
+          </button>
+        </div>
+      </a11y-dialog>
       <viz ref="viz" class="viz" />
     </div>
     <SpecialCare />
@@ -197,6 +244,8 @@ export default {
     return {
       baseUrl: BASE_URL,
       dialog: null,
+      categoryCall: null,
+      categoryCallSeen: false,
       atlasShown: this.showAtlases,
       filesBaseUrl: FILES_BASE_URL,
       headerHidden: true,
@@ -255,6 +304,12 @@ export default {
   watch: {
     fileData(newData) {
       if (newData.id) this.fileHidden = false
+    },
+    currentBucket() {
+      if (!this.categoryCallSeen) {
+        if (!this.categoryCall) return
+        this.categoryCall.show()
+      }
     }
   },
   mounted() {
@@ -305,6 +360,16 @@ export default {
       } else {
         this.$store.commit('setShowAtlases', this.atlasShown)
       }
+    },
+    confirmCategoryCall() {
+      if (this.categoryCall) this.categoryCall.hide()
+    },
+    assignCategoryCallRef(dialog) {
+      this.categoryCall = dialog
+      if (!this.categoryCall) return
+      this.categoryCall.on('hide', () => {
+        this.categoryCallSeen = true
+      })
     },
     assignDialogRef(dialog) {
       this.dialog = dialog
@@ -570,5 +635,9 @@ export default {
 }
 .file-description {
   margin: 0 0.5rem 0 0.5rem;
+}
+.call-list {
+  list-style-type: disc;
+  padding-left: 1rem;
 }
 </style>
