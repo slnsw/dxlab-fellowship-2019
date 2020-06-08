@@ -23,9 +23,10 @@ import SpriteText from 'three-spritetext'
 const CAMERA_NEAR = 0.0001
 const CAMERA_FAR = 100
 const CAMERA_FOV = 45
-const CAMERA_MIN_DIST = 0.001
-const CAMERA_MAX_DIST = 4
-const CAMERA_ZOOM_STEP = 0.05
+const CAMERA_MIN_DIST_FILES = 0.004
+const CAMERA_MIN_DIST_HOME = 1.25
+const CAMERA_MAX_DIST = 3
+const CAMERA_ZOOM_STEP = 0.1
 const CAMERA_ZOOM_ALL = -0.5565378067729787 // the zoom where camera sees all files (based on FOV 45 and padding 0.8)
 const CAMERA_VIEW_MAX = 12 // proxy for side of max items to view (not real # of items in view)
 
@@ -67,7 +68,7 @@ const getPointScale = (side) => {
   return (window.innerHeight / (side * TILE_PADDING)) * RETINA_SCALE
 }
 
-const getMinDist = (side) =>
+const getMinDistance = (side) =>
   FILE_Z + Math.abs((CAMERA_ZOOM_ALL * CAMERA_VIEW_MAX) / (2 * side))
 
 const easeInOutQuad = (t, b, c, d) => {
@@ -357,7 +358,7 @@ export default {
     applyZoom(direction) {
       const { side } = this.filesObject.mga
       const pos = this.camera.position.clone()
-      const minDist = getMinDist(side)
+      const minDist = getMinDistance(side)
       const deltaDist = CAMERA_ZOOM_ALL - minDist
       const newPos = CAMERA_ZOOM_STEP * direction * deltaDist
       if (direction > 0 || pos.z + newPos >= minDist) {
@@ -383,6 +384,7 @@ export default {
     backToEverything() {
       this.camera.layers.enable(0)
       this.cleanFiles()
+      this.resetControlsMinDistance()
       this.moveCameraTo(this.bucketsGroup, SCENE_HOME_PADDING)
       this.hideCursor()
       this.selectedInstance = {}
@@ -453,7 +455,7 @@ export default {
       this.controls.zoomSpeed = 1
       this.controls.panSpeed = 0.1
       this.controls.maxDistance = CAMERA_MAX_DIST
-      this.controls.minDistance = CAMERA_MIN_DIST
+      this.controls.minDistance = CAMERA_MIN_DIST_HOME
       this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
       this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
       this.controls.noRotate = true
@@ -550,6 +552,13 @@ export default {
         this.filesObject.material.uniforms.showAtlases.needsUpdate = true
       }
     },
+    resetControlsMinDistance(side) {
+      if (!side) {
+        this.controls.minDistance = CAMERA_MIN_DIST_HOME
+      } else {
+        this.controls.minDistance = CAMERA_MIN_DIST_FILES
+      }
+    },
     initFiles(obj) {
       this.cleanFiles()
 
@@ -559,6 +568,8 @@ export default {
       const w = obj.geometry.parameters.width
       const tileSize = w / side
       const realW = w
+
+      this.resetControlsMinDistance(side)
 
       const geometry = new THREE.BufferGeometry()
 
