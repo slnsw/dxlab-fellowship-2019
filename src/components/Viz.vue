@@ -67,6 +67,9 @@ const getPointScale = (side) => {
   return (window.innerHeight / (side * TILE_PADDING)) * RETINA_SCALE
 }
 
+const getMinDist = (side) =>
+  FILE_Z + Math.abs((CAMERA_ZOOM_ALL * CAMERA_VIEW_MAX) / (2 * side))
+
 const easeInOutQuad = (t, b, c, d) => {
   // t: current time, b: beginning value, c: change In value, d: duration
   if ((t /= d / 2) < 1) return (c / 2) * t * t + b
@@ -351,15 +354,16 @@ export default {
     document.removeEventListener('mouseout', this.onCanvasMouseOut)
   },
   methods: {
-    applyZoom(scale) {
+    applyZoom(direction) {
       const { side } = this.filesObject.mga
       const pos = this.camera.position.clone()
-      const minDist =
-        FILE_Z + Math.abs((CAMERA_ZOOM_ALL * CAMERA_VIEW_MAX) / (2 * side))
-      pos.z += CAMERA_ZOOM_STEP * scale * (CAMERA_ZOOM_ALL - minDist)
-      if (scale > 0 || pos.z >= minDist) {
+      const minDist = getMinDist(side)
+      const deltaDist = CAMERA_ZOOM_ALL - minDist
+      const newPos = CAMERA_ZOOM_STEP * direction * deltaDist
+      if (direction > 0 || pos.z + newPos >= minDist) {
+        pos.z += newPos
         this.camera.position.copy(pos)
-      } else if (scale > 0 || pos.z < minDist) {
+      } else if (direction > 0 || pos.z + newPos < minDist) {
         pos.z = minDist
         this.camera.position.copy(pos)
       }
@@ -1118,7 +1122,6 @@ export default {
       }
     },
     loadFile() {
-      this.$store.commit('setFileData', {})
       // get data from API
       if (!this.PAST_INTERSECTED.fileId) {
         this.lastFileId = null
@@ -1142,6 +1145,7 @@ export default {
           break
       }
       if (fileId === this.lastFileId) return
+      this.$store.commit('setFileData', {})
       this.lastFileId = fileId
       const year = this.yearYears[index]
       this.$store.commit('setFileData', { id: fileId, year })

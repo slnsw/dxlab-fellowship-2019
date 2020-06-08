@@ -433,7 +433,7 @@ export default {
   left: 0.5rem;
   top: 4rem;
   position: absolute;
-  z-index: 2;
+  z-index: 1;
 }
 .button-back {
   display: inline-block;
