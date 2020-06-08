@@ -25,9 +25,9 @@ const CAMERA_FAR = 100
 const CAMERA_FOV = 45
 const CAMERA_MIN_DIST = 0.001
 const CAMERA_MAX_DIST = 4
-const CAMERA_ZOOM_STEP = 0.01
+const CAMERA_ZOOM_STEP = 0.05
 const CAMERA_ZOOM_ALL = -0.5565378067729787 // the zoom where camera sees all files (based on FOV 45 and padding 0.8)
-const CAMERA_VIEW_MAX = 8 // proxy for side of max items to view (not real # of items in view)
+const CAMERA_VIEW_MAX = 12 // proxy for side of max items to view (not real # of items in view)
 
 // tile stuff
 const SMALL_ATLAS_SIZE = 2048
@@ -353,16 +353,18 @@ export default {
   methods: {
     applyZoom(scale) {
       const { side } = this.filesObject.mga
-      const maxZoom =
-        FILE_Z + Math.abs((CAMERA_ZOOM_ALL * CAMERA_VIEW_MAX) / side)
       const pos = this.camera.position.clone()
-      if (scale > 0 || pos.z >= maxZoom) {
-        pos.z += CAMERA_ZOOM_STEP * scale
+      const minDist =
+        FILE_Z + Math.abs((CAMERA_ZOOM_ALL * CAMERA_VIEW_MAX) / (2 * side))
+      pos.z += CAMERA_ZOOM_STEP * scale * (CAMERA_ZOOM_ALL - minDist)
+      if (scale > 0 || pos.z >= minDist) {
+        this.camera.position.copy(pos)
+      } else if (scale > 0 || pos.z < minDist) {
+        pos.z = minDist
         this.camera.position.copy(pos)
       }
     },
     zoomIn() {
-      console.log(this.camera.position.z)
       if (!this.filesObject.mga) return
       this.applyZoom(-1)
     },
