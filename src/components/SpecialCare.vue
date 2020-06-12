@@ -17,7 +17,6 @@
       <span>Special Care Notice</span>
     </template>
     <div>
-      <BrowserNotice />
       <p>
         This website may contain images or documentation relating to Aboriginal
         and Torres Strait Islander people who are deceased.
@@ -28,6 +27,7 @@
         published with respect to the descendants and communities of the
         individuals they depict.
       </p>
+      <BrowserNotice />
     </div>
   </a11y-dialog>
 </template>
