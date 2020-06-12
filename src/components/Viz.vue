@@ -23,8 +23,7 @@ import TextSprite from '@seregpie/three.text-sprite'
 const CAMERA_NEAR = 0.0001
 const CAMERA_FAR = 100
 const CAMERA_FOV = 45
-const CAMERA_MIN_DIST_FILES = 0.004
-const CAMERA_MIN_DIST_HOME = 1.25
+const CAMERA_MIN_DIST = 0.004
 const CAMERA_MAX_DIST = 3
 const CAMERA_ZOOM_STEP = 0.1
 const CAMERA_ZOOM_ALL = -0.5565378067729787 // the zoom where camera sees all files (based on FOV 45 and padding 0.8)
@@ -387,7 +386,6 @@ export default {
     backToEverything() {
       this.camera.layers.enable(0)
       this.cleanFiles()
-      this.resetControlsMinDistance()
       this.moveCameraTo(this.bucketsGroup, SCENE_HOME_PADDING)
       this.hideCursor()
       this.selectedInstance = {}
@@ -458,7 +456,7 @@ export default {
       this.controls.zoomSpeed = 1
       this.controls.panSpeed = 0.1
       this.controls.maxDistance = CAMERA_MAX_DIST
-      this.controls.minDistance = CAMERA_MIN_DIST_HOME
+      this.controls.minDistance = CAMERA_MIN_DIST
       this.controls.mouseButtons.LEFT = THREE.MOUSE.PAN
       this.controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE
       this.controls.noRotate = true
@@ -555,13 +553,6 @@ export default {
         this.filesObject.material.uniforms.showAtlases.needsUpdate = true
       }
     },
-    resetControlsMinDistance(files) {
-      if (!files) {
-        this.controls.minDistance = CAMERA_MIN_DIST_HOME
-      } else {
-        this.controls.minDistance = CAMERA_MIN_DIST_FILES
-      }
-    },
     initFiles(obj) {
       this.cleanFiles()
 
@@ -571,8 +562,6 @@ export default {
       const w = obj.geometry.parameters.width
       const tileSize = w / side
       const realW = w
-
-      this.resetControlsMinDistance(true)
 
       const geometry = new THREE.BufferGeometry()
 
