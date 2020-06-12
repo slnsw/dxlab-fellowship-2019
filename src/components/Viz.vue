@@ -17,7 +17,7 @@ import { mapState, mapGetters, mapActions } from 'vuex'
 
 import * as THREE from 'three'
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js'
-import SpriteText from 'three-spritetext'
+import TextSprite from '@seregpie/three.text-sprite'
 
 // camera stuff
 const CAMERA_NEAR = 0.0001
@@ -215,9 +215,12 @@ const createEmptyAtlases = (count) => {
 const createText = (text, x, y, z, scale) => {
   text = text || '[undefined]'
   if (isNaN(text) && text.includes('|||')) text = text.split('|||')[1]
-  const myText = new SpriteText(text)
-  myText.fontFace = 'monospace'
-  myText.textHeight = TEXT_SIZE * scale
+  const myText = new TextSprite({
+    text,
+    fontFamily: '"Courier New", monospace',
+    fontSize: TEXT_SIZE * scale,
+    fillStyle: '#FFFFFF'
+  })
   myText.position.set(x, y, z)
   myText.center = new THREE.Vector2(0, 0)
   return myText
