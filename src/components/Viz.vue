@@ -555,8 +555,8 @@ export default {
         this.filesObject.material.uniforms.showAtlases.needsUpdate = true
       }
     },
-    resetControlsMinDistance(side) {
-      if (!side) {
+    resetControlsMinDistance(files) {
+      if (!files) {
         this.controls.minDistance = CAMERA_MIN_DIST_HOME
       } else {
         this.controls.minDistance = CAMERA_MIN_DIST_FILES
@@ -572,7 +572,7 @@ export default {
       const tileSize = w / side
       const realW = w
 
-      this.resetControlsMinDistance(side)
+      this.resetControlsMinDistance(true)
 
       const geometry = new THREE.BufferGeometry()
 
