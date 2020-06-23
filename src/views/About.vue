@@ -142,7 +142,8 @@
 
         <p>
           You can read more about the making of this experiment in
-          <mark> this blog post </mark> or
+          <a href="//dxlab.sl.nsw.gov.au/blog/building-aereo">this blog post</a>
+          or
           <a
             href="https://github.com/slnsw/dxlab-fellowship-2019/"
             target="_blank"

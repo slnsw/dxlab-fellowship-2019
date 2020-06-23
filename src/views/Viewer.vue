@@ -28,32 +28,38 @@
           &lt; back to everything
         </router-link>
       </div>
-      <div :class="{ header: true, hidden: headerHidden }">
+      <div id="header-info" :class="{ header: true, hidden: headerHidden }">
         <h1 class="total">
-          <strong>{{ formattedItemsTotal }}</strong>
-          <div v-if="!currentBucket && bucketObjects" class="bucket-names">
-            <span v-for="(bucket, index) in bucketNames" :key="'b_' + index">
-              <span v-if="index === bucketNames.length - 1"> and </span>
-              <router-link :to="pathFor(sort, { key: bucket.key })">{{
-                bucket.name
-              }}</router-link>
-              <span v-if="index < bucketNames.length - 1">, </span>
-              <span v-if="index === bucketNames.length - 1">.</span>
-            </span>
-          </div>
-          <span v-if="currentBucket">{{
-            currentBucket.description.trim()
-          }}</span>
           <button
+            :aria-expanded="[!headerHidden]"
+            :aria-label="`${headerHidden ? 'show' : 'hide'} description header`"
+            aria-controls="header-info"
             type="button"
             :class="{ 'button-header-toggle': true, active: currentBucket }"
             @click="headerHidden = !headerHidden"
           >
             {{ !headerHidden ? 'hide' : 'more info' }}
           </button>
+          <div v-show="!headerHidden">
+            <strong>{{ formattedItemsTotal }}</strong>
+            <div v-if="!currentBucket && bucketObjects" class="bucket-names">
+              <span v-for="(bucket, index) in bucketNames" :key="'b_' + index">
+                <span v-if="index === bucketNames.length - 1"> and </span>
+                <router-link :to="pathFor(sort, { key: bucket.key })">{{
+                  bucket.name
+                }}</router-link>
+                <span v-if="index < bucketNames.length - 1">, </span>
+                <span v-if="index === bucketNames.length - 1">.</span>
+              </span>
+            </div>
+            <span v-if="currentBucket">{{
+              currentBucket.description.trim()
+            }}</span>
+          </div>
         </h1>
       </div>
       <div
+        v-show="!(!fileData.id || fileHidden)"
         ref="file"
         :class="{ file: true, hidden: !fileData.id || fileHidden }"
       >
@@ -166,7 +172,7 @@
           </p>
           <div class="dialog-buttons">
             <button type="button" class="button-confirm" @click="acceptAtlas">
-              Gimme those thumbnails!
+              Show thumbnails
             </button>
             <button type="button" class="button-cancel" @click="cancelAtlas">
               Don't show thumbnails
@@ -440,7 +446,8 @@ export default {
 }
 .button-header-toggle {
   position: absolute;
-  transform: translateY(50%);
+  transform: translateY(calc(100% + 0.5rem));
+  bottom: 0;
   box-shadow: 0 0 0.25rem $bg-color;
   right: 0;
 }
