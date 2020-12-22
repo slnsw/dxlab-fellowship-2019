@@ -32,7 +32,8 @@ All files are in their own subfolder in that bucket and <a href="https://dxlab-f
 <table>
   <thead>
     <tr>
-      <th>Name</th>
+      <th>Folder</th>
+      <th>Description</th>
       <th>
         File count
       </th>
@@ -41,36 +42,43 @@ All files are in their own subfolder in that bucket and <a href="https://dxlab-f
   </thead>
   <tbody>
     <tr>
+      <td><code>csv/</code></td>
       <td>File ID to URL mapping for categories/full set (CSV)</td>
       <td>22</td>
       <td>48.1 MB</td>
     </tr>
     <tr>
+      <td><code>colors_output/</code></td>
       <td>Colour summarizing (full version)</td>
       <td>2,212,318</td>
       <td>64.3 GB</td>
     </tr>
     <tr>
+      <td><code>colors_minimal/</code></td>
       <td>Colour summarizing (compact version)</td>
       <td>2,231,480</td>
       <td>1.3 GB</td>
     </tr>
     <tr>
+      <td><code>predictions/</code></td>
       <td>Image predictions (4,096 word values, gzipped)</td>
       <td>2,231,222</td>
       <td>33.8 GB</td>
     </tr>
     <tr>
+      <td><code>similarities/</code></td>
       <td>Image similarity intermediate data</td>
       <td>81</td>
       <td>2.9 GB</td>
     </tr>
     <tr>
+      <td><code>150_150/</code></td>
       <td>Image thumbnails (150x150 pixels)</td>
       <td>2,231,496</td>
       <td>9.8 GB</td>
     </tr>
     <tr>
+      <td><code>32_32/</code></td>
       <td>Image thumbnails (32x32 pixels)</td>
       <td>2,238,557</td>
       <td>3.5 GB</td>
