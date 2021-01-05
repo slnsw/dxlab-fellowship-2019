@@ -19,7 +19,7 @@
   "dependencies": {
     "@seregpie/three.text-sprite": "^2.0.0",
     "@seregpie/three.text-texture": "^2.0.1",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "bodybuilder": "^2.2.21",
     "csvtojson": "^2.0.10",
     "three": "0.117.0",
